@@ -63,7 +63,7 @@ Project Plan
         - when user submit message, if the convesation has not been initialised, system will create a conversation title (date-time)
         - both user message and system response will stored in the chat, with the same conversation id
     - Past conversation lists
-        - Activated from the burger menu from to top-left corner
+        - Activated from the burger menu (with history icon) from to top-left corner
         - list of conversation title displayed
         - when user click on the conversation title, preview convesation will be displayed
     - Conversation detail view

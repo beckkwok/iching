@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/chat_message.dart';
 import '../models/conversation.dart';
 import '../services/database_service.dart';
+import 'conversation_detail_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   /// Null on platforms where SQLite is unavailable (e.g. web).
@@ -22,6 +23,9 @@ class _ChatScreenState extends State<ChatScreen> {
   int _messageCounter = 0;
   bool _isSending = false;
   bool _welcomePersisted = false;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  List<Conversation> _conversations = [];
+  bool _drawerLoading = false;
 
   @override
   void initState() {
@@ -136,6 +140,122 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  /// Load conversations from the database for the drawer list.
+  Future<void> _loadConversations() async {
+    if (widget.databaseService == null) return;
+    setState(() => _drawerLoading = true);
+    try {
+      final list = await widget.databaseService!.getAllConversations();
+      if (mounted) setState(() => _conversations = list);
+    } catch (_) {
+      // silently fail
+    } finally {
+      if (mounted) setState(() => _drawerLoading = false);
+    }
+  }
+
+  /// Navigate to the conversation detail screen and refresh on return.
+  Future<void> _openConversation(Conversation conv) async {
+    // Close the drawer first.
+    Navigator.of(context).pop();
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ConversationDetailScreen(
+          conversation: conv,
+          databaseService: widget.databaseService,
+        ),
+      ),
+    );
+    // Refresh the drawer list when returning (in case of changes).
+    _loadConversations();
+  }
+
+  /// Build the drawer with the conversation list.
+  Widget _buildDrawer(BuildContext context) {
+    return Drawer(
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.inversePrimary,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Conversations',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_conversations.length} conversation${_conversations.length == 1 ? '' : 's'}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+            // List
+            Expanded(
+              child: _drawerLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _conversations.isEmpty
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Text(
+                              'No past conversations',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: _conversations.length,
+                          itemBuilder: (context, index) {
+                            final conv = _conversations[index];
+                            final isActive = _conversation?.id == conv.id;
+                            return ListTile(
+                              title: Text(
+                                conv.title,
+                                style: TextStyle(
+                                  fontWeight: isActive
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                              subtitle: Text(
+                                _formatTimestamp(conv.updatedAt),
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              trailing: isActive
+                                  ? const Icon(Icons.chat_bubble,
+                                      size: 18)
+                                  : null,
+                              selected: isActive,
+                              onTap: () => _openConversation(conv),
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatTimestamp(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inHours < 1) return '${diff.inMinutes}m ago';
+    if (diff.inDays < 1) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return '${dt.month}/${dt.day}';
+  }
+
   /// Placeholder response generator. Will be replaced by Gua engine + LLM.
   String _generateResponse(String userText) {
     final lower = userText.toLowerCase();
@@ -154,10 +274,20 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          tooltip: 'Past conversations',
+          onPressed: () {
+            _loadConversations();
+            _scaffoldKey.currentState?.openDrawer();
+          },
+        ),
         title: Text(_conversation?.title ?? 'I-Ching'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
+      drawer: _buildDrawer(context),
       body: Column(
         children: [
           // Chat message list
