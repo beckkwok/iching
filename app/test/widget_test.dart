@@ -1,30 +1,121 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:app/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+  testWidgets('Chat screen displays welcome message', (tester) async {
     await tester.pumpWidget(const MyApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // The welcome message is a single Text widget with a newline
+    expect(
+      find.textContaining('Welcome. I am here to help you reflect.'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Tell me what is on your mind.'),
+      findsOneWidget,
+    );
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+  testWidgets('User can type and send a message via keyboard',
+      (tester) async {
+    await tester.pumpWidget(const MyApp());
+
+    // Find the text field and type
+    final textField = find.byType(TextField);
+    expect(textField, findsOneWidget);
+
+    await tester.enterText(textField, 'I feel uncertain about my path');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // The user message should now appear
+    expect(
+      find.text('I feel uncertain about my path'),
+      findsOneWidget,
+    );
+
+    // Pump past the system response delay timer
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('System responds after user sends a message', (tester) async {
+    await tester.pumpWidget(const MyApp());
+
+    // Send a message
+    await tester.enterText(
+      find.byType(TextField),
+      'I feel uncertain',
+    );
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+
+    // Wait for the simulated system delay
+    await tester.pump(const Duration(seconds: 1));
+
+    // The system should have responded
+    expect(
+      find.textContaining('Thank you for sharing'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('Send button is present', (tester) async {
+    await tester.pumpWidget(const MyApp());
+
+    // Find the send button
+    final sendButton = find.byIcon(Icons.send);
+    expect(sendButton, findsOneWidget);
+  });
+
+  testWidgets('User can tap send button to submit message', (tester) async {
+    await tester.pumpWidget(const MyApp());
+
+    // Type a message
+    await tester.enterText(
+      find.byType(TextField),
+      'Testing the send button',
+    );
+    await tester.pump();
+
+    // Tap the send button
+    await tester.tap(find.byIcon(Icons.send));
+    await tester.pump();
+
+    // User message should appear
+    expect(
+      find.text('Testing the send button'),
+      findsOneWidget,
+    );
+
+    // Pump past the system response delay timer
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('Chat bubble styling distinguishes user from system',
+      (tester) async {
+    await tester.pumpWidget(const MyApp());
+
+    // Send a message
+    await tester.enterText(
+      find.byType(TextField),
+      'A test message',
+    );
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+
+    // User bubble should be aligned to the right (end)
+    final userBubble = find.text('A test message');
+    expect(userBubble, findsOneWidget);
+
+    // Pump past the system response delay timer
+    await tester.pump(const Duration(seconds: 1));
+
+    // Welcome message from system should also be visible
+    expect(
+      find.textContaining('Welcome'),
+      findsOneWidget,
+    );
   });
 }
