@@ -60,17 +60,19 @@ Project Plan
         - text input field
         - submit button
         - scrollable chat history
-    - Past conversation list
-        - conversation title
-        - preview text or last message
-        - open existing conversation
+        - when user submit message, if the convesation has not been initialised, system will create a conversation title (date-time)
+        - both user message and system response will stored in the chat, with the same conversation id
+    - Past conversation lists
+        - Activated from the burger menu from to top-left corner
+        - list of conversation title displayed
+        - when user click on the conversation title, preview convesation will be displayed
     - Conversation detail view
+        - Displayed when user select specific conversation from the conversation list
         - full chat log
         - gua details when selected
     - Settings interface
         - privacy notice
         - local storage management
-        - generator options if multiple supported
 4. Define business logic
     - Input handling
         - detect explicit gua in user prompt
@@ -91,6 +93,8 @@ Project Plan
     - scaffold app project
     - implement SQLite persistence layer
     - build conversation UI components
+    - build list of coversation component.
+    - Link conversation UI with persistance layer
     - build history and settings screens
     - integrate offline Gemma LLM or local model runtime
     - add privacy / local-only enforcement checks

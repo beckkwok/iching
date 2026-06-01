@@ -40,4 +40,36 @@ Design decisions:
 - `app/lib/models/gua.dart` - NEW: Gua model
 - `app/lib/services/database_service.dart` - NEW: Full DB service with CRUD
 - `app/test/database_service_test.dart` - NEW: 16 data layer tests
+## Gua Seed Data (64 Hexagrams)
+
+### Thinking
+User modified spec.md and asked to populate the Gua table with data from the
+Wikipedia page for the 64 hexagrams (周易六十四卦列表).
+
+I fetched the Wikipedia page via the REST API and raw wikitext, extracted:
+- All 64 hexagram names (Chinese characters)
+- All 64 common names (通稱 e.g. 乾爲天, 水雷屯)
+- Descriptions/meanings for each hexagram
+
+Created a comprehensive Dart data file with all 64 entries, each containing:
+- guaCode (1–64), guaName (Chinese + pinyin), guaContent (trigram composition
+  and classical meaning), guaSummary (reflection-oriented English prompt),
+  source ('classical')
+
+Also created a GuaSeeder service that:
+- Checks if Gua table already has records (idempotent)
+- Inserts all 64 hexagrams from HexagramData
+- Returns count of inserted rows
+
+### Files Changed
+- `app/lib/data/hexagram_data.dart` - NEW: All 64 hexagrams with name, content, summary
+- `app/lib/services/gua_seeder.dart` - NEW: Seeds Gua table on first launch
+- `app/test/gua_seeder_test.dart` - NEW: 6 tests (insert, idempotent, validation, gaps, sources, retrieval)
 - `logs/change_log_2026_06_01.md` - UPDATED: This entry
+
+### Spec Changes Detected
+- New detail: auto-create conversation title from date-time on first message
+- Messages stored with conversationId
+- Conversation list via burger menu (top-left)
+- Click on conversation shows preview
+- New implementation task: "build list of conversation component" and "Link UI with persistence"
