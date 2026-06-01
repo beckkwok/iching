@@ -1,6 +1,7 @@
-/// Run with: dart run tools/db_inspector.dart
-///
-/// Dumps all conversations and chat messages from the SQLite database.
+// ignore_for_file: avoid_print
+//
+// Run with: dart run tools/db_inspector.dart
+// Dumps all conversations and chat messages from the SQLite database.
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' as p;
 import 'dart:io';
@@ -13,9 +14,6 @@ void main() async {
   final home = Platform.environment['USERPROFILE'] ?? Platform.environment['HOME'] ?? '.';
   final dbPath = p.join(home, 'AppData', 'Roaming', 'iching', 'iching.db');
 
-  // Also check the standard Flutter databases path.
-  final defaultDbDir = p.join(home, 'Documents', 'iching', 'app', 'build', 'flutter_assets');
-  
   print('Looking for database...');
   
   // Try multiple possible locations
