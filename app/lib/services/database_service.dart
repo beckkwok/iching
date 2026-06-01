@@ -48,6 +48,8 @@ class DatabaseService {
 
   Future<Database> _initDatabase() async {
     final path = _customPath ?? await defaultDatabasePath;
+    // ignore: avoid_print
+    print('📁 Database path: $path');
     return openDatabase(
       path,
       version: _databaseVersion,

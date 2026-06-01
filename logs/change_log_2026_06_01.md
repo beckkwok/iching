@@ -67,6 +67,35 @@ Also created a GuaSeeder service that:
 - `app/test/gua_seeder_test.dart` - NEW: 6 tests (insert, idempotent, validation, gaps, sources, retrieval)
 - `logs/change_log_2026_06_01.md` - UPDATED: This entry
 
+## Wire Chat UI with SQLite
+
+### Thinking
+User asked to wire the chat UI with SQLite for persistence. Changes:
+
+- `main.dart` now initializes DatabaseService + GuaSeeder at startup, passes DB to ChatScreen
+- `ChatScreen` accepts `DatabaseService`, persists every user message and system
+  response to the database
+- First user message creates a conversation with a date-time title
+- AppBar title switches from "I-Ching" to conversation title after first message
+- Send button shows a spinner while the system is responding
+- Empty state replaces the old welcome message (not persisted)
+- Input is disabled while sending to prevent double-submit
+
+Testing challenges: `sqflite_common_ffi` real I/O is incompatible with Flutter
+widget tests' fake async zone. Split tests into:
+- UI-only widget tests (no DB writes, fast and reliable)
+- DB integration tests (pure Dart, exercise the full send-respond-persist flow)
+
+### Files Changed
+- `app/lib/main.dart` - REWRITTEN: DB init + seed + pass to ChatScreen
+- `app/lib/screens/chat_screen.dart` - REWRITTEN: DB persistence, empty state,
+  loading spinner, conversation title
+- `app/test/widget_test.dart` - REWRITTEN: UI-only tests (welcome state, AppBar,
+  typing, send button)
+- `app/test/database_service_test.dart` - EXTENDED: 2 full-flow simulation tests
+  (send-respond cycle, multi-message accumulation)
+- `logs/change_log_2026_06_01.md` - UPDATED: This entry
+
 ### Spec Changes Detected
 - New detail: auto-create conversation title from date-time on first message
 - Messages stored with conversationId
