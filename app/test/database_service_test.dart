@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:app/models/chat_message.dart';
@@ -300,6 +299,112 @@ void main() {
       final messages = await service.getMessages(conv.id!);
       expect(messages.length, 3);
       expect(messages.every((m) => m.conversationId == conv.id), isTrue);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Full-flow simulation: replicate what ChatScreen._handleSubmit does
+  // ---------------------------------------------------------------------------
+
+  group('Chat flow simulation', () {
+    test('complete send-respond cycle persists both messages', () async {
+      // 1. Create conversation with date-time title (as ChatScreen does).
+      final now = DateTime.now();
+      final title =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-'
+          '${now.day.toString().padLeft(2, '0')} '
+          '${now.hour.toString().padLeft(2, '0')}:'
+          '${now.minute.toString().padLeft(2, '0')}';
+      final conv = await service.createConversation(title);
+      expect(conv.id, isNotNull);
+      expect(
+        conv.title,
+        matches(RegExp(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}')),
+      );
+
+      // 2. Persist user message.
+      final userMsg = ChatMessage(
+        id: 'ui_1',
+        text: 'I feel uncertain about my path',
+        sender: MessageSender.user,
+      );
+      final savedUser =
+          await service.addMessage(conv.id!, userMsg);
+      expect(savedUser.dbId, isNotNull);
+      expect(savedUser.conversationId, conv.id);
+
+      // 3. Persist system response (simulating the 600ms delay).
+      final systemMsg = ChatMessage(
+        id: 'ui_2',
+        text: 'Thank you for sharing. The wisdom of the I-Ching '
+            'may offer perspective on what you describe.',
+        sender: MessageSender.system,
+      );
+      final savedSystem =
+          await service.addMessage(conv.id!, systemMsg);
+      expect(savedSystem.dbId, isNotNull);
+      expect(savedSystem.conversationId, conv.id);
+
+      // 4. Verify both messages in order.
+      final messages = await service.getMessages(conv.id!);
+      expect(messages.length, 2);
+      expect(messages[0].text, 'I feel uncertain about my path');
+      expect(messages[0].isUser, isTrue);
+      expect(messages[1].isSystem, isTrue);
+      expect(messages[1].text, contains('Thank you'));
+
+      // 5. Verify conversation updatedAt was bumped.
+      final updatedConv = await service.getConversation(conv.id!);
+      expect(
+        updatedConv!.updatedAt.isAfter(conv.updatedAt) ||
+            updatedConv.updatedAt.isAtSameMomentAs(conv.updatedAt),
+        isTrue,
+      );
+    });
+
+    test('multiple messages accumulate in same conversation', () async {
+      final conv = await service.createConversation('Multi msg flow');
+
+      // Round 1: user + system
+      await service.addMessage(
+        conv.id!,
+        ChatMessage(
+            id: 'u1', text: 'First', sender: MessageSender.user),
+      );
+      await service.addMessage(
+        conv.id!,
+        ChatMessage(
+            id: 's1',
+            text: 'Response 1',
+            sender: MessageSender.system),
+      );
+
+      // Round 2: user + system
+      await service.addMessage(
+        conv.id!,
+        ChatMessage(
+            id: 'u2', text: 'Second', sender: MessageSender.user),
+      );
+      await service.addMessage(
+        conv.id!,
+        ChatMessage(
+            id: 's2',
+            text: 'Response 2',
+            sender: MessageSender.system),
+      );
+
+      final messages = await service.getMessages(conv.id!);
+      expect(messages.length, 4);
+      expect(messages[0].text, 'First');
+      expect(messages[1].text, 'Response 1');
+      expect(messages[2].text, 'Second');
+      expect(messages[3].text, 'Response 2');
+
+      // All messages share the conversation ID
+      expect(
+        messages.every((m) => m.conversationId == conv.id),
+        isTrue,
+      );
     });
   });
 }

@@ -1,27 +1,38 @@
 import 'package:flutter/material.dart';
 import '../models/chat_message.dart';
+import '../models/conversation.dart';
+import '../services/database_service.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  /// Null on platforms where SQLite is unavailable (e.g. web).
+  /// When null, messages exist only in memory and are not persisted.
+  final DatabaseService? databaseService;
+
+  const ChatScreen({super.key, required this.databaseService});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
+  Conversation? _conversation;
   final List<ChatMessage> _messages = [];
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   int _messageCounter = 0;
+  bool _isSending = false;
+  bool _welcomePersisted = false;
 
   @override
   void initState() {
     super.initState();
-    // Add a welcome message from the system
-    _addSystemMessage(
-      'Welcome. I am here to help you reflect.\n'
-      'Tell me what is on your mind.',
-    );
+    // Add a welcome system bubble so the chat never feels empty.
+    _messages.add(ChatMessage(
+      id: 'msg_welcome',
+      text: 'Welcome. I am here to help you reflect.\n'
+          'Tell me what is on your mind.',
+      sender: MessageSender.system,
+    ));
   }
 
   @override
@@ -29,28 +40,6 @@ class _ChatScreenState extends State<ChatScreen> {
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _addUserMessage(String text) {
-    setState(() {
-      _messages.add(ChatMessage(
-        id: 'msg_${_messageCounter++}',
-        text: text,
-        sender: MessageSender.user,
-      ));
-    });
-    _scrollToBottom();
-  }
-
-  void _addSystemMessage(String text) {
-    setState(() {
-      _messages.add(ChatMessage(
-        id: 'msg_${_messageCounter++}',
-        text: text,
-        sender: MessageSender.system,
-      ));
-    });
-    _scrollToBottom();
   }
 
   void _scrollToBottom() {
@@ -65,21 +54,89 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  void _handleSubmit() {
+  Future<void> _handleSubmit() async {
     final text = _textController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || _isSending) return;
 
-    _addUserMessage(text);
     _textController.clear();
+    setState(() => _isSending = true);
 
-    // Simulate system thinking delay, then respond
-    Future.delayed(const Duration(milliseconds: 600), () {
-      _addSystemMessage(_generateResponse(text));
-    });
+    try {
+      // Create conversation on first message with date-time title.
+      if (_conversation == null) {
+        final now = DateTime.now();
+        final title =
+            '${now.year}-${now.month.toString().padLeft(2, '0')}-'
+            '${now.day.toString().padLeft(2, '0')} '
+            '${now.hour.toString().padLeft(2, '0')}:'
+            '${now.minute.toString().padLeft(2, '0')}';
+        if (widget.databaseService != null) {
+          _conversation =
+              await widget.databaseService!.createConversation(title);
+          // Persist the welcome message now that a conversation exists.
+          if (!_welcomePersisted) {
+            _welcomePersisted = true;
+            final welcomeMsg = _messages.firstWhere(
+              (m) => m.id == 'msg_welcome',
+              orElse: () => _messages.first,
+            );
+            if (welcomeMsg.id == 'msg_welcome') {
+              final saved = await widget.databaseService!
+                  .addMessage(_conversation!.id!, welcomeMsg);
+              // Replace the in-memory welcome with the persisted version.
+              final idx = _messages.indexWhere((m) => m.id == 'msg_welcome');
+              if (idx >= 0) {
+                _messages[idx] = saved;
+              }
+            }
+          }
+        } else {
+          _conversation = Conversation(
+            id: 0,
+            title: title,
+          );
+        }
+      }
+
+      // Persist or add user message.
+      final userMsg = ChatMessage(
+        id: 'msg_${_messageCounter++}',
+        text: text,
+        sender: MessageSender.user,
+      );
+      if (widget.databaseService != null) {
+        final saved = await widget.databaseService!
+            .addMessage(_conversation!.id!, userMsg);
+        setState(() => _messages.add(saved));
+      } else {
+        setState(() => _messages.add(userMsg));
+      }
+      _scrollToBottom();
+
+      // Simulate system thinking delay.
+      await Future.delayed(const Duration(milliseconds: 600));
+
+      // Generate, persist, and display system response.
+      final responseText = _generateResponse(text);
+      final systemMsg = ChatMessage(
+        id: 'msg_${_messageCounter++}',
+        text: responseText,
+        sender: MessageSender.system,
+      );
+      if (widget.databaseService != null) {
+        final saved = await widget.databaseService!
+            .addMessage(_conversation!.id!, systemMsg);
+        setState(() => _messages.add(saved));
+      } else {
+        setState(() => _messages.add(systemMsg));
+      }
+      _scrollToBottom();
+    } finally {
+      setState(() => _isSending = false);
+    }
   }
 
-  /// Temporary placeholder response generator.
-  /// In future iterations this will invoke the Gua engine and LLM.
+  /// Placeholder response generator. Will be replaced by Gua engine + LLM.
   String _generateResponse(String userText) {
     final lower = userText.toLowerCase();
     if (lower.contains('gua') || lower.contains('hexagram')) {
@@ -98,7 +155,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('I-Ching'),
+        title: Text(_conversation?.title ?? 'I-Ching'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: Column(
@@ -122,7 +179,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 BoxShadow(
                   offset: const Offset(0, -2),
                   blurRadius: 6,
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                 ),
               ],
             ),
@@ -151,12 +208,19 @@ class _ChatScreenState extends State<ChatScreen> {
                       onSubmitted: (_) => _handleSubmit(),
                       maxLines: 4,
                       minLines: 1,
+                      enabled: !_isSending,
                     ),
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                    onPressed: _handleSubmit,
-                    icon: const Icon(Icons.send),
+                    onPressed: _isSending ? null : _handleSubmit,
+                    icon: _isSending
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.send),
                     tooltip: 'Send',
                     style: IconButton.styleFrom(
                       foregroundColor:
