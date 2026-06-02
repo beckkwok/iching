@@ -1,4 +1,4 @@
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' as p;
 
 import '../models/chat_message.dart';
@@ -24,6 +24,35 @@ class DatabaseService {
   Database? _database;
 
   DatabaseService({String? databasePath}) : _customPath = databasePath;
+
+  /// Attempt to create a [DatabaseService] on the current platform.
+  ///
+  /// Tries native sqflite (Android/iOS) first, then FFI (desktop).
+  /// Returns `null` on platforms where no SQLite backend is available (web).
+  static Future<DatabaseService?> create() async {
+    // Try native sqflite (Android, iOS).
+    try {
+      final service = DatabaseService();
+      await service.database;
+      return service;
+    } catch (_) {
+      // Try FFI-based SQLite (Windows, macOS, Linux).
+      try {
+        sqfliteFfiInit();
+        // ignore: avoid_print
+        print('📁 Using FFI-based SQLite (desktop)');
+        databaseFactory = databaseFactoryFfi;
+        final service = DatabaseService();
+        await service.database;
+        return service;
+      } catch (_) {
+        // No SQLite backend available (web).
+        // ignore: avoid_print
+        print('📁 SQLite not available — running in-memory mode');
+        return null;
+      }
+    }
+  }
 
   /// The default file path for the production database.
   static Future<String> get defaultDatabasePath async {

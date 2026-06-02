@@ -95,9 +95,15 @@ Project Plan
     - build conversation UI components
     - build list of coversation component.
     - Link conversation UI with persistance layer
-    - build history and settings screens
     - integrate offline Gemma LLM or local model runtime
+        - research if there is any flutter support for local llm. or install https://pub.dev/packages/flutter_gemma plugin to connect to local llm if no better choice
+        - default a model if necessary
+        - try to send user prompt to the model
+        - get the user response and return and server response
+    - customize server prompt design
     - add privacy / local-only enforcement checks
+    - build history and settings screens
+
 6. Testing, deployment, and documentation
     - unit tests for gua generator and data model
     - integration tests for conversation flow and history

@@ -2,14 +2,23 @@ import 'package:flutter/material.dart';
 import '../models/chat_message.dart';
 import '../models/conversation.dart';
 import '../services/database_service.dart';
-import 'conversation_detail_screen.dart';
+import '../services/llm_service.dart';
+
 
 class ChatScreen extends StatefulWidget {
   /// Null on platforms where SQLite is unavailable (e.g. web).
   /// When null, messages exist only in memory and are not persisted.
   final DatabaseService? databaseService;
 
-  const ChatScreen({super.key, required this.databaseService});
+  /// The LLM service for generating responses.
+  /// When null, placeholder responses are used instead.
+  final LlmService? llmService;
+
+  const ChatScreen({
+    super.key,
+    required this.databaseService,
+    this.llmService,
+  });
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -17,7 +26,7 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   Conversation? _conversation;
-  final List<ChatMessage> _messages = [];
+  List<ChatMessage> _messages = [];
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   int _messageCounter = 0;
@@ -117,11 +126,19 @@ class _ChatScreenState extends State<ChatScreen> {
       }
       _scrollToBottom();
 
-      // Simulate system thinking delay.
-      await Future.delayed(const Duration(milliseconds: 600));
+      // Generate response — use LLM if available, fall back to placeholder.
+      String responseText;
+      if (widget.llmService != null && widget.llmService!.isReady) {
+        // Show a brief delay to indicate the model is thinking.
+        await Future.delayed(const Duration(milliseconds: 300));
+        responseText = await widget.llmService!.sendMessage(text);
+      } else {
+        // Simulate system thinking delay.
+        await Future.delayed(const Duration(milliseconds: 600));
+        responseText = _generatePlaceholderResponse(text);
+      }
 
-      // Generate, persist, and display system response.
-      final responseText = _generateResponse(text);
+      // Persist, and display system response.
       final systemMsg = ChatMessage(
         id: 'msg_${_messageCounter++}',
         text: responseText,
@@ -154,20 +171,28 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  /// Navigate to the conversation detail screen and refresh on return.
+  /// Load a past conversation into the main chat.
   Future<void> _openConversation(Conversation conv) async {
-    // Close the drawer first.
+    // Close the drawer.
     Navigator.of(context).pop();
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ConversationDetailScreen(
-          conversation: conv,
-          databaseService: widget.databaseService,
-        ),
-      ),
-    );
-    // Refresh the drawer list when returning (in case of changes).
-    _loadConversations();
+
+    if (widget.databaseService != null && conv.id != null) {
+      try {
+        final msgs =
+            await widget.databaseService!.getMessages(conv.id!);
+        if (mounted) {
+          setState(() {
+            _conversation = conv;
+            _messages = msgs;
+            _messageCounter = msgs.length;
+            _welcomePersisted = true; // welcome already in DB
+          });
+        }
+      } catch (_) {
+        // silently fail
+      }
+    }
+    _scrollToBottom();
   }
 
   /// Build the drawer with the conversation list.
@@ -256,8 +281,8 @@ class _ChatScreenState extends State<ChatScreen> {
     return '${dt.month}/${dt.day}';
   }
 
-  /// Placeholder response generator. Will be replaced by Gua engine + LLM.
-  String _generateResponse(String userText) {
+  /// Placeholder response generator when LLM is unavailable.
+  String _generatePlaceholderResponse(String userText) {
     final lower = userText.toLowerCase();
     if (lower.contains('gua') || lower.contains('hexagram')) {
       return 'You mentioned a hexagram. The Gua will reveal itself.\n'
@@ -277,7 +302,7 @@ class _ChatScreenState extends State<ChatScreen> {
       key: _scaffoldKey,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.menu),
+          icon: const Icon(Icons.history),
           tooltip: 'Past conversations',
           onPressed: () {
             _loadConversations();
