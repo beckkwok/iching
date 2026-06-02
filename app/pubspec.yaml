@@ -37,7 +37,14 @@ dependencies:
 
   # SQLite database
   sqflite: ^2.3.0
+  sqflite_common_ffi: ^2.3.0
+  sqlite3: 3.3.2
   path: ^1.9.0
+  path_provider: ^2.1.0
+  http: ^1.2.0
+
+  # Local LLM inference (Gemma, Qwen, DeepSeek, Phi-4, etc.)
+  flutter_gemma: ^0.16.3
 
 dev_dependencies:
   flutter_test:
@@ -49,10 +56,6 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
-
-  # FFI-based SQLite for unit testing (no emulator needed)
-  sqflite_common_ffi: ^2.3.0
-  sqlite3: ^2.4.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
