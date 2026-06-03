@@ -126,14 +126,14 @@ class _ChatScreenState extends State<ChatScreen> {
       }
       _scrollToBottom();
 
-      // Generate response — use LLM if available, fall back to placeholder.
+      // Let the LLM handle Gua generation via function calling.
+      // If the LLM decides a hexagram would help, it calls generate_gua(),
+      // and LlmService uses the GuaGenerator to produce one.
       String responseText;
       if (widget.llmService != null && widget.llmService!.isReady) {
-        // Show a brief delay to indicate the model is thinking.
         await Future.delayed(const Duration(milliseconds: 300));
         responseText = await widget.llmService!.sendMessage(text);
       } else {
-        // Simulate system thinking delay.
         await Future.delayed(const Duration(milliseconds: 600));
         responseText = _generatePlaceholderResponse(text);
       }
@@ -284,10 +284,6 @@ class _ChatScreenState extends State<ChatScreen> {
   /// Placeholder response generator when LLM is unavailable.
   String _generatePlaceholderResponse(String userText) {
     final lower = userText.toLowerCase();
-    if (lower.contains('gua') || lower.contains('hexagram')) {
-      return 'You mentioned a hexagram. The Gua will reveal itself.\n'
-          'How does this moment feel to you?';
-    }
     if (lower.contains('hello') || lower.contains('hi')) {
       return 'Greetings. Take a breath and tell me what brings you here today.';
     }

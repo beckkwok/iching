@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/llm_service.dart';
 import 'chat_screen.dart';
 import '../services/database_service.dart';
+import '../services/gua_generator.dart';
 
 class ModelDownloadScreen extends StatefulWidget {
   final DatabaseService? databaseService;
@@ -125,7 +126,19 @@ class _ModelDownloadScreenState extends State<ModelDownloadScreen> {
     }
   }
 
+  /// Shared GuaGenerator (created once, requires DB).
+  GuaGenerator? get _guaGenerator {
+    if (widget.databaseService != null) {
+      return GuaGenerator(widget.databaseService!);
+    }
+    return null;
+  }
+
   void _proceedToChat() {
+    // Wire GuaGenerator to the LLM service for function calling.
+    if (_guaGenerator != null) {
+      _llmService.guaGenerator = _guaGenerator;
+    }
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => ChatScreen(
