@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -181,6 +182,18 @@ class LlmService {
     String? responseText;
     int maxTurns = 3;
 
+    // Proactive context compression: if we're near the token limit, summarize
+    // before adding more context.
+    if (_chat != null) {
+      final limit = _chat!.maxTokens - _chat!.tokenBuffer;
+      if (_chat!.currentTokens > limit - 200) {
+        // ignore: avoid_print
+        print('🧹 Proactive context compression triggered '
+            '(${_chat!.currentTokens}/$limit tokens)');
+        await _compressContext();
+      }
+    }
+
     await _chat!.addQuery(Message(text: message, isUser: true));
 
     while (responseText == null && maxTurns > 0) {
@@ -259,6 +272,24 @@ class LlmService {
               _guaGenerated = true;
               final context = _guaGenerator!.formatContext(result);
               await _chat!.addQuery(Message.toolCall(text: '$context\n/no_think'));
+
+              // The model may have included response text after the function call JSON.
+              // Extract it and feed back so it isn't lost.
+              final toolCallEntry = _chat!.fullHistory.lastWhere(
+                (m) => m.type == MessageType.toolCall,
+                orElse: () => _chat!.fullHistory.last,
+              );
+              final jsonStr = '{"name": "${response.name}"'
+                  '${json.encode(response.args).replaceFirst('{', ', ')}';
+              final trailing = toolCallEntry.text
+                  .replaceAll(RegExp(r'\s*' + RegExp.escape(jsonStr) + r'\s*'), '')
+                  .trim();
+              if (trailing.isNotEmpty &&
+                  !trailing.startsWith('(')) {
+                // ignore: avoid_print
+                print('📝 Trailing text after function call: "${trailing.substring(0, trailing.length.clamp(0, 80))}"');
+                await _chat!.addQuery(Message(text: trailing, isUser: false));
+              }
             }
           } else {
             // Unknown function or no generator — just continue
@@ -360,6 +391,70 @@ class LlmService {
     }
 
     return responseText ?? '(No response could be generated.)';
+  }
+
+  /// Summarize the conversation history and restart the chat with compressed context.
+  /// Used both proactively (before overflow) and as a fallback (after retries exhausted).
+  Future<void> _compressContext() async {
+    // Collect all meaningful messages in chronological order.
+    final history = _chat!.fullHistory;
+    final meaningful = <String>[];
+    for (final msg in history) {
+      if (msg.type == MessageType.toolCall ||
+          msg.type == MessageType.thinking ||
+          msg.text.trim().isEmpty ||
+          msg.text.trim() == '<think>' ||
+          msg.text.trim() == '</think>' ||
+          msg.text.contains('Please respond directly')) {
+        continue;
+      }
+      final label = msg.isUser ? 'User' : 'Assistant';
+      meaningful.add('$label: ${msg.text}');
+    }
+    final fullConversation = meaningful.join('\n\n');
+
+    if (fullConversation.isEmpty) return;
+
+    // Close and reopen fresh.
+    await closeChat();
+    await openChat();
+
+    // Ask the LLM to summarize.
+    String summaryText = '';
+    await _chat!.addQuery(Message(
+      text: 'Summarize the following I-Ching consultation conversation '
+          'in about 250 words. Keep key topics, the hexagram cast (if any), '
+          'and the user\'s core concerns.\n\n$fullConversation',
+      isUser: true,
+    ));
+
+    try {
+      final summaryResponse = await Future(
+        () => _chat!.generateChatResponse(),
+      ).timeout(_responseTimeout);
+      if (summaryResponse is TextResponse) {
+        var t = summaryResponse.token;
+        t = t.replaceAll(RegExp(r'<think>.*?</think>', dotAll: true), '');
+        t = t.replaceAll(RegExp(r'<think>', dotAll: true), '');
+        t = t.replaceAll(RegExp(r'</think>', dotAll: true), '');
+        t = t.replaceAll('<|endoftext|>', '');
+        t = t.replaceAll('<|endoftext|', '');
+        summaryText = t.trim();
+      }
+    } catch (_) {
+      // ignore — proceed with empty summary
+    }
+
+    // Restart fresh again and feed the summary as context.
+    await closeChat();
+    await openChat();
+
+    if (summaryText.isNotEmpty) {
+      await _chat!.addQuery(Message(
+        text: '[Summary of our previous conversation]\n$summaryText',
+        isUser: true,
+      ));
+    }
   }
 
   // ---------------------------------------------------------------------------
