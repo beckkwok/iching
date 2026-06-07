@@ -318,7 +318,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const SettingsScreen(),
+                      builder: (_) => SettingsScreen(llmService: widget.llmService),
                     ),
                   );
                   break;

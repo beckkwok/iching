@@ -16,6 +16,18 @@ class LlmService {
 
   bool get isReady => _chat != null;
 
+  /// The current model filename (e.g. "Qwen3-0.6B.litertlm").
+  String get modelFilename => _filename;
+
+  /// The directory where models are stored.
+  Future<String> get modelDir => _modelsDir;
+
+  /// Full absolute path to the model file.
+  Future<String> get modelFilePath => _modelPath;
+
+  /// The download URL for the default model.
+  String get modelUrl => _modelUrl;
+
   /// Set the Gua generator for function calling.
   set guaGenerator(GuaGenerator? g) => _guaGenerator = g;
 
