@@ -130,10 +130,17 @@ Project Plan
         - setParam(), generate(), prompt() per strategy
         - SimpleGuaGeneratorStrategy: random 1-64, specific prompt
     - Build gua parser for user-provided gua -> return full gua result
+    - bug fix, model location
     - LLM response change to JSON format for chat screen
+    - Display independent image related to the gua
     - add privacy / local-only enforcement checks
-    - build settings screen
+    - Enrich the gua content.
+    - allow user to delete the chat history. In the chat history page, user hold the chat history item, then system prompt the confirmation button to user whether he want to delete the chat history.
+    - build settings screen, on the main chat screen, there is a burger menu on the right, when user click the burger menu, the following setting displayed:
         - privacy notice
+        - model path
+        - model selection
+        - prompt settings
         - local storage management
 
 6. Testing, deployment, and documentation ✅ Completed

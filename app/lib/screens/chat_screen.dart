@@ -3,6 +3,7 @@ import '../models/chat_message.dart';
 import '../models/conversation.dart';
 import '../services/database_service.dart';
 import '../services/llm_service.dart';
+import 'settings_screen.dart';
 
 
 class ChatScreen extends StatefulWidget {
@@ -307,6 +308,34 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         title: Text(_conversation?.title ?? 'I-Ching'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'Settings',
+            onSelected: (value) {
+              switch (value) {
+                case 'settings':
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const SettingsScreen(),
+                    ),
+                  );
+                  break;
+              }
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: 'settings',
+                child: ListTile(
+                  leading: Icon(Icons.settings),
+                  title: Text('Settings'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       drawer: _buildDrawer(context),
       body: Column(
