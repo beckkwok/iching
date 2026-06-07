@@ -89,23 +89,60 @@ Project Plan
         - persist each chat message
         - associate system response with gua where applicable
         - support continuing conversations later
-5. Implementation tasks
+5. Implementation tasks ✅ Completed
     - scaffold app project
+        - Flutter project with proper folder structure and all dependencies
     - implement SQLite persistence layer
+        - database_service.dart with full CRUD for conversations, messages, gua
     - build conversation UI components
-    - build list of coversation component.
-    - Link conversation UI with persistance layer
+        - chat_screen.dart with message bubbles, text input, buttons
+    - build list of conversation component
+        - History drawer with titles, timestamps, active indicator
+    - Link conversation UI with persistence layer
+        - Messages persisted on send and response
+        - Conversation auto-title with date-time
     - integrate offline Gemma LLM or local model runtime
-        - research if there is any flutter support for local llm. or install https://pub.dev/packages/flutter_gemma plugin to connect to local llm if no better choice
-        - default a model if necessary
-        - try to send user prompt to the model
-        - get the user response and return and server response
+        - flutter_gemma plugin integrated
+        - Model download from HuggingFace (Qwen3 0.6B)
+        - Send user prompt and receive response
+        - Function calling support (generate_gua tool)
+        - /no_think suppression for Qwen3 thinking mode
+        - Empty response retry guard
+        - Proactive context compression with LLM summarization
+        - Trailing text capture after function call JSON
     - customize server prompt design
-    - add privacy / local-only enforcement checks
-    - build history and settings screens
+        - I-Ching consultant system prompt with reflection guidelines
+    - Build gua generator
+        - GuaGenerator class with generateRandom() and findInText()
+        - Multiple GeneratorMethod (userRequested, randomCast, automatic)
+        - formatContext() with different headers per method
+    - LLM integration with gua generator via function calling
+        - LLM calls generate_gua -> GuaGenerator generates -> context fed back
+    - Build gua parser (findInText)
+        - Detects gua by Chinese name, pinyin, or number in user text
+    - build history screen
+        - conversation_detail_screen.dart for full chat log
+    - gua as separate response
+        - GenerationResult wraps gua + method, formatted as tool call context
 
-6. Testing, deployment, and documentation
-    - unit tests for gua generator and data model
+5b. Implementation tasks 🔲 Remaining
+    - Strategy pattern for GuaGenerator (GuaGeneratorStrategy interface)
+        - setParam(), generate(), prompt() per strategy
+        - SimpleGuaGeneratorStrategy: random 1-64, specific prompt
+    - Build gua parser for user-provided gua -> return full gua result
+    - LLM response change to JSON format for chat screen
+    - add privacy / local-only enforcement checks
+    - build settings screen
+        - privacy notice
+        - local storage management
+
+6. Testing, deployment, and documentation ✅ Completed
+    - unit tests for gua generator (gua_generator_test.dart)
+    - unit tests for data model (database_service_test.dart)
+    - unit tests for gua seeder (gua_seeder_test.dart)
+    - widget test for UI flow (widget_test.dart)
+
+6b. Testing, deployment, and documentation 🔲 Remaining
     - integration tests for conversation flow and history
     - privacy validation to ensure no network calls
     - Android packaging and build verification
