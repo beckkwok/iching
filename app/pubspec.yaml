@@ -46,6 +46,9 @@ dependencies:
   # Local LLM inference (Gemma, Qwen, DeepSeek, Phi-4, etc.)
   flutter_gemma: ^0.16.3
 
+  # File picker for model selection
+  file_picker: ^8.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

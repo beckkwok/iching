@@ -23,10 +23,23 @@ class LlmService {
   Future<String> get modelDir => _modelsDir;
 
   /// Full absolute path to the model file.
-  Future<String> get modelFilePath => _modelPath;
+  /// Returns the custom path if set, otherwise the default models directory.
+  String? _customModelPath;
+  Future<String> get modelFilePath async =>
+      _customModelPath ?? await _modelPath;
 
   /// The download URL for the default model.
   String get modelUrl => _modelUrl;
+
+  /// Switch to a different model file. Closes the current chat session.
+  /// After calling this, call [openChat] or [_validateModel] to load it.
+  Future<void> setModelFile(String filePath) async {
+    await closeChat();
+    _customModelPath = filePath;
+    _filename = filePath.split(RegExp(r'[/\\]')).last;
+    // ignore: avoid_print
+    print('📁 Model file changed to: $filePath');
+  }
 
   /// Set the Gua generator for function calling.
   set guaGenerator(GuaGenerator? g) => _guaGenerator = g;
@@ -35,15 +48,15 @@ class LlmService {
   void resetGuaGuard() => _guaGenerated = false;
 
   // ---------------------------------------------------------------------------
-  // Model config — Gemma 3 1B IT
+  // Model config — Qwen3 0.6B
   // ---------------------------------------------------------------------------
 
-  static const String _filename = 'Qwen3-0.6B.litertlm';
+  String _filename = 'Qwen3-0.6B.litertlm';
   String get _modelUrl => 'https://huggingface.co/litert-community/'
       'Qwen3-0.6B/resolve/main/Qwen3-0.6B.litertlm';
 
   Future<String> get _modelsDir async {
-    final appDir = await getApplicationDocumentsDirectory();
+    final appDir = await getApplicationSupportDirectory();
     final dir = Directory(p.join(appDir.path, 'models'));
     if (!await dir.exists()) await dir.create(recursive: true);
     return dir.path;
@@ -114,7 +127,7 @@ class LlmService {
   }
 
   Future<void> _registerAndLoad() async {
-    final modelPath = await _modelPath;
+    final modelPath = await modelFilePath;
     final file = File(modelPath);
     if (!await file.exists()) {
       // ignore: avoid_print
@@ -124,7 +137,10 @@ class LlmService {
       // ignore: avoid_print
       print('✅ Model file found at: $modelPath');
     }
-    await _copyToFlutterGemmaPath(modelPath);
+    // Only copy to flutter_gemma path for default (downloaded) models.
+    if (_customModelPath == null) {
+      await _copyToFlutterGemmaPath(modelPath);
+    }
     await FlutterGemma.installModel(
       modelType: ModelType.qwen3,
       fileType: ModelFileType.litertlm,
