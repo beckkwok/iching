@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -291,7 +292,7 @@ class LlmService {
                 Message.toolCall(text: '(Please respond directly without thinking tags.)'),
               );
             } else {
-              responseText = trimmed;
+              responseText = _extractJsonMessage(trimmed);
             }
           }
         } else if (response is FunctionCallResponse) {
@@ -420,7 +421,7 @@ class LlmService {
           text = text.replaceAll(RegExp(r'</think>', dotAll: true), '');
           text = text.replaceAll('<|endoftext|>', '');
           text = text.replaceAll('<|endoftext|', '');
-          responseText = text.trim();
+          responseText = _extractJsonMessage(text.trim());
         }
       } catch (e) {
         // ignore: avoid_print
@@ -514,6 +515,28 @@ class LlmService {
   }
 
   // ---------------------------------------------------------------------------
+  /// Try to parse [text] as JSON and extract the "message" field.
+  /// If parsing fails or "message" is missing, return [text] as-is.
+  static String _extractJsonMessage(String text) {
+    final trimmed = text.trim();
+    // Find the first '{' and last '}' to extract JSON.
+    final start = trimmed.indexOf('{');
+    final end = trimmed.lastIndexOf('}');
+    if (start < 0 || end <= start) return text;
+
+    final candidate = trimmed.substring(start, end + 1);
+    try {
+      final decoded = json.decode(candidate) as Map<String, dynamic>;
+      if (decoded.containsKey('message')) {
+        return decoded['message'].toString();
+      }
+    } catch (_) {
+      // Not valid JSON — fall through to return original text.
+    }
+    return text;
+  }
+
+  // ---------------------------------------------------------------------------
   // I-Ching system prompt
   // ---------------------------------------------------------------------------
 
@@ -546,5 +569,8 @@ class LlmService {
       'the current one still holds wisdom for them.\n'
       '- Remember: the goal is emotional support and self-reflection, '
       'not divination.\n'
-      '- Respond directly without using any XML or HTML tags.';
+      '- ALWAYS wrap your final response in valid JSON with a "message" '
+      'field. Example: {"message": "Your reflection here."}\n'
+      '- Only output the JSON object, nothing else before or after.\n'
+      '- Never use XML or HTML tags inside the message.';
 }
