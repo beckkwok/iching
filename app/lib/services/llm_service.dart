@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -302,16 +301,15 @@ class LlmService {
               await _chat!.addQuery(Message.toolCall(text: '$context\n/no_think'));
 
               // The model may have included response text after the function call JSON.
-              // Extract it and feed back so it isn't lost.
+              // Extract it by finding the closing brace and taking everything after.
               final toolCallEntry = _chat!.fullHistory.lastWhere(
                 (m) => m.type == MessageType.toolCall,
                 orElse: () => _chat!.fullHistory.last,
               );
-              final jsonStr = '{"name": "${response.name}"'
-                  '${json.encode(response.args).replaceFirst('{', ', ')}';
-              final trailing = toolCallEntry.text
-                  .replaceAll(RegExp(r'\s*' + RegExp.escape(jsonStr) + r'\s*'), '')
-                  .trim();
+              final jsonEnd = toolCallEntry.text.lastIndexOf('}');
+              final trailing = jsonEnd >= 0
+                  ? toolCallEntry.text.substring(jsonEnd + 1).trim()
+                  : '';
               if (trailing.isNotEmpty &&
                   !trailing.startsWith('(')) {
                 // ignore: avoid_print
