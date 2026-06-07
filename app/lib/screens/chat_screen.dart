@@ -4,6 +4,7 @@ import '../models/conversation.dart';
 import '../services/database_service.dart';
 import '../services/llm_service.dart';
 import 'settings_screen.dart';
+import '../widgets/gua_card.dart';
 
 
 class ChatScreen extends StatefulWidget {
@@ -140,10 +141,13 @@ class _ChatScreenState extends State<ChatScreen> {
       }
 
       // Persist, and display system response.
+      final generatedGua = widget.llmService?.consumeGeneratedGua();
+
       final systemMsg = ChatMessage(
         id: 'msg_${_messageCounter++}',
         text: responseText,
         sender: MessageSender.system,
+        gua: generatedGua,
       );
       if (widget.databaseService != null) {
         final saved = await widget.databaseService!
@@ -455,13 +459,21 @@ class _ChatScreenState extends State<ChatScreen> {
                       : const Radius.circular(16),
                 ),
               ),
-              child: Text(
-                message.text,
-                style: TextStyle(
-                  color: isUser
-                      ? Theme.of(context).colorScheme.onPrimaryContainer
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (message.gua != null)
+                    GuaCard(gua: message.gua!),
+                  Text(
+                    message.text,
+                    style: TextStyle(
+                      color: isUser
+                          ? Theme.of(context).colorScheme.onPrimaryContainer
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

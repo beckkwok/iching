@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
+import '../models/gua.dart';
 import '../services/gua_generator.dart';
 
 /// Wraps flutter_gemma for the I-Ching app.
@@ -12,8 +13,19 @@ class LlmService {
   InferenceChat? _chat;
   GuaGenerator? _guaGenerator;
   bool _guaGenerated = false; // only one hexagram per conversation
+  Gua? _lastGeneratedGua;
 
   bool get isReady => _chat != null;
+
+  /// The most recently generated Gua, if any. Cleared when chat is closed.
+  Gua? get lastGeneratedGua => _lastGeneratedGua;
+
+  /// Consume and clear the last generated Gua (to avoid reuse across messages).
+  Gua? consumeGeneratedGua() {
+    final gua = _lastGeneratedGua;
+    _lastGeneratedGua = null;
+    return gua;
+  }
 
   /// The current model filename (e.g. "Qwen3-0.6B.litertlm").
   String get modelFilename => _filename;
@@ -263,6 +275,7 @@ class LlmService {
               // ignore: avoid_print
               print('🔮 Generated: ${result.gua.guaName} (code ${result.gua.guaCode})');
               _guaGenerated = true;
+              _lastGeneratedGua = result.gua;
               final context = _guaGenerator!.formatContext(result);
               await _chat!.addQuery(Message.toolCall(text: '$context\n/no_think'));
             }
@@ -297,6 +310,7 @@ class LlmService {
               // ignore: avoid_print
               print('🔮 Generated: ${result.gua.guaName} (code ${result.gua.guaCode})');
               _guaGenerated = true;
+              _lastGeneratedGua = result.gua;
               final context = _guaGenerator!.formatContext(result);
               await _chat!.addQuery(Message.toolCall(text: '$context\n/no_think'));
 
@@ -488,6 +502,7 @@ class LlmService {
   // ---------------------------------------------------------------------------
 
   Future<void> closeChat() async {
+    _lastGeneratedGua = null;
     if (_chat != null) {
       await _chat!.close();
       _chat = null;
