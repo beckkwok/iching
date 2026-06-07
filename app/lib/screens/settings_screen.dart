@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../services/llm_service.dart';
 
@@ -221,13 +222,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ---------------------------------------------------------------------------
 
   Future<void> _pickModelFile() async {
-    // TODO: Integrate file_picker package to browse for .litertlm / .task files
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('File picker not yet implemented. '
-            'Will allow selecting .litertlm / .task files.'),
-      ),
-    );
+    final svc = widget.llmService;
+    if (svc == null) return;
+
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['litertlm', 'task', 'bin', 'tflite'],
+        allowMultiple: false,
+        dialogTitle: 'Select a model file',
+      );
+
+      if (result == null || result.files.isEmpty) return; // user cancelled
+
+      final filePath = result.files.single.path;
+      if (filePath == null || filePath.isEmpty) return;
+
+      setState(() {
+        _validationResult = null;
+        _modelFilename = result.files.single.name;
+        _modelFullPath = filePath;
+      });
+
+      // Update the LLM service with the new model file.
+      await svc.setModelFile(filePath);
+
+      // Auto-validate the new model.
+      _validateModel();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _validationResult = '❌ File picker error: $e';
+        });
+      }
+    }
   }
 
   Future<void> _validateModel() async {
