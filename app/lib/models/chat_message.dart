@@ -1,3 +1,5 @@
+import '../models/gua.dart';
+
 /// Represents a single message in the chat conversation.
 enum MessageSender { user, system }
 
@@ -20,6 +22,9 @@ class ChatMessage {
   /// When the message was created.
   final DateTime timestamp;
 
+  /// Optional Gua associated with this message (for displaying the card).
+  final Gua? gua;
+
   ChatMessage({
     required this.id,
     required this.text,
@@ -27,6 +32,7 @@ class ChatMessage {
     this.dbId,
     this.conversationId,
     DateTime? timestamp,
+    this.gua,
   }) : timestamp = timestamp ?? DateTime.now();
 
   /// Create a copy with optional field overrides.
@@ -38,6 +44,8 @@ class ChatMessage {
     MessageSender? sender,
     DateTime? timestamp,
     bool clearDbId = false,
+    Gua? gua,
+    bool clearGua = false,
   }) {
     return ChatMessage(
       id: id ?? this.id,
@@ -46,6 +54,7 @@ class ChatMessage {
       dbId: clearDbId ? null : (dbId ?? this.dbId),
       conversationId: conversationId ?? this.conversationId,
       timestamp: timestamp ?? this.timestamp,
+      gua: clearGua ? null : (gua ?? this.gua),
     );
   }
 
