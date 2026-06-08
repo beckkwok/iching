@@ -158,14 +158,15 @@ List<bool> _hexagramLines(Gua gua) {
   };
 
   // Parse "上卦XXX（Y），下卦XXX（Z）" from guaContent.
-  final match = RegExp(r'上卦(\S+).*?下卦(\S+)').firstMatch(gua.guaContent);
-  if (match == null) {
-    // Fallback: all broken for unknown
+  // Capture only the single Chinese trigram character (e.g. 乾, 坤, 震).
+  final match = RegExp(r'上卦([乾坤兑离震巽坎艮])').firstMatch(gua.guaContent);
+  final lowerMatch = RegExp(r'下卦([乾坤兑离震巽坎艮])').firstMatch(gua.guaContent);
+  if (match == null || lowerMatch == null) {
     return [false, false, false, false, false, false];
   }
 
   final upperName = match.group(1)!;
-  final lowerName = match.group(2)!;
+  final lowerName = lowerMatch.group(1)!;
 
   final upper = trigramMap[upperName] ?? [false, false, false];
   final lower = trigramMap[lowerName] ?? [false, false, false];
