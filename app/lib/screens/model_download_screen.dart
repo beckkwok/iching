@@ -47,7 +47,8 @@ class _ModelDownloadScreenState extends State<ModelDownloadScreen> {
           _initialising = false;
           _statusText = installed
               ? 'Model ready!'
-              : 'Qwen3 0.6B needs to be downloaded (586 MB)';
+              : '${_llmService.modelDisplayName} needs to be downloaded'
+                    ' (${_llmService.modelSize})';
         });
       }
       if (installed) {
@@ -242,8 +243,8 @@ class _ModelDownloadScreenState extends State<ModelDownloadScreen> {
               if (!_initialising && !_modelFound && !_downloading && !_downloadCompleted) ...[
                 const SizedBox(height: 24),
                 Text(
-                  'Download Qwen3 0.6B — an open-source LLM.\n'
-                  'A HuggingFace token is optional (not required for this model).',
+                  'Download ${_llmService.modelDisplayName} — an open-source LLM.\n'
+                  'No HuggingFace token required for this model.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -270,7 +271,8 @@ class _ModelDownloadScreenState extends State<ModelDownloadScreen> {
                   child: FilledButton.icon(
                     onPressed: _startDownload,
                     icon: const Icon(Icons.download),
-                    label: const Text('Download Qwen3 0.6B (586 MB)'),
+                    label: Text('Download ${_llmService.modelDisplayName}'
+                        ' (${_llmService.modelSize})'),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -285,8 +287,8 @@ class _ModelDownloadScreenState extends State<ModelDownloadScreen> {
 
               if (_modelFound && !_initialising && _errorMessage == null) ...[
                 const SizedBox(height: 16),
-                const Text(
-                  'Qwen3 0.6B is ready!\nStarting chat...',
+                Text(
+                  '${_llmService.modelDisplayName} is ready!\nStarting chat...',
                   textAlign: TextAlign.center,
                 ),
               ],

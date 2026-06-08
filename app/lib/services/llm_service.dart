@@ -67,6 +67,38 @@ class LlmService {
   ModelFileType _fileType = ModelFileType.litertlm;
   bool _isThinking = false;
 
+  /// Human-readable model name for UI display.
+  String get modelDisplayName {
+    switch (_modelType) {
+      case ModelType.gemma4:
+        return 'Gemma 4 E2B IT';
+      case ModelType.gemmaIt:
+        return 'Gemma 3 IT';
+      case ModelType.qwen3:
+        return 'Qwen3 0.6B';
+      case ModelType.qwen:
+        return 'Qwen 2.5';
+      case ModelType.deepSeek:
+        return 'DeepSeek R1';
+      case ModelType.functionGemma:
+        return 'FunctionGemma';
+      default:
+        return _filename;
+    }
+  }
+
+  /// Approximate file size for UI display.
+  String get modelSize {
+    switch (_modelType) {
+      case ModelType.gemma4:
+        return '2.4 GB';
+      case ModelType.qwen3:
+        return '586 MB';
+      default:
+        return '';
+    }
+  }
+
   String _filename = 'gemma-4-E2B-it.litertlm';
   String get _modelUrl => 'https://huggingface.co/litert-community/'
       'gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm';
