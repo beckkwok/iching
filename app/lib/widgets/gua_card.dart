@@ -171,19 +171,21 @@ List<bool> _hexagramLines(Gua gua) {
   // The 8 trigram line patterns (bottom to top within each trigram).
   const trigramMap = <String, List<bool>>{
     '乾': [true, true, true],   // ☰ Qián
-    '兑': [false, true, true],  // ☱ Duì
-    '离': [true, false, true],  // ☲ Lí
-    '震': [false, false, true], // ☳ Zhèn
-    '巽': [true, true, false],  // ☴ Xùn
+    '兑': [true, true, false],  // ☱ Duì (simplified)
+    '兌': [true, true, false],  // ☱ Duì (traditional)
+    '离': [true, false, true],  // ☲ Lí (simplified)
+    '離': [true, false, true],  // ☲ Lí (traditional)
+    '震': [true, false, false], // ☳ Zhèn (yang at bottom)
+    '巽': [false, true, true],  // ☴ Xùn (yin at bottom)
     '坎': [false, true, false], // ☵ Kǎn
-    '艮': [true, false, false], // ☶ Gèn
+    '艮': [false, false, true], // ☶ Gèn (yang on top)
     '坤': [false, false, false],// ☷ Kūn
   };
 
   // Parse "上卦XXX（Y），下卦XXX（Z）" from guaContent.
-  // Capture only the single Chinese trigram character (e.g. 乾, 坤, 震).
-  final match = RegExp(r'上卦([乾坤兑离震巽坎艮])').firstMatch(gua.guaContent);
-  final lowerMatch = RegExp(r'下卦([乾坤兑离震巽坎艮])').firstMatch(gua.guaContent);
+  // Support both simplified and traditional Chinese characters.
+  final match = RegExp(r'上卦([乾兑兌离離震巽坎艮坤])').firstMatch(gua.guaContent);
+  final lowerMatch = RegExp(r'下卦([乾兑兌离離震巽坎艮坤])').firstMatch(gua.guaContent);
   if (match == null || lowerMatch == null) {
     return [false, false, false, false, false, false];
   }
