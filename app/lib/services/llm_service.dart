@@ -220,7 +220,7 @@ class LlmService {
     _model = await FlutterGemmaPlugin.instance.createModel(
       modelType: _modelType,
       fileType: _fileType,
-      maxTokens: 1024,
+      maxTokens: 4096,
     );
 
     _guaGenerated = false; // fresh start
