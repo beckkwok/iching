@@ -60,12 +60,16 @@ class LlmService {
   void resetGuaGuard() => _guaGenerated = false;
 
   // ---------------------------------------------------------------------------
-  // Model config — Qwen3 0.6B
+  // Model config
   // ---------------------------------------------------------------------------
 
-  String _filename = 'Qwen3-0.6B.litertlm';
+  ModelType _modelType = ModelType.gemma4;
+  ModelFileType _fileType = ModelFileType.litertlm;
+  bool _isThinking = false;
+
+  String _filename = 'gemma-4-E2B-it.litertlm';
   String get _modelUrl => 'https://huggingface.co/litert-community/'
-      'Qwen3-0.6B/resolve/main/Qwen3-0.6B.litertlm';
+      'gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm';
 
   Future<String> get _modelsDir async {
     final appDir = await getApplicationSupportDirectory();
@@ -154,8 +158,8 @@ class LlmService {
       await _copyToFlutterGemmaPath(modelPath);
     }
     await FlutterGemma.installModel(
-      modelType: ModelType.qwen3,
-      fileType: ModelFileType.litertlm,
+      modelType: _modelType,
+      fileType: _fileType,
     ).fromFile(modelPath).install();
   }
 
@@ -182,8 +186,8 @@ class LlmService {
     await _registerAndLoad();
 
     _model = await FlutterGemmaPlugin.instance.createModel(
-      modelType: ModelType.qwen3,
-      fileType: ModelFileType.litertlm,
+      modelType: _modelType,
+      fileType: _fileType,
       maxTokens: 1024,
     );
 
@@ -193,8 +197,8 @@ class LlmService {
       topK: 40,
       topP: 0.95,
       tokenBuffer: 100,
-      modelType: ModelType.qwen3,
-      isThinking: false,
+      modelType: _modelType,
+      isThinking: _isThinking,
       supportsFunctionCalls: true,
       tools: _tools,
       systemInstruction: _systemPrompt,
