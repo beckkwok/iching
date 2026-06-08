@@ -122,15 +122,38 @@ class _HexagramLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 4,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(2),
-      ),
-      margin: isSolid
-          ? EdgeInsets.zero
-          : const EdgeInsets.symmetric(horizontal: 20),
+    if (isSolid) {
+      return Container(
+        height: 4,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(2),
+        ),
+      );
+    }
+    // Broken line: two shorter segments with a gap in the middle.
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 4,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Container(
+            height: 4,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
