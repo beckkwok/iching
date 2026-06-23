@@ -1,5 +1,12 @@
 # I-Ching specification
 
+**Important: Before committing any change, ensure ALL tests pass:**
+```bash
+cd app
+flutter test                    # Unit + widget tests
+flutter test integration_test/  # Integration tests (Windows desktop)
+```
+
 Objective
 =========
 This application is to build a consultancy service to the one who is in the cross road, provide some emotional support to the user. THe discussion should be encourage and open, targe to make user happy
@@ -148,9 +155,14 @@ Project Plan
     - unit tests for data model (database_service_test.dart)
     - unit tests for gua seeder (gua_seeder_test.dart)
     - widget test for UI flow (widget_test.dart)
+    - integration tests for chat flow, Gua card, navigation, persistence
+        - chat_flow_test.dart — welcome message, send/receive, button state, multi-message
+        - chat_with_gua_test.dart — GuaCard rendering, single-Gua guard
+        - navigation_test.dart — history drawer, settings screen, privacy dialog, back navigation
+        - persistence_test.dart — messages survive DB reload, appended after reload
+    - FakeLlmService for deterministic LLM responses in integration tests
 
 6b. Testing, deployment, and documentation 🔲 Remaining
-    - integration tests for conversation flow and history
     - privacy validation to ensure no network calls
     - Android packaging and build verification
     - user documentation for usage and privacy assurances
