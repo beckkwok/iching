@@ -199,13 +199,18 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('Gua', () {
+    const sampleContent =
+        '{"卦名":"乾 (Qián)","卦序":1,"卦象":"䷀（下乾上乾）","卦辭":"乾：元亨利貞。",'
+        '"彖傳":"大哉乾元","大象傳":"天行健，君子以自強不息。",'
+        '"爻辭":[],"象徵意義":{"基本卦象":{},"主要象徵":[],"生活與占事常見象徵":{},'
+        '"總結":"The creative power of the universe."},'
+        '"不同人解讀":[],"備註":""}';
+
     Gua createSampleGua() {
       return Gua(
         guaCode: 1,
-        guaName: 'Qian (The Creative)',
-        guaContent: 'The Qian hexagram consists of six unbroken lines...',
-        guaSummary: 'Strength, creativity, initiative.',
-        source: 'manual',
+        guaName: '乾 (Qián)',
+        guaContent: sampleContent,
       );
     }
 
@@ -215,8 +220,7 @@ void main() {
 
       expect(saved.id, isNotNull);
       expect(saved.guaCode, 1);
-      expect(saved.guaName, 'Qian (The Creative)');
-      expect(saved.source, 'manual');
+      expect(saved.guaName, '乾 (Qián)');
     });
 
     test('getGua returns null for missing id', () async {
@@ -232,17 +236,15 @@ void main() {
       expect(fetched, isNotNull);
       expect(fetched!.id, saved.id);
       expect(fetched.guaCode, 1);
-      expect(fetched.guaName, 'Qian (The Creative)');
+      expect(fetched.guaName, '乾 (Qián)');
     });
 
     test('getAllGua returns all Gua records', () async {
       final gua1 = createSampleGua();
       final gua2 = Gua(
         guaCode: 2,
-        guaName: 'Kun (The Receptive)',
-        guaContent: 'The Kun hexagram consists of six broken lines...',
-        guaSummary: 'Receptivity, nurturing, devotion.',
-        source: 'manual',
+        guaName: '坤 (Kūn)',
+        guaContent: '{"卦名":"坤 (Kūn)","卦序":2,"卦象":"䷁（下坤上坤）","卦辭":"坤：元亨，利牝馬之貞。"}',
       );
 
       await service.createGua(gua1);
@@ -250,6 +252,54 @@ void main() {
 
       final all = await service.getAllGua();
       expect(all.length, 2);
+    });
+
+    test('Gua content parses into HexagramContent', () async {
+      final gua = createSampleGua();
+      final content = gua.content;
+      expect(content, isNotNull);
+      expect(content!.guaName, '乾 (Qián)');
+      expect(content.guaSequence, 1);
+      expect(content.symbolicMeaning.summary, 'The creative power of the universe.');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Settings tests
+  // ---------------------------------------------------------------------------
+
+  group('Settings', () {
+    test('getSetting returns null for a missing key', () async {
+      final value = await service.getSetting('nonexistent');
+      expect(value, isNull);
+    });
+
+    test('setSetting and getSetting round-trip a value', () async {
+      await service.setSetting('theme', 'dark');
+      final value = await service.getSetting('theme');
+      expect(value, 'dark');
+    });
+
+    test('setSetting overwrites an existing value', () async {
+      await service.setSetting('theme', 'light');
+      await service.setSetting('theme', 'dark');
+      final value = await service.getSetting('theme');
+      expect(value, 'dark');
+    });
+
+    test('setSetting with null removes the key', () async {
+      await service.setSetting('theme', 'dark');
+      await service.setSetting('theme', null);
+      final value = await service.getSetting('theme');
+      expect(value, isNull);
+    });
+
+    test('multiple settings are stored independently', () async {
+      await service.setSetting('key1', 'value1');
+      await service.setSetting('key2', 'value2');
+
+      expect(await service.getSetting('key1'), 'value1');
+      expect(await service.getSetting('key2'), 'value2');
     });
   });
 
@@ -261,10 +311,8 @@ void main() {
     test('can associate a Gua with a conversation via lastGuaId', () async {
       final gua = Gua(
         guaCode: 15,
-        guaName: 'Qian (Modesty)',
-        guaContent: 'Modesty content...',
-        guaSummary: 'Modesty summary.',
-        source: 'random',
+        guaName: '謙 (Qiān)',
+        guaContent: '{"卦名":"謙 (Qiān)","卦序":15,"卦象":"䷎（下艮上坤）"}',
       );
       final savedGua = await service.createGua(gua);
 
@@ -277,7 +325,7 @@ void main() {
 
       // Fetch the associated Gua via its id
       final associatedGua = await service.getGua(savedGua.id!);
-      expect(associatedGua!.guaName, 'Qian (Modesty)');
+      expect(associatedGua!.guaName, '謙 (Qiān)');
     });
 
     test('multiple messages belong to the same conversation', () async {

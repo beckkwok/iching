@@ -38,16 +38,17 @@ dependencies:
   # SQLite database
   sqflite: ^2.3.0
   sqflite_common_ffi: ^2.3.0
-  sqlite3: 3.3.2
+  sqlite3: ^3.3.3
   path: ^1.9.0
   path_provider: ^2.1.0
   http: ^1.2.0
 
   # Local LLM inference (Gemma, Qwen, DeepSeek, Phi-4, etc.)
-  flutter_gemma: ^0.16.3
+  flutter_gemma: ^1.1.2
+  flutter_gemma_litertlm: ^1.0.2
 
   # File picker for model selection
-  file_picker: ^8.0.0
+  file_picker: ^11.0.2
 
 dev_dependencies:
   flutter_test:
@@ -74,10 +75,8 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/hexagrams/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

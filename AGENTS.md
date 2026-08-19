@@ -35,28 +35,37 @@
 iching/
 ├── app/                          # Flutter application
 │   ├── lib/
-│   │   ├── data/                 # Static data (hexagram_data.dart)
+│   │   ├── data/                 # Static data (model_catalog.dart, trigram_hexagram_data.dart)
 │   │   ├── models/               # Dart data models
 │   │   │   ├── chat_message.dart
 │   │   │   ├── conversation.dart
-│   │   │   └── gua.dart
+│   │   │   ├── gua.dart
+│   │   │   ├── hexagram_content.dart
+│   │   │   ├── model_info.dart
+│   │   │   └── trigram_hexagram.dart
 │   │   ├── screens/              # UI screens
 │   │   │   ├── chat_screen.dart
 │   │   │   ├── conversation_detail_screen.dart
-│   │   │   ├── model_download_screen.dart
+│   │   │   ├── model_selection_screen.dart
+│   │   │   ├── question_form_screen.dart
 │   │   │   └── settings_screen.dart
 │   │   ├── services/             # Business logic
 │   │   │   ├── database_service.dart
+│   │   │   ├── fake_llm_service.dart
 │   │   │   ├── gua_generator.dart
 │   │   │   ├── gua_seeder.dart
 │   │   │   └── llm_service.dart
 │   │   ├── widgets/              # Reusable UI components
 │   │   │   └── gua_card.dart
 │   │   └── main.dart
+│   ├── assets/hexagrams/         # Individual hexagram JSON files
 │   ├── test/
 │   │   ├── database_service_test.dart
 │   │   ├── gua_generator_test.dart
 │   │   ├── gua_seeder_test.dart
+│   │   ├── hexagram_content_test.dart
+│   │   ├── question_form_screen_test.dart
+│   │   ├── trigram_hexagram_data_test.dart
 │   │   └── widget_test.dart
 │   └── pubspec.yaml
 ├── logs/                         # Change logs
@@ -143,23 +152,22 @@ flutter test -d windows integration_test/all_tests.dart  # Integration tests (Wi
 | timestamp      | TEXT    | ISO 8601                       |
 
 ### gua
-| Column       | Type    | Notes                |
-|-------------|---------|----------------------|
-| id          | INTEGER | PK, AUTOINCREMENT    |
-| gua_code    | INTEGER | 1-64                 |
-| gua_name    | TEXT    | e.g. "乾 (qián)"     |
-| gua_content | TEXT    | Full hexagram text   |
-| gua_summary | TEXT    | Reflection prompt    |
-| source      | TEXT    | Generator type       |
+| Column       | Type    | Notes                       |
+|-------------|---------|-----------------------------|
+| id          | INTEGER | PK, AUTOINCREMENT           |
+| gua_code    | INTEGER | 1-64 (卦序)                 |
+| gua_name    | TEXT    | e.g. "乾為天" (卦名)        |
+| gua_content | TEXT    | Full hexagram JSON (see HexagramContent) |
 
 ---
 
 ## 7. Key Patterns
 
-- **GuaGenerator** uses `GeneratorMethod` enum (`userRequested`, `randomCast`, `automatic`) with different context prompt headers per method.
+- **GuaGenerator** uses `GeneratorMethod` enum (`manual`, `systemGenerated`) with different context prompt headers per method. Casts 6 yao lines via the three-coin method (`YaoLineType`: 老陰/少陽/少陰/老陽), resolves the hexagram via `TrigramHexagramData`.
+- **Consultation flow** (form-based, low token usage): QuestionFormScreen → submit → `GuaGenerator.generateRandom()` → CastResultScreen (卦象 + per-line types) → "Get Explanation" → `LlmService.generateExplanation()` (single-shot, no multi-turn history) → ExplanationScreen. The chat screen flow is being phased out.
 - **ChatMessage** uses string `id` for UI keys (`msg_0`, `db_{rowId}`) and separate nullable `dbId` for the database PK.
-- **LlmService** wraps flutter_gemma, supports function calling (`generate_gua` tool), handles thinking tag stripping, JSON message extraction, and proactive context compression.
-- **Gua seeding** happens at startup via `GuaSeeder.seedIfNeeded()` (only seeds if gua table is empty).
+- **LlmService** wraps flutter_gemma. `generateExplanation()` is a one-shot call (no function calling, no history); `sendMessage()` (legacy chat) supports function calling (`generate_gua` tool), thinking tag stripping, JSON message extraction, and proactive context compression.
+- **Gua seeding** happens at startup via `GuaSeeder.seedIfNeeded()` (seeds missing gua only; individual JSON files in `assets/hexagrams/gua_<n>.json`).
 
 ---
 
