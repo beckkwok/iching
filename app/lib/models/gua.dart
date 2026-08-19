@@ -1,36 +1,50 @@
+import 'hexagram_content.dart';
+
 /// Represents a single Gua (hexagram) entry in the database.
 class Gua {
   final int? id;
   final int guaCode;
   final String guaName;
+
+  /// The raw JSON string (see [HexagramContent]) describing this hexagram.
   final String guaContent;
-  final String guaSummary;
-  final String source;
+
+  /// Lazily parsed [guaContent]. Null if the JSON fails to parse.
+  HexagramContent? _parsed;
 
   Gua({
     this.id,
     required this.guaCode,
     required this.guaName,
     required this.guaContent,
-    required this.guaSummary,
-    required this.source,
   });
+
+  /// Parse [guaContent] into a [HexagramContent], caching the result.
+  /// Returns `null` if [guaContent] is not valid hexagram JSON.
+  HexagramContent? get content {
+    _parsed ??= _tryParse();
+    return _parsed;
+  }
+
+  HexagramContent? _tryParse() {
+    try {
+      return HexagramContent.fromJson(guaContent);
+    } catch (_) {
+      return null;
+    }
+  }
 
   Gua copyWith({
     int? id,
     int? guaCode,
     String? guaName,
     String? guaContent,
-    String? guaSummary,
-    String? source,
   }) {
     return Gua(
       id: id ?? this.id,
       guaCode: guaCode ?? this.guaCode,
       guaName: guaName ?? this.guaName,
       guaContent: guaContent ?? this.guaContent,
-      guaSummary: guaSummary ?? this.guaSummary,
-      source: source ?? this.source,
     );
   }
 
@@ -39,8 +53,6 @@ class Gua {
       'gua_code': guaCode,
       'gua_name': guaName,
       'gua_content': guaContent,
-      'gua_summary': guaSummary,
-      'source': source,
     };
     if (id != null) {
       map['id'] = id;
@@ -54,14 +66,11 @@ class Gua {
       guaCode: map['gua_code'] as int,
       guaName: map['gua_name'] as String,
       guaContent: map['gua_content'] as String,
-      guaSummary: map['gua_summary'] as String,
-      source: map['source'] as String,
     );
   }
 
   @override
-  String toString() =>
-      'Gua(id: $id, code: $guaCode, name: $guaName, source: $source)';
+  String toString() => 'Gua(id: $id, code: $guaCode, name: $guaName)';
 
   @override
   bool operator ==(Object other) =>
@@ -71,11 +80,8 @@ class Gua {
           id == other.id &&
           guaCode == other.guaCode &&
           guaName == other.guaName &&
-          guaContent == other.guaContent &&
-          guaSummary == other.guaSummary &&
-          source == other.source;
+          guaContent == other.guaContent;
 
   @override
-  int get hashCode =>
-      Object.hash(id, guaCode, guaName, guaContent, guaSummary, source);
+  int get hashCode => Object.hash(id, guaCode, guaName, guaContent);
 }

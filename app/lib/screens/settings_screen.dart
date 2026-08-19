@@ -1,13 +1,20 @@
 import 'dart:io';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../models/language_preference.dart';
+import '../services/database_service.dart';
 import '../services/llm_service.dart';
+import 'model_selection_screen.dart';
 
 /// Settings screen accessible from the chat screen's header menu.
 class SettingsScreen extends StatefulWidget {
   final LlmService? llmService;
+  final DatabaseService? databaseService;
 
-  const SettingsScreen({super.key, this.llmService});
+  const SettingsScreen({
+    super.key,
+    this.llmService,
+    required this.databaseService,
+  });
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -16,21 +23,40 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   String _modelFilename = 'Loading...';
   String _modelFullPath = 'Loading...';
+  String _modelDisplayName = 'Loading...';
   bool _loading = true;
-  bool _isValidating = false;
-  String? _validationResult;
+  LanguagePreference _language = LanguagePreference.english;
 
   @override
   void initState() {
     super.initState();
     _loadModelInfo();
+    _loadLanguage();
+  }
+
+  Future<void> _loadLanguage() async {
+    final db = widget.databaseService;
+    if (db == null) return;
+    final code = await db.getSetting(LanguagePreference.settingsKey);
+    if (mounted) {
+      setState(() => _language = LanguagePreference.fromCode(code));
+    }
+  }
+
+  Future<void> _setLanguage(LanguagePreference value) async {
+    setState(() => _language = value);
+    final db = widget.databaseService;
+    if (db != null) {
+      await db.setSetting(LanguagePreference.settingsKey, value.code);
+    }
   }
 
   Future<void> _loadModelInfo() async {
     final svc = widget.llmService;
     if (svc == null) {
       setState(() {
-        _modelFilename = 'No LLM service';
+        _modelDisplayName = 'No LLM service';
+        _modelFilename = 'Not available';
         _modelFullPath = 'Not available';
         _loading = false;
       });
@@ -40,6 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final path = await svc.modelFilePath;
       if (mounted) {
         setState(() {
+          _modelDisplayName = svc.modelDisplayName;
           _modelFilename = svc.modelFilename;
           _modelFullPath = path;
           _loading = false;
@@ -48,10 +75,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
+          _modelDisplayName = 'Error';
           _modelFilename = 'Error';
           _modelFullPath = '$e';
           _loading = false;
         });
+      }
+    }
+  }
+
+  Future<void> _removeModelFile() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove Model File?'),
+        content: const Text(
+          'This will delete the model file and reset your selection. '
+          'The app will restart with the model selection screen.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      // Delete model file from disk.
+      final svc = widget.llmService;
+      if (svc != null) {
+        await svc.closeChat();
+        final path = await svc.modelFilePath;
+        final file = File(path);
+        if (await file.exists()) {
+          await file.delete();
+        }
+      }
+
+      // Clear the setting.
+      final db = widget.databaseService;
+      if (db != null) {
+        await db.setSetting('selected_model_key', null);
+      }
+
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) =>
+                ModelSelectionScreen(databaseService: widget.databaseService),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to remove model: $e')));
       }
     }
   }
@@ -71,74 +158,72 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _buildSectionHeader(context, 'Model'),
                 ListTile(
                   leading: const Icon(Icons.storage),
-                  title: const Text('Model File'),
+                  title: const Text('Model'),
+                  subtitle: Text(
+                    _modelDisplayName,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.description),
+                  title: const Text('File Name'),
                   subtitle: Text(
                     _modelFilename,
-                    style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                    ),
                   ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _pickModelFile(),
                 ),
                 ListTile(
                   leading: const Icon(Icons.folder_open),
                   title: const Text('Full Path'),
                   subtitle: Text(
                     _modelFullPath,
-                    style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
-                  ),
-                ),
-                if (_validationResult != null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: _validationResult!.startsWith('✅')
-                            ? Colors.green.shade50
-                            : Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: _validationResult!.startsWith('✅')
-                              ? Colors.green.shade200
-                              : Colors.red.shade200,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            _validationResult!.startsWith('✅')
-                                ? Icons.check_circle
-                                : Icons.error,
-                            color: _validationResult!.startsWith('✅')
-                                ? Colors.green
-                                : Colors.red,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _validationResult!,
-                              style: const TextStyle(fontSize: 13),
-                            ),
-                          ),
-                        ],
-                      ),
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 11,
                     ),
                   ),
+                ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   child: OutlinedButton.icon(
-                    onPressed: _isValidating ? null : _validateModel,
-                    icon: _isValidating
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.check_circle_outline),
-                    label: Text(_isValidating
-                        ? 'Validating...'
-                        : 'Test & Validate Model'),
+                    onPressed: _removeModelFile,
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('Remove Model File'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                    ),
+                  ),
+                ),
+                const Divider(),
+
+                // --- Language ---
+                _buildSectionHeader(context, 'Language'),
+                RadioGroup<LanguagePreference>(
+                  groupValue: _language,
+                  onChanged: (value) {
+                    if (value != null) _setLanguage(value);
+                  },
+                  child: Column(
+                    children: [
+                      const RadioListTile<LanguagePreference>(
+                        value: LanguagePreference.english,
+                        title: Text('English'),
+                      ),
+                      const RadioListTile<LanguagePreference>(
+                        value: LanguagePreference.chinese,
+                        title: Text('中文 (Chinese)'),
+                      ),
+                    ],
                   ),
                 ),
                 const Divider(),
@@ -185,9 +270,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Text(
         title,
         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
-            ),
+          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -215,102 +300,5 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Model file selection & validation
-  // ---------------------------------------------------------------------------
-
-  Future<void> _pickModelFile() async {
-    final svc = widget.llmService;
-    if (svc == null) return;
-
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['litertlm', 'task', 'bin', 'tflite'],
-        allowMultiple: false,
-        dialogTitle: 'Select a model file',
-      );
-
-      if (result == null || result.files.isEmpty) return; // user cancelled
-
-      final filePath = result.files.single.path;
-      if (filePath == null || filePath.isEmpty) return;
-
-      setState(() {
-        _validationResult = null;
-        _modelFilename = result.files.single.name;
-        _modelFullPath = filePath;
-      });
-
-      // Update the LLM service with the new model file.
-      await svc.setModelFile(filePath);
-
-      // Auto-validate the new model.
-      _validateModel();
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _validationResult = '❌ File picker error: $e';
-        });
-      }
-    }
-  }
-
-  Future<void> _validateModel() async {
-    final svc = widget.llmService;
-    if (svc == null) return;
-
-    setState(() {
-      _isValidating = true;
-      _validationResult = null;
-    });
-
-    try {
-      // Check if file exists
-      final path = await svc.modelFilePath;
-      final file = File(path);
-      if (!await file.exists()) {
-        setState(() {
-          _isValidating = false;
-          _validationResult = '❌ Model file not found at: $path';
-        });
-        return;
-      }
-
-      // Check file size
-      final size = await file.length();
-      if (size < 1024 * 1024) {
-        setState(() {
-          _isValidating = false;
-          _validationResult = '❌ Model file is too small (${_formatSize(size)}). '
-              'May be corrupted.';
-        });
-        return;
-      }
-
-      // Try to register and load the model
-      await svc.closeChat();
-      await svc.openChat();
-
-      setState(() {
-        _isValidating = false;
-        _validationResult = '✅ Model validated successfully! '
-            '(${_formatSize(size)} — ${svc.modelFilename})';
-      });
-    } catch (e) {
-      setState(() {
-        _isValidating = false;
-        _validationResult = '❌ Validation failed: $e';
-      });
-    }
-  }
-
-  String _formatSize(int bytes) {
-    if (bytes < 1024 * 1024) {
-      return '${(bytes / 1024).toStringAsFixed(0)} KB';
-    }
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 }

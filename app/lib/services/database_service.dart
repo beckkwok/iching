@@ -14,9 +14,10 @@ class DatabaseService {
   static const String _conversationsTable = 'conversations';
   static const String _messagesTable = 'chat_messages';
   static const String _guaTable = 'gua';
+  static const String _settingsTable = 'settings';
 
   /// The database version for migration tracking.
-  static const int _databaseVersion = 1;
+  static const int _databaseVersion = 4;
 
   /// Custom database path (used for in-memory testing).
   final String? _customPath;
@@ -83,6 +84,7 @@ class DatabaseService {
       path,
       version: _databaseVersion,
       onCreate: _createTables,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -114,11 +116,62 @@ class DatabaseService {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         gua_code INTEGER NOT NULL,
         gua_name TEXT NOT NULL,
-        gua_content TEXT NOT NULL,
-        gua_summary TEXT NOT NULL,
-        source TEXT NOT NULL
+        gua_content TEXT NOT NULL
       )
     ''');
+
+    await _createSettingsTable(db);
+  }
+
+  Future<void> _createSettingsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $_settingsTable (
+        key TEXT PRIMARY KEY,
+        value TEXT
+      )
+    ''');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await _createSettingsTable(db);
+    }
+    if (oldVersion < 3) {
+      await _dropGuaColumns(db);
+    }
+    if (oldVersion < 4) {
+      // v3 → v4: the gua data format changed to JSON (卦序/卦象/卦名 inside
+      // gua_content). Old rows store plain-text content that no longer parses,
+      // so clear the table and let GuaSeeder re-seed from the JSON assets.
+      await db.delete(_guaTable);
+    }
+  }
+
+  /// v2 → v3: remove `gua_summary` and `source` from the gua table.
+  /// SQLite 3.35+ supports ALTER TABLE DROP COLUMN; the bundled engine
+  /// (sqlite3 3.53.2) does. Falls back to a full table rebuild otherwise.
+  Future<void> _dropGuaColumns(Database db) async {
+    try {
+      await db.execute('ALTER TABLE $_guaTable DROP COLUMN gua_summary');
+      await db.execute('ALTER TABLE $_guaTable DROP COLUMN source');
+    } catch (_) {
+      // Older SQLite without DROP COLUMN — rebuild the table.
+      await db.execute('''
+        CREATE TABLE ${_guaTable}_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          gua_code INTEGER NOT NULL,
+          gua_name TEXT NOT NULL,
+          gua_content TEXT NOT NULL
+        )
+      ''');
+      await db.execute('''
+        INSERT INTO ${_guaTable}_new (id, gua_code, gua_name, gua_content)
+        SELECT id, gua_code, gua_name, gua_content FROM $_guaTable
+      ''');
+      await db.execute('DROP TABLE $_guaTable');
+      await db.execute(
+          'ALTER TABLE ${_guaTable}_new RENAME TO $_guaTable');
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -268,5 +321,41 @@ class DatabaseService {
     final db = await database;
     final rows = await db.query(_guaTable);
     return rows.map((row) => Gua.fromMap(row)).toList();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Settings CRUD
+  // ---------------------------------------------------------------------------
+
+  /// Get a setting by [key], or `null` if not found.
+  Future<String?> getSetting(String key) async {
+    final db = await database;
+    final rows = await db.query(
+      _settingsTable,
+      columns: ['value'],
+      where: 'key = ?',
+      whereArgs: [key],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return rows.first['value'] as String?;
+  }
+
+  /// Set a setting. If [value] is `null`, the key is deleted.
+  Future<void> setSetting(String key, String? value) async {
+    final db = await database;
+    if (value == null) {
+      await db.delete(
+        _settingsTable,
+        where: 'key = ?',
+        whereArgs: [key],
+      );
+    } else {
+      await db.insert(
+        _settingsTable,
+        {'key': key, 'value': value},
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
   }
 }
