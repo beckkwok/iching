@@ -4,6 +4,7 @@ import '../models/language_preference.dart';
 import '../services/database_service.dart';
 import '../services/llm_service.dart';
 import 'model_selection_screen.dart';
+import 'prompt_editor_screen.dart';
 
 /// Settings screen accessible from the chat screen's header menu.
 class SettingsScreen extends StatefulWidget {
@@ -236,7 +237,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle: const Text('Customize the LLM instruction'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
-                    // TODO: prompt editor
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => PromptEditorScreen(
+                          llmService: widget.llmService,
+                          databaseService: widget.databaseService,
+                        ),
+                      ),
+                    );
                   },
                 ),
                 const Divider(),

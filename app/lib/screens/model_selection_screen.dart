@@ -30,13 +30,7 @@ class ModelSelectionScreen extends StatefulWidget {
   State<ModelSelectionScreen> createState() => _ModelSelectionScreenState();
 }
 
-enum _ScreenPhase {
-  initialising,
-  selecting,
-  downloading,
-  loading,
-  error,
-}
+enum _ScreenPhase { initialising, selecting, downloading, loading, error }
 
 class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
   _ScreenPhase _phase = _ScreenPhase.initialising;
@@ -79,6 +73,7 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
             _llmService = LlmService(modelInfo: model);
             try {
               await _llmService!.initialize();
+              await _applySavedPrompt();
               await _llmService!.openChat();
               if (mounted) _proceedToChat();
             } catch (e) {
@@ -112,6 +107,7 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
         }
         try {
           await _llmService!.initialize();
+          await _applySavedPrompt();
           await _llmService!.openChat();
           if (mounted) _proceedToChat();
         } catch (e) {
@@ -150,6 +146,18 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
     return File(modelPath).exists();
   }
 
+  /// Apply a user-saved custom system prompt (if any) to the LLM service
+  /// before opening the chat.
+  Future<void> _applySavedPrompt() async {
+    final db = widget.databaseService;
+    final svc = _llmService;
+    if (db == null || svc == null) return;
+    final saved = await db.getSetting(LlmService.systemPromptSettingsKey);
+    if (saved != null && saved.isNotEmpty) {
+      svc.systemPrompt = saved;
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Download
   // ---------------------------------------------------------------------------
@@ -181,6 +189,7 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
           _statusText = 'Opening chat session...';
         });
         try {
+          await _applySavedPrompt();
           await _llmService!.openChat();
           if (mounted) _proceedToChat();
         } catch (openError) {
@@ -243,9 +252,8 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
   void _skipDownload() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => QuestionFormScreen(
-          databaseService: widget.databaseService,
-        ),
+        builder: (_) =>
+            QuestionFormScreen(databaseService: widget.databaseService),
       ),
     );
   }
@@ -317,17 +325,19 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
           Text(
             'All models run fully offline on your device.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 16),
-          ...models.map((model) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _ModelCard(
-                  model: model,
-                  onTap: () => _confirmSelection(context, model),
-                ),
-              )),
+          ...models.map(
+            (model) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _ModelCard(
+                model: model,
+                onTap: () => _confirmSelection(context, model),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -402,10 +412,7 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
           children: [
             Icon(Icons.error_outline, size: 72, color: Colors.red.shade400),
             const SizedBox(height: 16),
-            Text(
-              _statusText,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text(_statusText, style: Theme.of(context).textTheme.titleMedium),
             if (_errorMessage != null) ...[
               const SizedBox(height: 12),
               Container(
@@ -470,13 +477,19 @@ class _ModelCard extends StatelessWidget {
               Row(
                 children: [
                   Chip(
-                    label: Text(model.language, style: const TextStyle(fontSize: 11)),
+                    label: Text(
+                      model.language,
+                      style: const TextStyle(fontSize: 11),
+                    ),
                     visualDensity: VisualDensity.compact,
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   const SizedBox(width: 8),
                   Chip(
-                    label: Text(model.sizeLabel, style: const TextStyle(fontSize: 11)),
+                    label: Text(
+                      model.sizeLabel,
+                      style: const TextStyle(fontSize: 11),
+                    ),
                     visualDensity: VisualDensity.compact,
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),

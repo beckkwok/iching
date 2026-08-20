@@ -4,6 +4,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:app/screens/cast_result_screen.dart';
 import 'package:app/screens/question_form_screen.dart';
+import 'package:app/screens/settings_screen.dart';
 import 'package:app/services/database_service.dart';
 import 'package:app/services/gua_seeder.dart';
 
@@ -148,5 +149,18 @@ void main() {
       findsOneWidget,
     );
     expect(find.byType(CastResultScreen), findsNothing);
+  });
+
+  testWidgets('settings menu opens the settings screen', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(home: QuestionFormScreen(databaseService: db)),
+    );
+
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SettingsScreen), findsOneWidget);
   });
 }
