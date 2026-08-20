@@ -5,6 +5,7 @@ import '../services/gua_generator.dart';
 import '../services/llm_service.dart';
 import 'cast_result_screen.dart';
 import 'hexagram_browser_screen.dart';
+import 'settings_screen.dart';
 
 /// Question categories the user can choose from when starting a consultation.
 enum QuestionType {
@@ -74,7 +75,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
           final generator = GuaGenerator(db);
           final result = await generator.generateRandom();
           if (!mounted) return;
-          Navigator.of(context).pushReplacement(
+          Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => CastResultScreen(
                 result: result,
@@ -108,6 +109,34 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
       appBar: AppBar(
         title: const Text('I-Ching Consultation'),
         backgroundColor: theme.colorScheme.inversePrimary,
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'Settings',
+            onSelected: (value) {
+              if (value == 'settings') {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => SettingsScreen(
+                      llmService: widget.llmService,
+                      databaseService: widget.databaseService,
+                    ),
+                  ),
+                );
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'settings',
+                child: ListTile(
+                  leading: Icon(Icons.settings),
+                  title: Text('Settings'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: SafeArea(
         child: Center(

@@ -131,4 +131,37 @@ void main() {
 
     expect(find.text('Get Explanation'), findsNothing);
   });
+
+  testWidgets('back button pops back to the previous screen', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => CastResultScreen(result: _result()),
+                    ),
+                  );
+                },
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CastResultScreen), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CastResultScreen), findsNothing);
+    expect(find.text('open'), findsOneWidget);
+  });
 }

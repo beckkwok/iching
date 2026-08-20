@@ -24,6 +24,13 @@ class LlmService {
   /// Construct with a [modelInfo] describing the model to load.
   LlmService({required this.modelInfo});
 
+  /// Settings table key under which a custom system prompt is stored.
+  static const String systemPromptSettingsKey = 'system_prompt';
+
+  /// The system prompt used when opening a chat. Defaults to [_systemPrompt];
+  /// callers can override it (e.g. from a saved user preference).
+  String systemPrompt = _systemPrompt;
+
   bool get isReady => _chat != null;
 
   /// The most recently generated Gua, if any. Cleared when chat is closed.
@@ -212,7 +219,36 @@ class LlmService {
       isThinking: modelInfo.isThinking,
       supportsFunctionCalls: true,
       tools: _tools,
-      systemInstruction: _systemPrompt,
+      systemInstruction: systemPrompt,
+    );
+  }
+
+  /// Open a fresh chat session for one-shot explanations.
+  ///
+  /// Unlike [openChat], this session has function calling disabled and no
+  /// tools, so the model answers directly instead of trying to call
+  /// `generate_gua` (the hexagram is already cast in the form-based flow).
+  Future<void> openExplanationChat() async {
+    await closeChat();
+    await _registerAndLoad();
+
+    _model = await FlutterGemmaPlugin.instance.createModel(
+      modelType: modelInfo.modelType,
+      fileType: _fileType,
+      maxTokens: 4096,
+    );
+
+    _guaGenerated = false;
+    _chat = await _model!.createChat(
+      temperature: 0.7,
+      topK: 40,
+      topP: 0.95,
+      tokenBuffer: 100,
+      modelType: modelInfo.modelType,
+      isThinking: modelInfo.isThinking,
+      supportsFunctionCalls: false,
+      tools: const [],
+      systemInstruction: systemPrompt,
     );
   }
 
@@ -559,22 +595,21 @@ class LlmService {
   // ---------------------------------------------------------------------------
 
   /// Generate a single explanation that connects a cast [result] to the
-  /// user's [question]. This is a one-shot call (no multi-turn history), so
-  /// token usage stays low enough for on-device LLMs.
+  /// user's [question]. This is a one-shot call (no multi-turn history, no
+  /// function-calling tools), so token usage stays low enough for on-device
+  /// LLMs.
   ///
   /// [questionTypeLabel] is the human-readable category (e.g. "Career
   /// Achievement"). [language] selects the language the model should respond
-  /// in (defaults to [LanguagePreference.english]). Requires an open chat
-  /// (call [openChat] first).
+  /// in (defaults to [LanguagePreference.english]).
   Future<String> generateExplanation({
     required String question,
     String? questionTypeLabel,
     required GenerationResult result,
     LanguagePreference language = LanguagePreference.english,
   }) async {
-    if (_chat == null) {
-      throw StateError('Chat not opened. Call openChat() first.');
-    }
+    // Fresh, tool-free session dedicated to the single-shot explanation.
+    await openExplanationChat();
 
     final context =
         _guaGenerator?.formatContext(result) ?? _fallbackContext(result);
@@ -594,6 +629,11 @@ class LlmService {
         '3-5 sentences and frame it as an invitation for reflection.\n'
         '$languageInstruction\n'
         'Wrap your final response in JSON: {"message": "your response here"}.';
+
+    // Print the full prompt so the developer can verify the hexagram info,
+    // the user's question, and the language preference are all included.
+    // ignore: avoid_print
+    print('📝 Explanation prompt:\n$prompt');
 
     await _chat!.addQuery(Message(text: prompt, isUser: true));
 

@@ -47,6 +47,11 @@ class CastResultScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(gua.guaName),
         backgroundColor: theme.colorScheme.inversePrimary,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Back to question',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
