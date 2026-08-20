@@ -10,23 +10,22 @@ Built with **Flutter**, **SQLite**, and **Gemma / Qwen** on-device models — no
 ## ✨ Features
 
 ### ✅ Implemented
-- **Chat-based consultation** — type your thoughts, receive I-Ching guidance
-- **I-Ching (Gua) generation** — random casting or detection of gua by name/number in your text
-- **Local LLM integration** — runs Qwen3 0.6B (or other Gemma-compatible models) entirely on-device using `flutter_gemma`
-- **Function calling** — LLM can request gua generation via a `generate_gua` tool, and the response incorporates the gua context
-- **Conversation history** — all chats persisted in SQLite; browse past sessions
-- **Auto-title** — conversations are automatically named by date-time
-- **Context compression** — proactive LLM summarization to stay within token limits
+- **Form-based consultation** — pick a question type (Career Achievement, Intellectual and moral cultivation, Timing, Attitude), enter your question, and submit
+- **I-Ching (Gua) casting** — six yao lines are cast with the traditional three-coin method (老陰/少陽/少陰/老陽) and resolved into a hexagram
+- **One-shot LLM explanation** — a single, token-light call connects the hexagram context to your question (no multi-turn chat, so it stays within the on-device model's context window)
+- **Language preference** — choose English or Chinese (中文); the choice is injected into the explanation prompt
+- **Editable system prompt** — view and customize the LLM instruction in Settings
+- **Hexagram browser** — browse all 64 hexagrams in a grid; tap any card for the full detail view (卦辭, 彖傳, 大象傳, 爻辭, 象徵意義, 不同人解讀)
+- **Local LLM integration** — runs a selectable on-device model via `flutter_gemma` (6 models available, e.g. Gemma 4, DeepSeek R1, Qwen3)
+- **Model selection** — choose and download a model at first run; persisted in Settings
 - **Cross-platform** — runs on Android, Windows, macOS, Linux, and Web
 
 ### 🚧 Planned
 - [ ] Gua image / visual representation
 - [ ] Enriched gua content with full classical texts
-- [ ] Delete conversation history (long-press in history list)
-- [ ] Settings screen (privacy notice, model path, model selection, prompt settings, storage management)
+- [ ] Load hexagrams directly from JSON assets (remove the `gua` DB table)
 - [ ] Privacy validation test suite (no network calls)
 - [ ] Android packaging & app store readiness
-- [ ] Strategy pattern for gua generation (`SimpleGuaGeneratorStrategy`, etc.)
 
 ---
 
@@ -36,9 +35,9 @@ Built with **Flutter**, **SQLite**, and **Gemma / Qwen** on-device models — no
 |--------------|-----------------------------------------|
 | Framework    | [Flutter](https://flutter.dev) 3.44+    |
 | Language     | Dart 3.12+                              |
-| Database     | SQLite via `sqflite`                    |
-| LLM Runtime  | `flutter_gemma` (supports Gemma, Qwen, DeepSeek, Phi-4, etc.) |
-| Model        | Qwen3 0.6B (downloaded from HuggingFace at first run) |
+| Database     | SQLite via `sqflite` (settings) + JSON asset files (hexagrams) |
+| LLM Runtime  | `flutter_gemma` + `flutter_gemma_litertlm` |
+| Model        | Selectable at first run (6 models: Gemma 4 E2B/E4B, DeepSeek R1, Gemma 3 1B, Qwen2.5, Qwen3) |
 | Platform     | Android (primary), Windows, macOS, Linux, Web |
 
 ---
@@ -51,7 +50,7 @@ iching/
 │   ├── lib/
 │   │   ├── data/             # Gua data (64 hexagrams)
 │   │   ├── models/           # Dart data models
-│   │   ├── screens/          # UI screens (chat, history, detail)
+│   │   ├── screens/          # UI screens (question form, cast result, explanation, hexagram browser/detail)
 │   │   ├── services/         # Business logic (DB, LLM, gua generator)
 │   │   ├── widgets/          # Reusable UI components
 │   │   └── main.dart         # App entry point
@@ -73,26 +72,25 @@ iching/
 ### Data Flow
 
 ```
-User Input
-    │
-    ├─► LLM (local) processes prompt
-    │       │
-    │       ├─► generate_gua function call ──► GuaGenerator
-    │       │                                       │
-    │       │                              random cast / detect in text
-    │       │                                       │
-    │       │                              return gua (1-64)
-    │       │
-    │       └─► Generates reflective response with gua context
-    │
-    └─► Saved to SQLite (conversation + messages)
+Question Form
+    │  (category + question)
+    ▼
+GuaGenerator (casts 6 yao lines via three-coin method)
+    │  (resolve hexagram from trigram mapping)
+    ▼
+Cast Result (卦象 + per-line 老陰/少陽/少陰/老陽)
+    │  (tap "Get Explanation")
+    ▼
+LLM (local) — one-shot call
+    │  (hexagram context + question + language preference)
+    ▼
+Explanation (解讀)
 ```
 
 ### Database Schema
 
-- **Conversations** — id, title, created_at, updated_at, last_gua_id
-- **Messages** — id, conversation_id, sender (user/system), content, gua_id, timestamp
-- **Gua** — id, code (1-64), name, content, summary, source
+- **Gua** — id, code (1-64), name, content (full hexagram JSON)
+- **Settings** — key, value (model selection, language preference, custom system prompt)
 
 ---
 
@@ -121,11 +119,12 @@ flutter emulators --create --name pixel_6
 # Launch the emulator
 flutter emulators --launch pixel_6
 
-# Run the appNice,
+# Run the app
 flutter run
 ```
 
-> **Note:** On first run, the app will download the LLM model from HuggingFace (~600MB for Qwen3 0.6B).  
+> **Note:** On first run, the app asks you to select and download an LLM model from HuggingFace
+> (sizes range from ~0.5 GB to ~3.6 GB depending on the model).  
 > Ensure you have sufficient storage and a stable connection for the download.
 
 ### Running Tests

@@ -37,16 +37,19 @@ iching/
 │   ├── lib/
 │   │   ├── data/                 # Static data (model_catalog.dart, trigram_hexagram_data.dart)
 │   │   ├── models/               # Dart data models
-│   │   │   ├── chat_message.dart
-│   │   │   ├── conversation.dart
 │   │   │   ├── gua.dart
 │   │   │   ├── hexagram_content.dart
+│   │   │   ├── language_preference.dart
 │   │   │   ├── model_info.dart
-│   │   │   └── trigram_hexagram.dart
+│   │   │   ├── trigram_hexagram.dart
+│   │   │   └── yao_line_type.dart
 │   │   ├── screens/              # UI screens
-│   │   │   ├── chat_screen.dart
-│   │   │   ├── conversation_detail_screen.dart
+│   │   │   ├── cast_result_screen.dart
+│   │   │   ├── explanation_screen.dart
+│   │   │   ├── hexagram_browser_screen.dart
+│   │   │   ├── hexagram_detail_screen.dart
 │   │   │   ├── model_selection_screen.dart
+│   │   │   ├── prompt_editor_screen.dart
 │   │   │   ├── question_form_screen.dart
 │   │   │   └── settings_screen.dart
 │   │   ├── services/             # Business logic
@@ -55,16 +58,22 @@ iching/
 │   │   │   ├── gua_generator.dart
 │   │   │   ├── gua_seeder.dart
 │   │   │   └── llm_service.dart
-│   │   ├── widgets/              # Reusable UI components
-│   │   │   └── gua_card.dart
 │   │   └── main.dart
 │   ├── assets/hexagrams/         # Individual hexagram JSON files
 │   ├── test/
+│   │   ├── cast_result_screen_test.dart
 │   │   ├── database_service_test.dart
+│   │   ├── explanation_screen_test.dart
 │   │   ├── gua_generator_test.dart
 │   │   ├── gua_seeder_test.dart
+│   │   ├── hexagram_browser_screen_test.dart
 │   │   ├── hexagram_content_test.dart
+│   │   ├── hexagram_detail_screen_test.dart
+│   │   ├── language_preference_test.dart
+│   │   ├── migration_v4_test.dart
+│   │   ├── prompt_editor_screen_test.dart
 │   │   ├── question_form_screen_test.dart
+│   │   ├── settings_screen_test.dart
 │   │   ├── trigram_hexagram_data_test.dart
 │   │   └── widget_test.dart
 │   └── pubspec.yaml
@@ -89,7 +98,7 @@ iching/
 - Services are plain Dart classes injected via constructor.
 - DatabaseService uses a `_customPath` constructor param for test in-memory DBs (`:memory:`).
 - Catch platform-specific errors gracefully (e.g., `DatabaseService.create()` returns `null` on unsupported platforms).
-- LLM function calling uses the `generate_gua` tool with optional `intent` parameter.
+- `LlmService.generateExplanation()` is a one-shot call (no function calling, no history) on a tool-free session.
 
 ### Naming
 
@@ -127,29 +136,11 @@ flutter test                    # Unit + widget tests
 flutter test -d windows integration_test/all_tests.dart  # Integration tests (Windows desktop)
 ```
 
-**Before every commit** run `flutter test && flutter test -d windows integration_test/all_tests.dart` to verify nothing is broken.
+**Before every commit** run `flutter test && flutter test -d windows integration_test/cast_and_browse_test.dart` to verify nothing is broken.
 
 ---
 
 ## 6. Database Schema
-
-### conversations
-| Column       | Type    | Notes                |
-|-------------|---------|----------------------|
-| id          | INTEGER | PK, AUTOINCREMENT    |
-| title       | TEXT    | Auto-generated (date-time) |
-| created_at  | TEXT    | ISO 8601             |
-| updated_at  | TEXT    | ISO 8601             |
-| last_gua_id | INTEGER | FK to gua.id (nullable) |
-
-### chat_messages
-| Column          | Type    | Notes                          |
-|----------------|---------|--------------------------------|
-| id             | INTEGER | PK, AUTOINCREMENT              |
-| conversation_id| INTEGER | FK → conversations.id          |
-| sender         | TEXT    | "user" or "system"             |
-| message        | TEXT    |                                |
-| timestamp      | TEXT    | ISO 8601                       |
 
 ### gua
 | Column       | Type    | Notes                       |
@@ -159,14 +150,20 @@ flutter test -d windows integration_test/all_tests.dart  # Integration tests (Wi
 | gua_name    | TEXT    | e.g. "乾為天" (卦名)        |
 | gua_content | TEXT    | Full hexagram JSON (see HexagramContent) |
 
+### settings
+| Column       | Type    | Notes                       |
+|-------------|---------|-----------------------------|
+| key          | TEXT    | PK (e.g. language, system_prompt, selected_model_key) |
+| value        | TEXT    |                            |
+
 ---
 
 ## 7. Key Patterns
 
 - **GuaGenerator** uses `GeneratorMethod` enum (`manual`, `systemGenerated`) with different context prompt headers per method. Casts 6 yao lines via the three-coin method (`YaoLineType`: 老陰/少陽/少陰/老陽), resolves the hexagram via `TrigramHexagramData`.
-- **Consultation flow** (form-based, low token usage): QuestionFormScreen → submit → `GuaGenerator.generateRandom()` → CastResultScreen (卦象 + per-line types) → "Get Explanation" → `LlmService.generateExplanation()` (single-shot, no multi-turn history) → ExplanationScreen. The chat screen flow is being phased out.
-- **ChatMessage** uses string `id` for UI keys (`msg_0`, `db_{rowId}`) and separate nullable `dbId` for the database PK.
-- **LlmService** wraps flutter_gemma. `generateExplanation()` is a one-shot call (no function calling, no history); `sendMessage()` (legacy chat) supports function calling (`generate_gua` tool), thinking tag stripping, JSON message extraction, and proactive context compression.
+- **Consultation flow** (form-based, low token usage): QuestionFormScreen → submit → `GuaGenerator.generateRandom()` → CastResultScreen (卦象 + per-line types) → "Get Explanation" → `LlmService.generateExplanation()` (one-shot, no multi-turn history, tool-free) → ExplanationScreen.
+- **LlmService** wraps flutter_gemma. `generateExplanation()` opens its own tool-free session (`openExplanationChat()`), sends one prompt combining hexagram context + question + language preference, and returns the response.
+- **Language & prompts**: `LanguagePreference` (en/cn) and a custom system prompt are stored in the `settings` table and injected into the explanation prompt.
 - **Gua seeding** happens at startup via `GuaSeeder.seedIfNeeded()` (seeds missing gua only; individual JSON files in `assets/hexagrams/gua_<n>.json`).
 
 ---
