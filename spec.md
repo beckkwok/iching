@@ -4,7 +4,7 @@
 ```bash
 cd app
 flutter test                    # Unit + widget tests
-flutter test integration_test/  # Integration tests (Windows desktop)
+flutter test -d windows integration_test/cast_and_browse_test.dart  # Integration tests (Windows desktop)
 ```
 
 Objective
@@ -13,154 +13,106 @@ This application is to build a consultancy service to the one who is in the cros
 
 User Story
 ----------
-1. A UI will be displayed with:
+1. A form-based UI is displayed with:
+    - A question category (Career Achievement, Intellectual and moral cultivation, Timing, Attitude)
     - A text box to allow user to type the things that bother him
     - A button to submit the query
-2. If the gua does not provided in the prompt, The system then generate the 'gua' for the user, which it will retrieve the corresponding information, then the system should briefly describe the content of the 'gua', but should not tell the good or bad, but to encourage user for more information, and how he feel about the 'gua', to reflect its thought.
-3. The process should be continued. System should store the conversation.
+2. The system casts a 'gua' (六爻, three-coin method) and shows the hexagram (卦象) with per-line yao types.
+3. The user taps "Get Explanation" and the local LLM generates a reflection/explanation combining the hexagram context, the question, and the language preference (one-shot, no chat history, stays within on-device context limits).
 
 Architecture Overview
-----------------------
-1. The project build as andriod application. hybrid framework like react-native is suggested
-2. The system uses Gemma as LLM model. The whole process should not called internet to protect user privacy
-3. The following will be stored in sqlite db:
-    - Gua content
-    - conversation detail
+---------------------
+1. The project build as android application. Flutter is the framework.
+2. The system uses Gemma-compatible local models (via `flutter_gemma`). The whole process does not call the internet to protect user privacy (network only used to download the model at first run).
+3. The following will be stored:
+    - Gua content — as JSON asset files (`assets/hexagrams/gua_<n>.json`) and seeded into the `gua` SQLite table
+    - Settings (language preference, custom system prompt, selected model) — `settings` SQLite table
 
 UI function
 -----------
-- Main conversation interface
-- Menu function to list the past conversation history
+- Question form → cast result → explanation flow
+- Hexagram browser + detail screens (all 64 hexagrams)
 
 System function
 ---------------
-- Program to generate gua (64)
+- Program to generate gua (64), via three-coin casting (`GuaGenerator.generateRandom()`)
 
 Project Plan
 -------------
 1. Define project scope
-    - Confirm target platform and framework (Android app, React Native / hybrid)
+    - Confirm target platform and framework (Android app, Flutter)
     - Define offline privacy requirements (no internet access, local model only)
-    - Clarify main user flow: user input -> optional gua parse -> generate/retrieve gua -> encourage reflection
+    - Clarify main user flow: question form -> cast gua -> one-shot LLM explanation
 2. Design data model
-    - Conversation
-        - Conversation ID
-        - Conversation Title
-        - Created At
-        - Updated At
-        - Last Gua ID
-    - Chat
-        - Chat ID
-        - Conversation ID
-        - Sender (User / System)
-        - Message
-        - Timestamp
     - Gua
         - Gua ID
-        - Gua Code (Non unique)
-        - Gua Name
-        - Gua Content
-        - Gua Summary / Reflection Hint
-        - Source / Generator Type
+        - Gua Code (1-64, 卦序)
+        - Gua Name (e.g. 乾為天)
+        - Gua Content (full hexagram JSON, see HexagramContent)
+    - Settings
+        - Key (language, system_prompt, selected_model_key)
+        - Value
 3. Define views
-    - Main conversation interface
-        - text input field
-        - submit button
-        - scrollable chat history
-        - when user submit message, if the convesation has not been initialised, system will create a conversation title (date-time)
-        - both user message and system response will stored in the chat, with the same conversation id
-    - Past conversation lists
-        - Activated from the burger menu (with history icon) from to top-left corner
-        - list of conversation title displayed
-        - when user click on the conversation title, preview convesation will be displayed
-    - Conversation detail view
-        - Displayed when user select specific conversation from the conversation list
-        - full chat log
-        - gua details when selected
+    - Question form screen
+        - question category selector, question text input, submit button
+    - Cast result screen
+        - hexagram 卦象 + per-line yao types (老陰/少陽/少陰/老陽)
+        - "Get Explanation" button → LLM
+    - Explanation screen
+        - shows the LLM-generated reflection
+    - Hexagram browser + detail screens
+        - grid of all 64 hexagrams; detail shows 卦辭, 彖傳, 大象傳, 爻辭, 象徵意義, 不同人解讀
+    - Model selection screen
+        - choose + download a model at first run (persisted in settings)
     - Settings interface
-        - privacy notice
-        - local storage management
+        - language preference, editable system prompt (PromptEditorScreen)
 4. Define business logic
-    - Input handling
-        - detect explicit gua in user prompt
-        - otherwise request generated gua
-    - Gua generation
-        - support random generation
-        - support multiple generator methods
-        - produce one of 64 gua codes
+    - Gua casting
+        - support random generation via three-coin method
+        - produce one of 64 gua codes via trigram mapping (TrigramHexagramData)
     - Gua retrieval
-        - load local gua content from store
-        - summarize without judging good/bad
-        - frame response as encouragement and reflection
-    - Conversation management
-        - persist each chat message
-        - associate system response with gua where applicable
-        - support continuing conversations later
+        - load gua content from store (JSON assets / gua table)
+    - Explanation
+        - one-shot LLM call: hexagram context + question + language preference, no function calling, no history
 5. Implementation tasks ✅ Completed
     - scaffold app project
         - Flutter project with proper folder structure and all dependencies
     - implement SQLite persistence layer
-        - database_service.dart with full CRUD for conversations, messages, gua
-    - build conversation UI components
-        - chat_screen.dart with message bubbles, text input, buttons
-    - build list of conversation component
-        - History drawer with titles, timestamps, active indicator
-    - Link conversation UI with persistence layer
-        - Messages persisted on send and response
-        - Conversation auto-title with date-time
-    - integrate offline Gemma LLM or local model runtime
+        - database_service.dart (gua + settings tables, migrations to v5)
+    - Gua seeding at startup via GuaSeeder.seedIfNeeded() from assets/hexagrams JSON
+    - integrate offline Gemma-compatible local model runtime
         - flutter_gemma plugin integrated
-        - Model download from HuggingFace (Qwen3 0.6B)
-        - Send user prompt and receive response
-        - Function calling support (generate_gua tool)
-        - /no_think suppression for Qwen3 thinking mode
-        - Empty response retry guard
-        - Proactive context compression with LLM summarization
-        - Trailing text capture after function call JSON
+        - Model catalog (6 models) + download on first run
+        - openExplanationChat() tool-free session
     - customize server prompt design
         - I-Ching consultant system prompt with reflection guidelines
-    - Build gua generator
-        - GuaGenerator class with generateRandom() and findInText()
-        - Multiple GeneratorMethod (userRequested, randomCast, automatic)
+    - build gua generator
+        - GuaGenerator class with generateRandom() and GeneratorMethod enum
         - formatContext() with different headers per method
-    - LLM integration with gua generator via function calling
-        - LLM calls generate_gua -> GuaGenerator generates -> context fed back
-    - Build gua parser (findInText)
-        - Detects gua by Chinese name, pinyin, or number in user text
-    - build history screen
-        - conversation_detail_screen.dart for full chat log
-    - gua as separate response
-        - GenerationResult wraps gua + method, formatted as tool call context
+    - build gua parser / trigram mapping
+        - TrigramHexagramData resolves cast lines to hexagram
+    - build hexagram browser and detail screens
+    - build form-based consultation flow
+        - QuestionFormScreen → CastResultScreen → ExplanationScreen
 
 5b. Implementation tasks 🔲 Remaining
     - Strategy pattern for GuaGenerator (GuaGeneratorStrategy interface)
-        - setParam(), generate(), prompt() per strategy
-        - SimpleGuaGeneratorStrategy: random 1-64, specific prompt
-    - Build gua parser for user-provided gua -> return full gua result
-    - bug fix, model location
-    - LLM response change to JSON format for chat screen
     - Display independent image related to the gua
+    - Enrich the gua content
+    - Load hexagrams directly from JSON assets (remove the `gua` DB table and `Gua.id`)
     - add privacy / local-only enforcement checks
-    - Enrich the gua content.
-    - allow user to delete the chat history. In the chat history page, user hold the chat history item, then system prompt the confirmation button to user whether he want to delete the chat history.
-    - build settings screen, on the main chat screen, there is a burger menu on the right, when user click the burger menu, the following setting displayed:
-        - privacy notice
-        - model path
-        - model selection
-        - prompt settings
-        - local storage management
+    - Android packaging and build verification
+    - user documentation for usage and privacy assurances
 
 6. Testing, deployment, and documentation ✅ Completed
     - unit tests for gua generator (gua_generator_test.dart)
-    - unit tests for data model (database_service_test.dart)
+    - unit tests for data models / DB (database_service_test.dart, hexagram_content_test.dart)
     - unit tests for gua seeder (gua_seeder_test.dart)
-    - widget test for UI flow (widget_test.dart)
-    - integration tests for chat flow, Gua card, navigation, persistence
-        - chat_flow_test.dart — welcome message, send/receive, button state, multi-message
-        - chat_with_gua_test.dart — GuaCard rendering, single-Gua guard
-        - navigation_test.dart — history drawer, settings screen, privacy dialog, back navigation
-        - persistence_test.dart — messages survive DB reload, appended after reload
-    - FakeLlmService for deterministic LLM responses in integration tests
+    - unit tests for trigram mapping (trigram_hexagram_data_test.dart)
+    - widget tests for UI screens (question_form, cast_result, explanation, hexagram_browser, hexagram_detail, settings, prompt_editor)
+    - integration test cast_and_browse_test.dart — cast flow + hexagram browser
+    - FakeLlmService for deterministic LLM responses in tests
+    - migration test (migration_v4_test.dart) verifies schema migrations
 
 6b. Testing, deployment, and documentation 🔲 Remaining
     - privacy validation to ensure no network calls
