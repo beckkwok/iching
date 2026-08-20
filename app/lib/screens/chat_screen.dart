@@ -3,6 +3,7 @@ import '../models/chat_message.dart';
 import '../models/conversation.dart';
 import '../services/database_service.dart';
 import '../services/llm_service.dart';
+import 'question_form_screen.dart';
 import 'settings_screen.dart';
 import '../widgets/gua_card.dart';
 
@@ -16,10 +17,24 @@ class ChatScreen extends StatefulWidget {
   /// When null, placeholder responses are used instead.
   final LlmService? llmService;
 
+  /// Initial question text submitted from [QuestionFormScreen].
+  /// When set, the chat auto-submits it on first load.
+  final String? initialQuestion;
+
+  /// Category chosen on [QuestionFormScreen], used to frame the question.
+  final QuestionType? questionType;
+
+  /// Whether the user wants a hexagram generated. When false, the Gua
+  /// generator is disabled so the LLM cannot cast one.
+  final bool generateHexagram;
+
   const ChatScreen({
     super.key,
     required this.databaseService,
     this.llmService,
+    this.initialQuestion,
+    this.questionType,
+    this.generateHexagram = true,
   });
 
   @override
@@ -48,6 +63,21 @@ class _ChatScreenState extends State<ChatScreen> {
           'Tell me what is on your mind.',
       sender: MessageSender.system,
     ));
+
+    // When the user opted out of hexagram generation, disable the generator
+    // so the LLM cannot cast one.
+    if (!widget.generateHexagram) {
+      widget.llmService?.guaGenerator = null;
+    }
+
+    // Auto-submit the question provided by the question form.
+    final initialQuestion = widget.initialQuestion;
+    if (initialQuestion != null && initialQuestion.trim().isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _textController.text = initialQuestion.trim();
+        _handleSubmit();
+      });
+    }
   }
 
   @override
@@ -113,10 +143,15 @@ class _ChatScreenState extends State<ChatScreen> {
         }
       }
 
-      // Persist or add user message.
+      // Persist or add user message. Prefix the category so the LLM has
+      // context about the question type.
+      final category = widget.questionType;
+      final framedText = category != null
+          ? '[${category.label}] $text'
+          : text;
       final userMsg = ChatMessage(
         id: 'msg_${_messageCounter++}',
-        text: text,
+        text: framedText,
         sender: MessageSender.user,
       );
       if (widget.databaseService != null) {
@@ -322,7 +357,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => SettingsScreen(llmService: widget.llmService),
+                      builder: (_) => SettingsScreen(
+                            llmService: widget.llmService,
+                            databaseService: widget.databaseService,
+                          ),
                     ),
                   );
                   break;

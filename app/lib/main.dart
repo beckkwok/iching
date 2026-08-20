@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/model_download_screen.dart';
+import 'screens/model_selection_screen.dart';
 import 'services/database_service.dart';
 import 'services/gua_seeder.dart';
 
@@ -34,7 +34,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: ModelDownloadScreen(databaseService: databaseService),
+      home: ModelSelectionScreen(databaseService: databaseService),
     );
   }
 }

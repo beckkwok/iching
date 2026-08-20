@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../data/trigram_hexagram_data.dart';
 import '../models/gua.dart';
+import '../screens/hexagram_detail_screen.dart';
 
 /// Renders the 6-line yao (爻) pattern for a hexagram.
 ///
@@ -22,88 +24,114 @@ class GuaCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header: gua name and code
-            Row(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => HexagramDetailScreen(gua: gua)),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    'Gua ${gua.guaCode}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    gua.guaName,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Hexagram lines (drawn bottom-to-top)
-            Center(
-              child: SizedBox(
-                width: 120,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                // Header: gua name and code
+                Row(
                   children: [
-                    // Lines drawn from top (line 6) to bottom (line 1)
-                    for (int i = 5; i >= 0; i--)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 3),
-                        child: _HexagramLine(
-                          isSolid: lines[i],
-                          color: theme.colorScheme.primary,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'Gua ${gua.guaCode}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onPrimaryContainer,
                         ),
                       ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        gua.guaName,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-              ),
-            ),
-            const SizedBox(height: 12),
+                const SizedBox(height: 12),
 
-            // Chinese description
-            Text(
-              gua.guaContent,
-              style: TextStyle(
-                fontSize: 13,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 8),
+                // Hexagram lines (drawn bottom-to-top)
+                Center(
+                  child: SizedBox(
+                    width: 120,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Lines drawn from top (line 6) to bottom (line 1)
+                        for (int i = 5; i >= 0; i--)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 3),
+                            child: _HexagramLine(
+                              isSolid: lines[i],
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
 
-            // English summary
-            Text(
-              gua.guaSummary,
-              style: TextStyle(
-                fontSize: 13,
-                fontStyle: FontStyle.italic,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+                // Hexagram content (parsed from JSON)
+                if (gua.content != null) ...[
+                  if (gua.content!.guaSymbol.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        gua.content!.guaSymbol,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  if (gua.content!.guaCi.isNotEmpty)
+                    Text(
+                      gua.content!.guaCi,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  if (gua.content!.symbolicMeaning.summary.isNotEmpty)
+                    Text(
+                      gua.content!.symbolicMeaning.summary,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontStyle: FontStyle.italic,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                ],
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -115,10 +143,7 @@ class _HexagramLine extends StatelessWidget {
   final bool isSolid;
   final Color color;
 
-  const _HexagramLine({
-    required this.isSolid,
-    required this.color,
-  });
+  const _HexagramLine({required this.isSolid, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -162,40 +187,12 @@ class _HexagramLine extends StatelessWidget {
 // Hexagram line pattern mapping
 // ---------------------------------------------------------------------------
 
-/// Returns the 6-line pattern for a hexagram by parsing trigram info from
-/// [gua.guaContent] (e.g. "上卦乾（天），下卦乾（天）").
+/// Returns the 6-line pattern for a hexagram by parsing the trigram info
+/// from the hexagram's JSON content (卦象, e.g. "䷭（下巽上坤）").
 ///
 /// Each element is `true` for a solid (yang) line or `false` for a broken
 /// (yin) line. Index 0 = bottom line (line 1), index 5 = top line (line 6).
 List<bool> _hexagramLines(Gua gua) {
-  // The 8 trigram line patterns (bottom to top within each trigram).
-  const trigramMap = <String, List<bool>>{
-    '乾': [true, true, true],   // ☰ Qián
-    '兑': [true, true, false],  // ☱ Duì (simplified)
-    '兌': [true, true, false],  // ☱ Duì (traditional)
-    '离': [true, false, true],  // ☲ Lí (simplified)
-    '離': [true, false, true],  // ☲ Lí (traditional)
-    '震': [true, false, false], // ☳ Zhèn (yang at bottom)
-    '巽': [false, true, true],  // ☴ Xùn (yin at bottom)
-    '坎': [false, true, false], // ☵ Kǎn
-    '艮': [false, false, true], // ☶ Gèn (yang on top)
-    '坤': [false, false, false],// ☷ Kūn
-  };
-
-  // Parse "上卦XXX（Y），下卦XXX（Z）" from guaContent.
-  // Support both simplified and traditional Chinese characters.
-  final match = RegExp(r'上卦([乾兑兌离離震巽坎艮坤])').firstMatch(gua.guaContent);
-  final lowerMatch = RegExp(r'下卦([乾兑兌离離震巽坎艮坤])').firstMatch(gua.guaContent);
-  if (match == null || lowerMatch == null) {
-    return [false, false, false, false, false, false];
-  }
-
-  final upperName = match.group(1)!;
-  final lowerName = lowerMatch.group(1)!;
-
-  final upper = trigramMap[upperName] ?? [false, false, false];
-  final lower = trigramMap[lowerName] ?? [false, false, false];
-
-  // Combine: lines 1-3 = lower, lines 4-6 = upper
-  return [...lower, ...upper];
+  final symbol = gua.content?.guaSymbol ?? '';
+  return TrigramHexagramData.linesFromSymbol(symbol);
 }

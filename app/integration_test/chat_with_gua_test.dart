@@ -46,9 +46,12 @@ void main() {
       id: 1,
       guaCode: code,
       guaName: '乾 (Qián)',
-      guaContent: '上卦乾（天），下卦乾（天）',
-      guaSummary: 'Strength, creativity, initiative. The creative power of the universe.',
-      source: 'classical',
+      guaContent:
+          '{"卦名":"乾 (Qián)","卦序":$code,"卦象":"䷀（下乾上乾）","卦辭":"乾：元亨利貞。",'
+          '"彖傳":"大哉乾元","大象傳":"天行健，君子以自強不息。",'
+          '"爻辭":[],"象徵意義":{"基本卦象":{},"主要象徵":[],"生活與占事常見象徵":{},'
+          '"總結":"Strength, creativity, initiative. The creative power of the universe."},'
+          '"不同人解讀":[],"備註":""}',
     );
   }
 

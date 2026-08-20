@@ -1,18 +1,17 @@
 import 'dart:math';
+import '../data/trigram_hexagram_data.dart';
 import '../models/gua.dart';
+import '../models/yao_line_type.dart';
 import 'database_service.dart';
 
 /// How a hexagram was generated. Each method implies a different framing
 /// for the LLM interpretation prompt.
 enum GeneratorMethod {
   /// User explicitly named a hexagram (by name, number, or pinyin).
-  userRequested,
+  manual,
 
   /// System randomly generated a hexagram with user consent.
-  randomCast,
-
-  /// System randomly generated for the first interaction before asking.
-  automatic,
+  systemGenerated,
 }
 
 /// Result of a Gua generation or lookup.
@@ -20,7 +19,29 @@ class GenerationResult {
   final Gua gua;
   final GeneratorMethod method;
 
-  const GenerationResult({required this.gua, required this.method});
+  /// The six cast yao lines, bottom (index 0) to top (index 5).
+  ///
+  /// `true` = yang (solid), `false` = yin (broken). Empty for [GeneratorMethod.manual].
+  final List<bool> lines;
+
+  /// The six cast line types (老陰/少陽/少陰/老陽), bottom → top.
+  ///
+  /// Empty for [GeneratorMethod.manual] or when only boolean lines are known.
+  final List<YaoLineType> lineTypes;
+
+  const GenerationResult({
+    required this.gua,
+    required this.method,
+    this.lines = const [],
+    this.lineTypes = const [],
+  });
+
+  /// True if [lines] holds the six cast lines (system-generated casts).
+  bool get hasCast => lines.length == 6;
+
+  /// Convenience: the 老陰/少陽/少陰/老陽 labels, bottom → top.
+  List<String> get lineTypeLabels =>
+      lineTypes.map((t) => t.label).toList();
 }
 
 /// Generates and retrieves Gua (hexagrams) for the I-Ching app.
@@ -46,13 +67,78 @@ class GuaGenerator {
   // Generation
   // ---------------------------------------------------------------------------
 
-  /// Pick a random hexagram from the 64.
+  /// Cast six yao lines (bottom → top) using the traditional three-coin
+  /// method and resolve the resulting hexagram from [TrigramHexagramData].
+  ///
+  /// Each line is cast by summing three coins (2 = yin, 3 = yang), yielding
+  /// 6/7/8/9 → 老陰/少陽/少陰/老陽. The lower trigram is lines 1–3 (indices
+  /// 0–2); the upper trigram is lines 4–6 (indices 3–5). Both the boolean
+  /// [lines] and the full [YaoLineType] list are stored on the result.
   Future<GenerationResult> generateRandom() async {
+    final lineTypes = List.generate(6, (_) => _castLine());
+    final lines = lineTypes.map((t) => t.isYang).toList();
+    return resolveCast(lines, lineTypes: lineTypes);
+  }
+
+  /// Cast a single yao line with three coins. Each coin is 2 (yin) or 3
+  /// (yang); the sum determines the type:
+  /// 6=老陰, 7=少陽, 8=少陰, 9=老陽.
+  YaoLineType _castLine() {
+    var sum = 0;
+    for (var i = 0; i < 3; i++) {
+      sum += _random.nextBool() ? 3 : 2;
+    }
+    return YaoLineType.fromValue(sum);
+  }
+
+  /// Resolve a fixed 6-line [lines] cast (bottom → top) into a hexagram,
+  /// using [TrigramHexagramData] and the seeded gua table.
+  ///
+  /// Optionally pass [lineTypes] (the 老陰/少陽/少陰/老陽 per line) to keep
+  /// on the result. Throws [ArgumentError] if [lines] is not exactly 6.
+  Future<GenerationResult> resolveCast(
+    List<bool> lines, {
+    List<YaoLineType> lineTypes = const [],
+  }) async {
+    if (lines.length != 6) {
+      throw ArgumentError.value(
+          lines, 'lines', 'A cast must contain exactly 6 lines');
+    }
     final list = await _guaList;
     return GenerationResult(
-      gua: list[_random.nextInt(list.length)],
-      method: GeneratorMethod.randomCast,
+      gua: _resolveGua(list, lines),
+      method: GeneratorMethod.systemGenerated,
+      lines: lines,
+      lineTypes: lineTypes,
     );
+  }
+
+  /// Find the hexagram in [list] that matches a 6-line cast [lines].
+  Gua _resolveGua(List<Gua> list, List<bool> lines) {
+    if (lines.length == 6) {
+      final lowerCode =
+          TrigramHexagramData.linesToCode(lines[0], lines[1], lines[2]);
+      final upperCode =
+          TrigramHexagramData.linesToCode(lines[3], lines[4], lines[5]);
+      final entry = TrigramHexagramData.byCodes(lowerCode, upperCode);
+      if (entry != null) {
+        // Prefer an exact name match (卦名 == resultName, e.g. "地風升").
+        for (final gua in list) {
+          final name = gua.content?.guaName ?? gua.guaName;
+          if (name == entry.resultName) return gua;
+        }
+        // Fall back to matching the 6-line pattern from each gua's 卦象.
+        for (final gua in list) {
+          if (_listsEqual(
+              TrigramHexagramData.linesFromSymbol(gua.content?.guaSymbol ?? ''),
+              lines)) {
+            return gua;
+          }
+        }
+      }
+    }
+    // Unknown cast — fall back to a random hexagram.
+    return list[_random.nextInt(list.length)];
   }
 
   /// Try to find a Gua mentioned in [text]. Returns `null` if none found.
@@ -76,7 +162,7 @@ class GuaGenerator {
             (g) => g.guaCode == num,
             orElse: () => list[_random.nextInt(list.length)],
           ),
-          method: GeneratorMethod.userRequested,
+          method: GeneratorMethod.manual,
         );
       }
     }
@@ -87,7 +173,7 @@ class GuaGenerator {
       if (lower.contains(chineseName)) {
         return GenerationResult(
           gua: gua,
-          method: GeneratorMethod.userRequested,
+          method: GeneratorMethod.manual,
         );
       }
     }
@@ -103,13 +189,22 @@ class GuaGenerator {
                 .hasMatch(lower)) {
           return GenerationResult(
             gua: gua,
-            method: GeneratorMethod.userRequested,
+            method: GeneratorMethod.manual,
           );
         }
       }
     }
 
     return null;
+  }
+
+  /// Element-wise equality for two [List]s (Dart `==` on lists is identity).
+  static bool _listsEqual(List<dynamic> a, List<dynamic> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   /// Strip common diacritics from pinyin so "qián" matches "qian".
@@ -152,25 +247,45 @@ class GuaGenerator {
   String formatContext(GenerationResult result) {
     final gua = result.gua;
     final header = _methodHeader(result.method);
-    return '$header\n'
-        'Hexagram: ${gua.guaName} (gua code ${gua.guaCode})\n'
-        '${gua.guaContent}\n'
-        '${gua.guaSummary}\n'
-        'Source: ${gua.source}';
+    final content = gua.content;
+    final buffer = StringBuffer('$header\n');
+    buffer.writeln('Hexagram: ${gua.guaName} (gua code ${gua.guaCode})');
+    if (result.hasCast) {
+      buffer.writeln('Cast lines (bottom to top): '
+          '${result.lines.map((l) => l ? 'yang' : 'yin').join(', ')}');
+      if (result.lineTypes.length == 6) {
+        buffer.writeln('Line types (bottom to top): '
+            '${result.lineTypeLabels.join(', ')}');
+      }
+    }
+    if (content != null) {
+      if (content.guaCi.isNotEmpty) {
+        buffer.writeln('卦辭: ${content.guaCi}');
+      }
+      if (content.tuanZhuan.isNotEmpty) {
+        buffer.writeln('彖傳: ${content.tuanZhuan}');
+      }
+      if (content.daXiangZhuan.isNotEmpty) {
+        buffer.writeln('大象傳: ${content.daXiangZhuan}');
+      }
+      if (content.symbolicMeaning.summary.isNotEmpty) {
+        buffer.writeln('象徵總結: ${content.symbolicMeaning.summary}');
+      }
+    } else {
+      buffer.writeln(gua.guaContent);
+    }
+    return buffer.toString();
   }
 
   /// The opening line that frames how this hexagram came about.
   String _methodHeader(GeneratorMethod method) {
     switch (method) {
-      case GeneratorMethod.userRequested:
+      case GeneratorMethod.manual:
         return 'The user has specifically asked about this hexagram. '
             'Share its wisdom as it relates to their situation.';
-      case GeneratorMethod.randomCast:
+      case GeneratorMethod.systemGenerated:
         return 'A hexagram has been cast at the user\'s request. '
             'The I-Ching offers this reflection for their contemplation.';
-      case GeneratorMethod.automatic:
-        return 'A hexagram has been drawn to offer perspective. '
-            'Present its meaning gently as an invitation for reflection.';
     }
   }
 
