@@ -1,20 +1,28 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_gemma/flutter_gemma.dart';
+import 'package:flutter_gemma_litertlm/flutter_gemma_litertlm.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
 import '../models/gua.dart';
+import '../models/language_preference.dart';
+import '../models/model_info.dart';
 import '../services/gua_generator.dart';
 
 /// Wraps flutter_gemma for the I-Ching app.
 class LlmService {
+  final ModelInfo modelInfo;
+
   InferenceModel? _model;
   InferenceChat? _chat;
   GuaGenerator? _guaGenerator;
   bool _guaGenerated = false; // only one hexagram per conversation
   Gua? _lastGeneratedGua;
+
+  /// Construct with a [modelInfo] describing the model to load.
+  LlmService({required this.modelInfo});
 
   bool get isReady => _chat != null;
 
@@ -29,7 +37,7 @@ class LlmService {
   }
 
   /// The current model filename (e.g. "Qwen3-0.6B.litertlm").
-  String get modelFilename => _filename;
+  String get modelFilename => modelInfo.filename;
 
   /// The directory where models are stored.
   Future<String> get modelDir => _modelsDir;
@@ -40,17 +48,14 @@ class LlmService {
   Future<String> get modelFilePath async =>
       _customModelPath ?? await _modelPath;
 
-  /// The download URL for the default model.
-  String get modelUrl => _modelUrl;
+  /// The download URL for the selected model.
+  String get modelUrl => modelInfo.downloadUrl;
 
-  /// Switch to a different model file. Closes the current chat session.
-  /// After calling this, call [openChat] or [_validateModel] to load it.
+  /// Switch to a different model file path. Closes the current chat session.
+  /// After calling this, call [openChat] to load it.
   Future<void> setModelFile(String filePath) async {
     await closeChat();
     _customModelPath = filePath;
-    _filename = filePath.split(RegExp(r'[/\\]')).last;
-    // ignore: avoid_print
-    print('📁 Model file changed to: $filePath');
   }
 
   /// Set the Gua generator for function calling.
@@ -60,48 +65,16 @@ class LlmService {
   void resetGuaGuard() => _guaGenerated = false;
 
   // ---------------------------------------------------------------------------
-  // Model config
+  // Model config (derived from [modelInfo])
   // ---------------------------------------------------------------------------
 
-  ModelType _modelType = ModelType.gemma4;
-  ModelFileType _fileType = ModelFileType.litertlm;
-  bool _isThinking = false;
+  static const ModelFileType _fileType = ModelFileType.litertlm;
 
   /// Human-readable model name for UI display.
-  String get modelDisplayName {
-    switch (_modelType) {
-      case ModelType.gemma4:
-        return 'Gemma 4 E2B IT';
-      case ModelType.gemmaIt:
-        return 'Gemma 3 IT';
-      case ModelType.qwen3:
-        return 'Qwen3 0.6B';
-      case ModelType.qwen:
-        return 'Qwen 2.5';
-      case ModelType.deepSeek:
-        return 'DeepSeek R1';
-      case ModelType.functionGemma:
-        return 'FunctionGemma';
-      default:
-        return _filename;
-    }
-  }
+  String get modelDisplayName => modelInfo.modelFamily;
 
   /// Approximate file size for UI display.
-  String get modelSize {
-    switch (_modelType) {
-      case ModelType.gemma4:
-        return '2.4 GB';
-      case ModelType.qwen3:
-        return '586 MB';
-      default:
-        return '';
-    }
-  }
-
-  String _filename = 'gemma-4-E2B-it.litertlm';
-  String get _modelUrl => 'https://huggingface.co/litert-community/'
-      'gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm';
+  String get modelSize => modelInfo.sizeLabel;
 
   Future<String> get _modelsDir async {
     final appDir = await getApplicationSupportDirectory();
@@ -110,7 +83,8 @@ class LlmService {
     return dir.path;
   }
 
-  Future<String> get _modelPath async => p.join(await _modelsDir, _filename);
+  Future<String> get _modelPath async =>
+      p.join(await _modelsDir, modelInfo.filename);
 
   /// Tool definition: let the LLM request a hexagram.
   static const List<Tool> _tools = [
@@ -138,11 +112,14 @@ class LlmService {
   // ---------------------------------------------------------------------------
 
   Future<void> initialize({String? huggingFaceToken}) async {
-    await FlutterGemma.initialize(huggingFaceToken: huggingFaceToken);
+    await FlutterGemma.initialize(
+      huggingFaceToken: huggingFaceToken,
+      inferenceEngines: [LiteRtLmEngine()],
+    );
   }
 
   Future<bool> isModelInstalled() async =>
-      FlutterGemma.isModelInstalled(_filename);
+      FlutterGemma.isModelInstalled(modelInfo.filename);
 
   Future<void> downloadModel({
     String? token,
@@ -152,14 +129,16 @@ class LlmService {
     // ignore: avoid_print
     print('📥 Downloading model to: $targetPath');
     final file = File(targetPath);
-    final request = http.Request('GET', Uri.parse(_modelUrl));
+    final request = http.Request('GET', Uri.parse(modelInfo.downloadUrl));
     if (token != null && token.isNotEmpty) {
       request.headers['Authorization'] = 'Bearer $token';
     }
     final response = await http.Client().send(request);
     if (response.statusCode != 200) {
-      throw HttpException('Download failed (HTTP ${response.statusCode})',
-          uri: Uri.parse(_modelUrl));
+      throw HttpException(
+        'Download failed (HTTP ${response.statusCode})',
+        uri: Uri.parse(modelInfo.downloadUrl),
+      );
     }
     final totalBytes = response.contentLength ?? -1;
     var receivedBytes = 0;
@@ -190,7 +169,7 @@ class LlmService {
       await _copyToFlutterGemmaPath(modelPath);
     }
     await FlutterGemma.installModel(
-      modelType: _modelType,
+      modelType: modelInfo.modelType,
       fileType: _fileType,
     ).fromFile(modelPath).install();
   }
@@ -201,7 +180,7 @@ class LlmService {
       if (localAppData.isNotEmpty) {
         final targetDir = Directory(p.join(localAppData, 'flutter_gemma'));
         if (!await targetDir.exists()) await targetDir.create(recursive: true);
-        final targetPath = p.join(targetDir.path, _filename);
+        final targetPath = p.join(targetDir.path, modelInfo.filename);
         if (!await File(targetPath).exists()) {
           await File(sourcePath).copy(targetPath);
         }
@@ -218,7 +197,7 @@ class LlmService {
     await _registerAndLoad();
 
     _model = await FlutterGemmaPlugin.instance.createModel(
-      modelType: _modelType,
+      modelType: modelInfo.modelType,
       fileType: _fileType,
       maxTokens: 4096,
     );
@@ -229,8 +208,8 @@ class LlmService {
       topK: 40,
       topP: 0.95,
       tokenBuffer: 100,
-      modelType: _modelType,
-      isThinking: _isThinking,
+      modelType: modelInfo.modelType,
+      isThinking: modelInfo.isThinking,
       supportsFunctionCalls: true,
       tools: _tools,
       systemInstruction: _systemPrompt,
@@ -264,8 +243,10 @@ class LlmService {
       final limit = _chat!.maxTokens - _chat!.tokenBuffer;
       if (_chat!.currentTokens > limit - 200) {
         // ignore: avoid_print
-        print('🧹 Proactive context compression triggered '
-            '(${_chat!.currentTokens}/$limit tokens)');
+        print(
+          '🧹 Proactive context compression triggered '
+          '(${_chat!.currentTokens}/$limit tokens)',
+        );
         await _compressContext();
       }
     }
@@ -276,14 +257,17 @@ class LlmService {
       maxTurns--;
 
       try {
-        final response = await Future(() => _chat!.generateChatResponse())
-            .timeout(_responseTimeout);
+        final response = await Future(
+          () => _chat!.generateChatResponse(),
+        ).timeout(_responseTimeout);
 
         if (response is TextResponse) {
           var text = response.token;
           // Strip thinking tags and end-of-text markers
           text = text.replaceAll(
-              RegExp(r'<think>.*?</think>', dotAll: true), '');
+            RegExp(r'<think>.*?</think>', dotAll: true),
+            '',
+          );
           text = text.replaceAll(RegExp(r'<think>', dotAll: true), '');
           text = text.replaceAll(RegExp(r'</think>', dotAll: true), '');
           text = text.replaceAll('<|endoftext|>', '');
@@ -291,7 +275,10 @@ class LlmService {
 
           // Some models describe the tool instead of calling it properly.
           // Detect tool call patterns in the text and handle them.
-          final cleanText = text.replaceAll(RegExp(r'<tool_code>|</tool_code>'), '');
+          final cleanText = text.replaceAll(
+            RegExp(r'<tool_code>|</tool_code>'),
+            '',
+          );
           final toolMatch = RegExp(
             r'generate_gua',
             caseSensitive: false,
@@ -302,19 +289,26 @@ class LlmService {
               // ignore: avoid_print
               print('🔮 Gua already generated — ignoring duplicate request');
               await _chat!.addQuery(
-                Message.toolCall(text: '(A hexagram is already active. '
-                    'Continue discussing it with the user.)'),
+                Message.toolCall(
+                  text:
+                      '(A hexagram is already active. '
+                      'Continue discussing it with the user.)',
+                ),
               );
             } else {
               // ignore: avoid_print
               print('🔮 LLM described a tool — generating Gua from text...');
               final result = await _guaGenerator!.generateRandom();
               // ignore: avoid_print
-              print('🔮 Generated: ${result.gua.guaName} (code ${result.gua.guaCode})');
+              print(
+                '🔮 Generated: ${result.gua.guaName} (code ${result.gua.guaCode})',
+              );
               _guaGenerated = true;
               _lastGeneratedGua = result.gua;
               final context = _guaGenerator!.formatContext(result);
-              await _chat!.addQuery(Message.toolCall(text: '$context\n/no_think'));
+              await _chat!.addQuery(
+                Message.toolCall(text: '$context\n/no_think'),
+              );
             }
             // Don't set responseText — continue the loop
           } else {
@@ -325,7 +319,9 @@ class LlmService {
               // ignore: avoid_print
               print('⚠️ Empty response after stripping — retrying...');
               await _chat!.addQuery(
-                Message.toolCall(text: '(Please respond directly without thinking tags.)'),
+                Message.toolCall(
+                  text: '(Please respond directly without thinking tags.)',
+                ),
               );
             } else {
               responseText = _extractJsonMessage(trimmed);
@@ -337,19 +333,26 @@ class LlmService {
               // ignore: avoid_print
               print('🔮 Gua already generated — skipping duplicate call');
               await _chat!.addQuery(
-                Message.toolCall(text: '(A hexagram is already active. '
-                    'Continue discussing it with the user.)'),
+                Message.toolCall(
+                  text:
+                      '(A hexagram is already active. '
+                      'Continue discussing it with the user.)',
+                ),
               );
             } else {
               // ignore: avoid_print
               print('🔮 LLM requested a hexagram — generating Gua...');
               final result = await _guaGenerator!.generateRandom();
               // ignore: avoid_print
-              print('🔮 Generated: ${result.gua.guaName} (code ${result.gua.guaCode})');
+              print(
+                '🔮 Generated: ${result.gua.guaName} (code ${result.gua.guaCode})',
+              );
               _guaGenerated = true;
               _lastGeneratedGua = result.gua;
               final context = _guaGenerator!.formatContext(result);
-              await _chat!.addQuery(Message.toolCall(text: '$context\n/no_think'));
+              await _chat!.addQuery(
+                Message.toolCall(text: '$context\n/no_think'),
+              );
 
               // The model may have included response text after the function call JSON.
               // Extract it by finding the closing brace and taking everything after.
@@ -361,10 +364,11 @@ class LlmService {
               final trailing = jsonEnd >= 0
                   ? toolCallEntry.text.substring(jsonEnd + 1).trim()
                   : '';
-              if (trailing.isNotEmpty &&
-                  !trailing.startsWith('(')) {
+              if (trailing.isNotEmpty && !trailing.startsWith('(')) {
                 // ignore: avoid_print
-                print('📝 Trailing text after function call: "${trailing.substring(0, trailing.length.clamp(0, 80))}"');
+                print(
+                  '📝 Trailing text after function call: "${trailing.substring(0, trailing.length.clamp(0, 80))}"',
+                );
                 await _chat!.addQuery(Message(text: trailing, isUser: false));
               }
             }
@@ -385,7 +389,9 @@ class LlmService {
     // a summary context to avoid context-length issues.
     if (responseText == null || responseText!.isEmpty) {
       // ignore: avoid_print
-      print('⚠️ All retries exhausted — restarting chat with truncated context...');
+      print(
+        '⚠️ All retries exhausted — restarting chat with truncated context...',
+      );
       try {
         // Collect all meaningful messages in chronological order.
         final history = _chat!.fullHistory;
@@ -410,12 +416,15 @@ class LlmService {
         await openChat();
 
         String summaryText = '';
-        await _chat!.addQuery(Message(
-          text: 'Summarize the following I-Ching consultation conversation '
-              'in about 250 words. Keep key topics, the hexagram cast (if any), '
-              'and the user\'s core concerns.\n\n$fullConversation',
-          isUser: true,
-        ));
+        await _chat!.addQuery(
+          Message(
+            text:
+                'Summarize the following I-Ching consultation conversation '
+                'in about 250 words. Keep key topics, the hexagram cast (if any), '
+                'and the user\'s core concerns.\n\n$fullConversation',
+            isUser: true,
+          ),
+        );
 
         try {
           final summaryResponse = await Future(
@@ -439,20 +448,25 @@ class LlmService {
         await openChat();
 
         if (summaryText.isNotEmpty) {
-          await _chat!.addQuery(Message(
-            text: '[Summary of our previous conversation]\n$summaryText',
-            isUser: true,
-          ));
+          await _chat!.addQuery(
+            Message(
+              text: '[Summary of our previous conversation]\n$summaryText',
+              isUser: true,
+            ),
+          );
         }
         // Send the original user message again.
         await _chat!.addQuery(Message(text: message, isUser: true));
 
-        final response = await Future(() => _chat!.generateChatResponse())
-            .timeout(_responseTimeout);
+        final response = await Future(
+          () => _chat!.generateChatResponse(),
+        ).timeout(_responseTimeout);
         if (response is TextResponse) {
           var text = response.token;
           text = text.replaceAll(
-              RegExp(r'<think>.*?</think>', dotAll: true), '');
+            RegExp(r'<think>.*?</think>', dotAll: true),
+            '',
+          );
           text = text.replaceAll(RegExp(r'<think>', dotAll: true), '');
           text = text.replaceAll(RegExp(r'</think>', dotAll: true), '');
           text = text.replaceAll('<|endoftext|>', '');
@@ -462,7 +476,8 @@ class LlmService {
       } catch (e) {
         // ignore: avoid_print
         print('⚠️ Chat restart also failed: $e');
-        responseText = '(The conversation context has grown long. '
+        responseText =
+            '(The conversation context has grown long. '
             'Let us start a fresh reflection. What is on your mind?)';
       }
     }
@@ -498,12 +513,15 @@ class LlmService {
 
     // Ask the LLM to summarize.
     String summaryText = '';
-    await _chat!.addQuery(Message(
-      text: 'Summarize the following I-Ching consultation conversation '
-          'in about 250 words. Keep key topics, the hexagram cast (if any), '
-          'and the user\'s core concerns.\n\n$fullConversation',
-      isUser: true,
-    ));
+    await _chat!.addQuery(
+      Message(
+        text:
+            'Summarize the following I-Ching consultation conversation '
+            'in about 250 words. Keep key topics, the hexagram cast (if any), '
+            'and the user\'s core concerns.\n\n$fullConversation',
+        isUser: true,
+      ),
+    );
 
     try {
       final summaryResponse = await Future(
@@ -527,11 +545,100 @@ class LlmService {
     await openChat();
 
     if (summaryText.isNotEmpty) {
-      await _chat!.addQuery(Message(
-        text: '[Summary of our previous conversation]\n$summaryText',
-        isUser: true,
-      ));
+      await _chat!.addQuery(
+        Message(
+          text: '[Summary of our previous conversation]\n$summaryText',
+          isUser: true,
+        ),
+      );
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // One-shot explanation (form-based flow)
+  // ---------------------------------------------------------------------------
+
+  /// Generate a single explanation that connects a cast [result] to the
+  /// user's [question]. This is a one-shot call (no multi-turn history), so
+  /// token usage stays low enough for on-device LLMs.
+  ///
+  /// [questionTypeLabel] is the human-readable category (e.g. "Career
+  /// Achievement"). [language] selects the language the model should respond
+  /// in (defaults to [LanguagePreference.english]). Requires an open chat
+  /// (call [openChat] first).
+  Future<String> generateExplanation({
+    required String question,
+    String? questionTypeLabel,
+    required GenerationResult result,
+    LanguagePreference language = LanguagePreference.english,
+  }) async {
+    if (_chat == null) {
+      throw StateError('Chat not opened. Call openChat() first.');
+    }
+
+    final context =
+        _guaGenerator?.formatContext(result) ?? _fallbackContext(result);
+
+    final languageInstruction = switch (language) {
+      LanguagePreference.english => 'Respond in English.',
+      LanguagePreference.chinese => 'Respond in Traditional Chinese.',
+    };
+
+    final prompt =
+        'The user asked: "$question"'
+        '${questionTypeLabel != null ? ' (category: $questionTypeLabel)' : ''}'
+        '\n\n'
+        'The hexagram below was cast for them:\n$context\n\n'
+        'Provide a compassionate I-Ching explanation that connects this '
+        'hexagram to the user\'s question. Never predict fortune. Keep it to '
+        '3-5 sentences and frame it as an invitation for reflection.\n'
+        '$languageInstruction\n'
+        'Wrap your final response in JSON: {"message": "your response here"}.';
+
+    await _chat!.addQuery(Message(text: prompt, isUser: true));
+
+    try {
+      final response = await Future(
+        () => _chat!.generateChatResponse(),
+      ).timeout(_responseTimeout);
+      if (response is TextResponse) {
+        var text = response.token;
+        text = text.replaceAll(RegExp(r'<think>.*?</think>', dotAll: true), '');
+        text = text.replaceAll(RegExp(r'<think>', dotAll: true), '');
+        text = text.replaceAll(RegExp(r'</think>', dotAll: true), '');
+        text = text.replaceAll('<|endoftext|>', '');
+        text = text.replaceAll('<|endoftext|', '');
+        final trimmed = text.trim();
+        if (trimmed.isNotEmpty) {
+          return _extractJsonMessage(trimmed);
+        }
+      }
+    } on TimeoutException {
+      await _chat!.stopGeneration();
+    }
+    return '(The explanation could not be generated.)';
+  }
+
+  /// Minimal hexagram context when no GuaGenerator is wired.
+  String _fallbackContext(GenerationResult result) {
+    final gua = result.gua;
+    final content = gua.content;
+    final buffer = StringBuffer(
+      'Hexagram: ${gua.guaName} (gua code ${gua.guaCode})\n',
+    );
+    if (content != null) {
+      if (content.guaCi.isNotEmpty) buffer.writeln('卦辭: ${content.guaCi}');
+      if (content.tuanZhuan.isNotEmpty) {
+        buffer.writeln('彖傳: ${content.tuanZhuan}');
+      }
+      if (content.daXiangZhuan.isNotEmpty) {
+        buffer.writeln('大象傳: ${content.daXiangZhuan}');
+      }
+      if (content.symbolicMeaning.summary.isNotEmpty) {
+        buffer.writeln('象徵總結: ${content.symbolicMeaning.summary}');
+      }
+    }
+    return buffer.toString();
   }
 
   // ---------------------------------------------------------------------------
