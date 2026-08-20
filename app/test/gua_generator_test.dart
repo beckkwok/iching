@@ -251,16 +251,6 @@ void main() {
       expect(systemGenerated, contains('at the user\'s request'));
     });
 
-    test('associateWithConversation updates lastGuaId', () async {
-      final conv = await db.createConversation('Test gua');
-      final result = await generator.generateRandom();
-
-      await generator.associateWithConversation(conv.id!, result.gua);
-
-      final updated = await db.getConversation(conv.id!);
-      expect(updated!.lastGuaId, result.gua.id);
-    });
-
     test('findInText detects gua by classical name 坤為地', () async {
       final result = await generator.findInText('坤為地卦怎麼說？');
       expect(result, isNotNull);

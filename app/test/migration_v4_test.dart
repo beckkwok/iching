@@ -59,4 +59,52 @@ void main() {
 
     await service.close();
   });
+
+  test('migration to v5 drops conversation and message tables', () async {
+    final dbPath = ':memory:';
+    // Simulate a legacy v4 DB with conversation tables present.
+    final legacy = await databaseFactory.openDatabase(
+      dbPath,
+      options: OpenDatabaseOptions(version: 4),
+    );
+    await legacy.execute('''
+      CREATE TABLE conversations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        last_gua_id INTEGER
+      )
+    ''');
+    await legacy.execute('''
+      CREATE TABLE chat_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        conversation_id INTEGER NOT NULL,
+        sender TEXT NOT NULL,
+        message TEXT NOT NULL,
+        timestamp TEXT NOT NULL
+      )
+    ''');
+    await legacy.insert('conversations', {
+      'title': 'old',
+      'created_at': '2026-01-01',
+      'updated_at': '2026-01-01',
+    });
+    await legacy.close();
+
+    // Open via DatabaseService (runs v4→v5 migration).
+    final service = DatabaseService(databasePath: dbPath);
+    final db = await service.database;
+
+    final tables = await db.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type='table'",
+    );
+    final names = tables.map((t) => t['name']).toSet();
+    expect(names, isNot(contains('conversations')));
+    expect(names, isNot(contains('chat_messages')));
+    expect(names, contains('gua'));
+    expect(names, contains('settings'));
+
+    await service.close();
+  });
 }
