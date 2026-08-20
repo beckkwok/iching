@@ -245,8 +245,7 @@ class LlmService {
         text = text.replaceAll(RegExp(r'<think>.*?</think>', dotAll: true), '');
         text = text.replaceAll(RegExp(r'<think>', dotAll: true), '');
         text = text.replaceAll(RegExp(r'</think>', dotAll: true), '');
-        text = text.replaceAll('<|endoftext|>', '');
-        text = text.replaceAll('<|endoftext|', '');
+        text = text.replaceAll(RegExp(r'<\|endoftext\|>?'), '');
         final trimmed = text.trim();
         if (trimmed.isNotEmpty) {
           return trimmed;
