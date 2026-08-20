@@ -288,21 +288,4 @@ class GuaGenerator {
             'The I-Ching offers this reflection for their contemplation.';
     }
   }
-
-  // ---------------------------------------------------------------------------
-  // Conversation association
-  // ---------------------------------------------------------------------------
-
-  /// Associate a Gua with a conversation by updating [lastGuaId].
-  Future<void> associateWithConversation(int conversationId, Gua gua) async {
-    final conv = await _db.getConversation(conversationId);
-    if (conv != null) {
-      await _db.updateConversation(
-        conv.copyWith(
-          lastGuaId: gua.id,
-          updatedAt: DateTime.now(),
-        ),
-      );
-    }
-  }
 }

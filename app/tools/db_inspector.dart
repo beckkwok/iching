@@ -1,7 +1,7 @@
 // ignore_for_file: avoid_print
 //
 // Run with: dart run tools/db_inspector.dart
-// Dumps all conversations and chat messages from the SQLite database.
+// Dumps the current SQLite tables (gua + settings).
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' as p;
 import 'dart:io';
@@ -15,7 +15,7 @@ void main() async {
   final dbPath = p.join(home, 'AppData', 'Roaming', 'iching', 'iching.db');
 
   print('Looking for database...');
-  
+
   // Try multiple possible locations
   final candidates = [
     dbPath,
@@ -50,42 +50,30 @@ void main() async {
     },
   );
 
-  // List conversations
+  // List settings
   print('\n═══════════════════════════════════════════');
-  print('  CONVERSATIONS');
+  print('  SETTINGS');
   print('═══════════════════════════════════════════');
-  final conversations = await db.rawQuery('SELECT * FROM conversations');
-  if (conversations.isEmpty) {
-    print('  (no conversations)');
+  final settings = await db.rawQuery('SELECT * FROM settings');
+  if (settings.isEmpty) {
+    print('  (no settings)');
   } else {
-    for (final c in conversations) {
-      print('  [${c['id']}] ${c['title']}');
-      print('       created: ${c['created_at']}');
-      print('       updated: ${c['updated_at']}');
-      print('       last_gua_id: ${c['last_gua_id']}');
-      print('');
+    for (final s in settings) {
+      print('  ${s['key']} = ${s['value']}');
     }
   }
 
-  // List chat messages
+  // List gua
   print('\n═══════════════════════════════════════════');
-  print('  CHAT MESSAGES');
+  print('  GUA');
   print('═══════════════════════════════════════════');
-  final messages = await db.rawQuery('''
-    SELECT cm.*, c.title as conv_title
-    FROM chat_messages cm
-    JOIN conversations c ON cm.conversation_id = c.id
-    ORDER BY cm.conversation_id, cm.timestamp
-  ''');
-  if (messages.isEmpty) {
-    print('  (no messages)');
+  final gua = await db.rawQuery(
+      'SELECT id, gua_code, gua_name FROM gua ORDER BY gua_code');
+  if (gua.isEmpty) {
+    print('  (no gua)');
   } else {
-    for (final m in messages) {
-      final sender = m['sender'] == 'user' ? '👤' : '✨';
-      print('  $sender [conv ${m['conversation_id']}] '
-          '${m['message']}');
-      print('       at: ${m['timestamp']}');
-      print('');
+    for (final g in gua) {
+      print('  [${g['id']}] code=${g['gua_code']} ${g['gua_name']}');
     }
   }
 
@@ -93,8 +81,8 @@ void main() async {
   print('\n═══════════════════════════════════════════');
   print('  SUMMARY');
   print('═══════════════════════════════════════════');
-  print('  Conversations: ${conversations.length}');
-  print('  Chat messages: ${messages.length}');
+  print('  Settings: ${settings.length}');
+  print('  Gua: ${gua.length}');
   print('');
 
   await db.close();
