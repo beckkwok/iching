@@ -16,10 +16,10 @@ import 'question_form_screen.dart';
 /// Flow:
 /// 1. Check `settings` table for `selected_model_key`.
 /// 2. If found → look up ModelInfo, check file existence.
-///    - File exists → go to chat.
+///    - File exists → proceed to the question form.
 ///    - File missing → download that model.
 /// 3. If no key → check old default file for backward compatibility.
-///    - Exists → auto-select Gemma4, save, go to chat.
+///    - Exists → auto-select Gemma4, save, proceed to the question form.
 /// 4. Otherwise → show the 6-model selection grid.
 class ModelSelectionScreen extends StatefulWidget {
   final DatabaseService? databaseService;
@@ -74,8 +74,8 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
             try {
               await _llmService!.initialize();
               await _applySavedPrompt();
-              await _llmService!.openChat();
-              if (mounted) _proceedToChat();
+              await _llmService!.openExplanationChat();
+              if (mounted) _proceed();
             } catch (e) {
               if (mounted) {
                 setState(() {
@@ -108,8 +108,8 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
         try {
           await _llmService!.initialize();
           await _applySavedPrompt();
-          await _llmService!.openChat();
-          if (mounted) _proceedToChat();
+          await _llmService!.openExplanationChat();
+          if (mounted) _proceed();
         } catch (e) {
           if (mounted) {
             setState(() {
@@ -186,12 +186,12 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
       if (mounted) {
         setState(() {
           _phase = _ScreenPhase.loading;
-          _statusText = 'Opening chat session...';
+          _statusText = 'Loading model...';
         });
         try {
           await _applySavedPrompt();
-          await _llmService!.openChat();
-          if (mounted) _proceedToChat();
+          await _llmService!.openExplanationChat();
+          if (mounted) _proceed();
         } catch (openError) {
           if (mounted) {
             setState(() {
@@ -234,7 +234,9 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
     return null;
   }
 
-  void _proceedToChat() {
+  void _proceed() {
+    // Wire the GuaGenerator so the explanation prompt includes the cast
+    // context (cast lines, line types, hexagram content).
     if (_guaGenerator != null && _llmService != null) {
       _llmService!.guaGenerator = _guaGenerator;
     }
@@ -300,7 +302,7 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
             children: [
               CircularProgressIndicator(),
               SizedBox(height: 16),
-              Text('Opening chat session...'),
+              Text('Loading model...'),
             ],
           ),
         );
@@ -432,7 +434,7 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
             FilledButton.icon(
               onPressed: _skipDownload,
               icon: const Icon(Icons.chat),
-              label: const Text('Continue to chat anyway'),
+              label: const Text('Continue anyway'),
             ),
           ],
         ),

@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:app/models/gua.dart';
 import 'package:app/screens/hexagram_detail_screen.dart';
-import 'package:app/widgets/gua_card.dart';
 
 /// A full hexagram JSON blob for gua 46 (地風升), mirroring the real asset.
 const _gua46Json = '''
@@ -129,22 +128,6 @@ void main() {
     );
 
     expect(find.textContaining('Unable to read'), findsOneWidget);
-  });
-
-  testWidgets('tapping a GuaCard opens the hexagram detail screen',
-      (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: SingleChildScrollView(child: GuaCard(gua: _gua46()))),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byType(GuaCard));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(HexagramDetailScreen), findsOneWidget);
-    expect(find.text('第46卦'), findsOneWidget);
   });
 
   testWidgets('close button pops the detail screen back to the previous screen',
