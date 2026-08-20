@@ -1,5 +1,4 @@
 ﻿import 'dart:async';
-import 'dart:convert';
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:flutter_gemma_litertlm/flutter_gemma_litertlm.dart';
 import 'package:path/path.dart' as p;
@@ -213,8 +212,7 @@ class LlmService {
     // Fresh, tool-free session dedicated to the single-shot explanation.
     await openExplanationChat();
 
-    final context =
-        _guaGenerator?.formatContext(result) ?? _fallbackContext(result);
+    final context = _guaGenerator!.formatContext(result);
 
     final languageInstruction = switch (language) {
       LanguagePreference.english => 'Respond in English.',
@@ -229,8 +227,7 @@ class LlmService {
         'Provide a compassionate I-Ching explanation that connects this '
         'hexagram to the user\'s question. Never predict fortune. Keep it to '
         '3-5 sentences and frame it as an invitation for reflection.\n'
-        '$languageInstruction\n'
-        'Wrap your final response in JSON: {"message": "your response here"}.';
+        '$languageInstruction';
 
     // Print the full prompt so the developer can verify the hexagram info,
     // the user's question, and the language preference are all included.
@@ -252,7 +249,7 @@ class LlmService {
         text = text.replaceAll('<|endoftext|', '');
         final trimmed = text.trim();
         if (trimmed.isNotEmpty) {
-          return _extractJsonMessage(trimmed);
+          return trimmed;
         }
       }
     } on TimeoutException {
@@ -261,28 +258,8 @@ class LlmService {
     return '(The explanation could not be generated.)';
   }
 
-  /// Minimal hexagram context when no GuaGenerator is wired.
-  String _fallbackContext(GenerationResult result) {
-    final gua = result.gua;
-    final content = gua.content;
-    final buffer = StringBuffer(
-      'Hexagram: ${gua.guaName} (gua code ${gua.guaCode})\n',
-    );
-    if (content != null) {
-      if (content.guaCi.isNotEmpty) buffer.writeln('å¦è¾­: ${content.guaCi}');
-      if (content.tuanZhuan.isNotEmpty) {
-        buffer.writeln('å½–å‚³: ${content.tuanZhuan}');
-      }
-      if (content.daXiangZhuan.isNotEmpty) {
-        buffer.writeln('å¤§è±¡å‚³: ${content.daXiangZhuan}');
-      }
-      if (content.symbolicMeaning.summary.isNotEmpty) {
-        buffer.writeln('è±¡å¾µç¸½çµ: ${content.symbolicMeaning.summary}');
-      }
-    }
-    return buffer.toString();
-  }
-
+// ---------------------------------------------------------------------------
+  // Cleanup
   // ---------------------------------------------------------------------------
   // Cleanup
   // ---------------------------------------------------------------------------
@@ -299,44 +276,21 @@ class LlmService {
   }
 
   // ---------------------------------------------------------------------------
-  /// Try to parse [text] as JSON and extract the "message" field.
-  /// If parsing fails or "message" is missing, return [text] as-is.
-  static String _extractJsonMessage(String text) {
-    final trimmed = text.trim();
-    // Find the first '{' and last '}' to extract JSON.
-    final start = trimmed.indexOf('{');
-    final end = trimmed.lastIndexOf('}');
-    if (start < 0 || end <= start) return text;
-
-    final candidate = trimmed.substring(start, end + 1);
-    try {
-      final decoded = json.decode(candidate) as Map<String, dynamic>;
-      if (decoded.containsKey('message')) {
-        return decoded['message'].toString();
-      }
-    } catch (_) {
-      // Not valid JSON â€” fall through to return original text.
-    }
-    return text;
-  }
-
-  // ---------------------------------------------------------------------------
   // I-Ching system prompt
   // ---------------------------------------------------------------------------
 
   static const String _systemPrompt =
       'You are a compassionate I-Ching consultant. Help users reflect through '
       'the wisdom of the I-Ching (Book of Changes).\n\n'
-      'You have access to the `generate_gua` function. Call it ONCE when the '
-      'user seeks guidance or when a hexagram would help them reflect. '
-      'After a hexagram is cast, discuss it â€” do NOT cast another one.\n\n'
+      'A hexagram has already been cast for the user and its details are '
+      'provided in the prompt. Connect that hexagram to the user\'s question '
+      'and help them reflect on it.\n\n'
       'Guidelines:\n'
       '- Listen carefully to what the user shares.\n'
       '- Never predict good or bad fortune. Frame responses as invitations '
       'for reflection.\n'
       '- Ask open-ended questions to help the user explore their feelings.\n'
-      '- Be warm, supportive, and encouraging. Keep responses to 2-4 sentences.\n'
-      '- Use gentle, poetic language when referencing I-Ching concepts.\n'
-      '- Wrap your final response in JSON: {"message": "your response here"}. '
-      'Replace "your response here" with your actual reflection.';
+      '- Be warm, supportive, and encouraging. Keep responses to 3-5 '
+      'sentences.\n'
+      '- Use gentle, poetic language when referencing I-Ching concepts.';
 }
