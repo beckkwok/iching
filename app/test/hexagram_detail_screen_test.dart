@@ -45,7 +45,6 @@ const _gua46Json = '''
 
 Gua _gua46() {
   return Gua(
-    id: 46,
     guaCode: 46,
     guaName: '地風升',
     guaContent: _gua46Json,
@@ -122,7 +121,7 @@ void main() {
 
   testWidgets('detail screen handles unparseable gua content gracefully',
       (tester) async {
-    final bad = Gua(id: 99, guaCode: 99, guaName: 'Bad', guaContent: 'not json');
+    final bad = Gua(guaCode: 99, guaName: 'Bad', guaContent: 'not json');
     await tester.pumpWidget(
       MaterialApp(home: HexagramDetailScreen(gua: bad)),
     );

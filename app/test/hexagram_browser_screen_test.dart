@@ -6,7 +6,7 @@ import 'package:app/screens/hexagram_browser_screen.dart';
 import 'package:app/screens/hexagram_detail_screen.dart';
 import 'package:app/screens/question_form_screen.dart';
 import 'package:app/services/database_service.dart';
-import 'package:app/services/gua_seeder.dart';
+import 'package:app/services/hexagram_loader.dart';
 
 /// Minimal valid hexagram JSON for [code].
 String fixtureJson(int code) {
@@ -50,8 +50,6 @@ void main() {
     } catch (_) {}
     db = DatabaseService(databasePath: inMemoryDatabasePath);
     await db.database;
-    final seeder = GuaSeeder(db, assetLoader: (code) async => fixtureJson(code));
-    await seeder.seedIfNeeded();
   });
 
   tearDown(() async {
@@ -61,10 +59,12 @@ void main() {
     } catch (_) {}
   });
 
+  final loader = HexagramLoader((code) async => fixtureJson(code));
+
   testWidgets('browser shows a fill-column grid of hexagram cards',
       (tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: HexagramBrowserScreen(databaseService: db)),
+      MaterialApp(home: HexagramBrowserScreen(loader: loader)),
     );
     await tester.runAsync(() async {
       await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -91,7 +91,7 @@ void main() {
 
   testWidgets('browser lists all 64 hexagrams (scrollable)', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: HexagramBrowserScreen(databaseService: db)),
+      MaterialApp(home: HexagramBrowserScreen(loader: loader)),
     );
     await tester.runAsync(() async {
       await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -112,7 +112,7 @@ void main() {
   testWidgets('tapping a hexagram card opens the detail screen',
       (tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: HexagramBrowserScreen(databaseService: db)),
+      MaterialApp(home: HexagramBrowserScreen(loader: loader)),
     );
     await tester.runAsync(() async {
       await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -127,10 +127,12 @@ void main() {
     expect(find.text('第1卦'), findsOneWidget);
   });
 
-  testWidgets('question form has a Browse Hexagrams button',
-      (tester) async {
+  testWidgets('question form has a Browse Hexagrams button', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: QuestionFormScreen(databaseService: db)),
+      MaterialApp(home: QuestionFormScreen(
+        databaseService: db,
+        hexagramLoader: loader,
+      )),
     );
 
     expect(find.text('Browse Hexagrams'), findsOneWidget);
@@ -138,11 +140,17 @@ void main() {
 
   testWidgets('Browse Hexagrams button opens the browser', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: QuestionFormScreen(databaseService: db)),
+      MaterialApp(home: QuestionFormScreen(
+        databaseService: db,
+        hexagramLoader: loader,
+      )),
     );
 
     // Scroll the form down to reveal the browse button.
-    await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -400));
+    await tester.drag(
+      find.byType(SingleChildScrollView),
+      const Offset(0, -400),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(find.text('Browse Hexagrams'));

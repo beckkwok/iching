@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/language_preference.dart';
 import '../services/database_service.dart';
 import '../services/gua_generator.dart';
+import '../services/hexagram_loader.dart';
 import '../services/llm_service.dart';
 import 'cast_result_screen.dart';
 import 'hexagram_browser_screen.dart';
@@ -32,10 +33,20 @@ class QuestionFormScreen extends StatefulWidget {
   final DatabaseService? databaseService;
   final LlmService? llmService;
 
+  /// Optional generator for tests. When omitted, a [GuaGenerator] backed by
+  /// the bundled JSON assets is used.
+  final GuaGenerator? guaGenerator;
+
+  /// Optional loader for tests. When omitted, the bundled JSON assets are used
+  /// by the hexagram browser.
+  final HexagramLoader? hexagramLoader;
+
   const QuestionFormScreen({
     super.key,
     required this.databaseService,
     this.llmService,
+    this.guaGenerator,
+    this.hexagramLoader,
   });
 
   @override
@@ -72,7 +83,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
           final langCode = await db.getSetting(LanguagePreference.settingsKey);
           final language = LanguagePreference.fromCode(langCode);
 
-          final generator = GuaGenerator(db);
+          final generator = widget.guaGenerator ?? GuaGenerator();
           final result = await generator.generateRandom();
           if (!mounted) return;
           Navigator.of(context).push(
@@ -247,7 +258,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (_) => HexagramBrowserScreen(
-                              databaseService: widget.databaseService,
+                              loader: widget.hexagramLoader,
                             ),
                           ),
                         );

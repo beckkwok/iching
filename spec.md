@@ -71,7 +71,7 @@ Project Plan
         - support random generation via three-coin method
         - produce one of 64 gua codes via trigram mapping (TrigramHexagramData)
     - Gua retrieval
-        - load gua content from store (JSON assets / gua table)
+        - load gua content from bundled JSON assets (assets/hexagrams/gua_<n>.json)
     - Explanation
         - one-shot LLM call: hexagram context + question + language preference, no function calling, no history
 5. Implementation tasks ✅ Completed
@@ -79,7 +79,7 @@ Project Plan
         - Flutter project with proper folder structure and all dependencies
     - implement SQLite persistence layer
         - database_service.dart (gua + settings tables, migrations to v5)
-    - Gua seeding at startup via GuaSeeder.seedIfNeeded() from assets/hexagrams JSON
+    - Hexagrams loaded directly from JSON assets via HexagramLoader (no gua DB table)
     - integrate offline Gemma-compatible local model runtime
         - flutter_gemma plugin integrated
         - Model catalog (6 models) + download on first run

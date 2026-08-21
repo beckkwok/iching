@@ -6,7 +6,8 @@ import 'package:app/screens/cast_result_screen.dart';
 import 'package:app/screens/question_form_screen.dart';
 import 'package:app/screens/settings_screen.dart';
 import 'package:app/services/database_service.dart';
-import 'package:app/services/gua_seeder.dart';
+import 'package:app/services/gua_generator.dart';
+import 'package:app/services/hexagram_loader.dart';
 
 /// Minimal valid hexagram JSON for [code].
 String fixtureJson(int code) {
@@ -45,8 +46,6 @@ void main() {
     } catch (_) {}
     db = DatabaseService(databasePath: inMemoryDatabasePath);
     await db.database;
-    final seeder = GuaSeeder(db, assetLoader: (code) async => fixtureJson(code));
-    await seeder.seedIfNeeded();
   });
 
   tearDown(() async {
@@ -56,10 +55,19 @@ void main() {
     } catch (_) {}
   });
 
+  final generator = GuaGenerator(HexagramLoader((code) async => fixtureJson(code)));
+  final loader = HexagramLoader((code) async => fixtureJson(code));
+
+  QuestionFormScreen buildForm() => QuestionFormScreen(
+        databaseService: db,
+        guaGenerator: generator,
+        hexagramLoader: loader,
+      );
+
   testWidgets('question form shows type selector, text box and submit button',
       (tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: QuestionFormScreen(databaseService: db)),
+      MaterialApp(home: buildForm()),
     );
 
     expect(find.text('What would you like to ask the I-Ching?'), findsOneWidget);
@@ -74,7 +82,7 @@ void main() {
 
   testWidgets('hexagram checkbox defaults to checked', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: QuestionFormScreen(databaseService: db)),
+      MaterialApp(home: buildForm()),
     );
 
     final checkbox = tester.widget<CheckboxListTile>(
@@ -85,7 +93,7 @@ void main() {
 
   testWidgets('submit without input shows validation errors', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: QuestionFormScreen(databaseService: db)),
+      MaterialApp(home: buildForm()),
     );
 
     await tester.tap(find.text('Submit Question'));
@@ -98,7 +106,7 @@ void main() {
   testWidgets('submitting with hexagram enabled opens the cast result screen',
       (tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: QuestionFormScreen(databaseService: db)),
+      MaterialApp(home: buildForm()),
     );
 
     await tester.tap(find.byType(DropdownButtonFormField<QuestionType>));
@@ -126,7 +134,7 @@ void main() {
 
   testWidgets('submitting with hexagram disabled shows a hint', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: QuestionFormScreen(databaseService: db)),
+      MaterialApp(home: buildForm()),
     );
 
     await tester.tap(find.byType(DropdownButtonFormField<QuestionType>));
@@ -153,7 +161,7 @@ void main() {
 
   testWidgets('settings menu opens the settings screen', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: QuestionFormScreen(databaseService: db)),
+      MaterialApp(home: buildForm()),
     );
 
     await tester.tap(find.byIcon(Icons.more_vert));

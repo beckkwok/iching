@@ -1,7 +1,13 @@
+import 'dart:io';
+import 'dart:math';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:app/services/database_service.dart';
-import 'package:app/services/gua_seeder.dart';
+
+String _tmpPath() =>
+    p.join(Directory.systemTemp.path, 'iching_migration_${Random().nextInt(1 << 32)}.db');
 
 void main() {
   setUpAll(() {
@@ -9,102 +15,69 @@ void main() {
     databaseFactory = databaseFactoryFfi;
   });
 
-  test('migration from v2 clears old gua rows so seeder re-seeds JSON',
-      () async {
-    final dbPath = ':memory:';
-    // Simulate a legacy v2 DB: create with old schema then insert old-format
-    // gua rows.
+  test('migration from v5 drops the legacy gua table', () async {
+    final path = _tmpPath();
+    // Simulate a legacy v5 DB that still has a gua table (and settings).
     final legacy = await databaseFactory.openDatabase(
-      dbPath,
-      options: OpenDatabaseOptions(version: 2),
+      path,
+      options: OpenDatabaseOptions(version: 5),
     );
+    await legacy.execute('''
+      CREATE TABLE settings (
+        key TEXT PRIMARY KEY,
+        value TEXT
+      )
+    ''');
     await legacy.execute('''
       CREATE TABLE gua (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         gua_code INTEGER NOT NULL,
         gua_name TEXT NOT NULL,
-        gua_content TEXT NOT NULL,
-        gua_summary TEXT NOT NULL,
-        source TEXT NOT NULL
+        gua_content TEXT NOT NULL
       )
     ''');
     await legacy.insert('gua', {
-      'gua_code': 51,
-      'gua_name': '震 (Zhèn)',
-      'gua_content': 'old plain text',
-      'gua_summary': 'old summary',
-      'source': 'classical',
+      'gua_code': 1,
+      'gua_name': '乾為天',
+      'gua_content': '{"卦名":"乾為天","卦序":1}',
+    });
+    await legacy.insert('settings', {
+      'key': 'language',
+      'value': 'cn',
     });
     await legacy.close();
 
-    // Open via DatabaseService (runs v2→v4 migration), then re-seed.
-    final service = DatabaseService(databasePath: dbPath);
-    await service.database;
-    expect(await service.getAllGua(), isEmpty,
-        reason: 'v4 migration must clear stale gua rows');
-
-    final seeder = GuaSeeder(service, assetLoader: (code) async {
-      return code == 51
-          ? '{"卦名":"震為雷","卦序":51,"卦象":"䷱（下震上震）"}'
-          : null;
-    });
-    await seeder.seedIfNeeded();
-
-    final all = await service.getAllGua();
-    expect(all.length, 1);
-    final gua51 = all.first;
-    expect(gua51.guaName, '震為雷');
-    expect(gua51.content, isNotNull);
-    expect(gua51.content!.guaSymbol, '䷱（下震上震）');
-
-    await service.close();
-  });
-
-  test('migration to v5 drops conversation and message tables', () async {
-    final dbPath = ':memory:';
-    // Simulate a legacy v4 DB with conversation tables present.
-    final legacy = await databaseFactory.openDatabase(
-      dbPath,
-      options: OpenDatabaseOptions(version: 4),
-    );
-    await legacy.execute('''
-      CREATE TABLE conversations (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        last_gua_id INTEGER
-      )
-    ''');
-    await legacy.execute('''
-      CREATE TABLE chat_messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        conversation_id INTEGER NOT NULL,
-        sender TEXT NOT NULL,
-        message TEXT NOT NULL,
-        timestamp TEXT NOT NULL
-      )
-    ''');
-    await legacy.insert('conversations', {
-      'title': 'old',
-      'created_at': '2026-01-01',
-      'updated_at': '2026-01-01',
-    });
-    await legacy.close();
-
-    // Open via DatabaseService (runs v4→v5 migration).
-    final service = DatabaseService(databasePath: dbPath);
+    // Opening via DatabaseService runs the v5 → v6 migration.
+    final service = DatabaseService(databasePath: path);
     final db = await service.database;
 
     final tables = await db.rawQuery(
       "SELECT name FROM sqlite_master WHERE type='table'",
     );
     final names = tables.map((t) => t['name']).toSet();
-    expect(names, isNot(contains('conversations')));
-    expect(names, isNot(contains('chat_messages')));
-    expect(names, contains('gua'));
+    expect(names, isNot(contains('gua')));
     expect(names, contains('settings'));
 
+    // Settings survive the migration.
+    expect(await service.getSetting('language'), 'cn');
+
     await service.close();
+    await File(path).delete();
+  });
+
+  test('a fresh database has only the settings table', () async {
+    final path = _tmpPath();
+    final service = DatabaseService(databasePath: path);
+    final db = await service.database;
+
+    final tables = await db.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type='table'",
+    );
+    final names = tables.map((t) => t['name']).toSet();
+    expect(names, contains('settings'));
+    expect(names, isNot(contains('gua')));
+
+    await service.close();
+    await File(path).delete();
   });
 }

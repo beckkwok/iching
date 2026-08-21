@@ -1,19 +1,15 @@
 import 'package:flutter/material.dart';
 import 'screens/model_selection_screen.dart';
 import 'services/database_service.dart';
-import 'services/gua_seeder.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Attempt database initialisation across platforms.
+  // Attempt database initialisation across platforms. The database only
+  // stores settings now; hexagrams are loaded from JSON assets.
   DatabaseService? db;
   try {
     db = await DatabaseService.create();
-    if (db != null) {
-      final seeder = GuaSeeder(db);
-      await seeder.seedIfNeeded();
-    }
   } catch (e) {
     db = null;
   }

@@ -1,12 +1,10 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:app/data/trigram_hexagram_data.dart';
 import 'package:app/models/yao_line_type.dart';
-import 'package:app/services/database_service.dart';
 import 'package:app/services/gua_generator.dart';
-import 'package:app/services/gua_seeder.dart';
+import 'package:app/services/hexagram_loader.dart';
 
 /// Trigram char by 1-based code: 1=坤, 2=艮, 3=坎, 4=巽, 5=震, 6=離, 7=兌, 8=乾.
 const _trigramChars = ['坤', '艮', '坎', '巽', '震', '離', '兌', '乾'];
@@ -60,24 +58,10 @@ String fixtureJson(int code) {
 }
 
 void main() {
-  setUpAll(() {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
-  });
-
-  late DatabaseService db;
   late GuaGenerator generator;
 
-  setUp(() async {
-    db = DatabaseService(databasePath: ':memory:');
-    await db.database;
-    final seeder = GuaSeeder(db, assetLoader: (code) async => fixtureJson(code));
-    await seeder.seedIfNeeded();
-    generator = GuaGenerator(db);
-  });
-
-  tearDown(() async {
-    await db.close();
+  setUp(() {
+    generator = GuaGenerator(HexagramLoader((code) async => fixtureJson(code)));
   });
 
   group('GuaGenerator', () {

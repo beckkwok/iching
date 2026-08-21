@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import '../models/gua.dart';
-import '../services/database_service.dart';
+import '../services/hexagram_loader.dart';
 import 'hexagram_detail_screen.dart';
 
-/// Browse all seeded hexagrams in a 2-column card grid.
+/// Browse all hexagrams in a 2-column card grid.
 ///
 /// Each card shows the 卦序, 卦象, and 卦名. Tapping a card opens the
-/// [HexagramDetailScreen] for that hexagram.
+/// [HexagramDetailScreen] for that hexagram. Hexagrams are loaded directly
+/// from the bundled JSON assets.
 class HexagramBrowserScreen extends StatefulWidget {
-  final DatabaseService? databaseService;
+  /// Optional loader for tests. When omitted, the bundled JSON assets are used.
+  final HexagramLoader? loader;
 
-  const HexagramBrowserScreen({super.key, required this.databaseService});
+  const HexagramBrowserScreen({super.key, this.loader});
 
   @override
   State<HexagramBrowserScreen> createState() => _HexagramBrowserScreenState();
@@ -27,13 +29,8 @@ class _HexagramBrowserScreenState extends State<HexagramBrowserScreen> {
   }
 
   Future<void> _load() async {
-    final db = widget.databaseService;
-    if (db == null) {
-      setState(() => _error = 'Database unavailable.');
-      return;
-    }
     try {
-      final guaList = await db.getAllGua();
+      final guaList = await (widget.loader ?? HexagramLoader()).loadAll();
       // Sort by guaCode for a stable 1..64 ordering.
       guaList.sort((a, b) => a.guaCode.compareTo(b.guaCode));
       if (mounted) setState(() => _guaList = guaList);
@@ -63,7 +60,7 @@ class _HexagramBrowserScreenState extends State<HexagramBrowserScreen> {
     if (_guaList!.isEmpty) {
       return const Center(
         child: Text(
-          'No hexagrams found. Please run the app once to seed them.',
+          'No hexagrams found.',
         ),
       );
     }

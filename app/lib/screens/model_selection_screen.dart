@@ -227,17 +227,12 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
     _startDownload();
   }
 
-  GuaGenerator? get _guaGenerator {
-    if (widget.databaseService != null) {
-      return GuaGenerator(widget.databaseService!);
-    }
-    return null;
-  }
+  GuaGenerator get _guaGenerator => GuaGenerator();
 
   void _proceed() {
     // Wire the GuaGenerator so the explanation prompt includes the cast
     // context (cast lines, line types, hexagram content).
-    if (_guaGenerator != null && _llmService != null) {
+    if (_llmService != null) {
       _llmService!.guaGenerator = _guaGenerator;
     }
     if (!mounted) return;

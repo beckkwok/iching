@@ -10,7 +10,6 @@ import 'package:app/screens/hexagram_detail_screen.dart';
 import 'package:app/screens/question_form_screen.dart';
 import 'package:app/services/database_service.dart';
 import 'package:app/services/fake_llm_service.dart';
-import 'package:app/services/gua_seeder.dart';
 
 /// End-to-end tests for the consultation flow:
 /// 1. question form → cast result → hexagram detail → explanation
@@ -32,8 +31,6 @@ void main() {
     } catch (_) {}
     db = DatabaseService(databasePath: inMemoryDatabasePath);
     await db.database;
-    final seeder = GuaSeeder(db);
-    await seeder.seedIfNeeded();
     fakeLlm = FakeLlmService();
   });
 
@@ -101,7 +98,7 @@ void main() {
 
   testWidgets('browse hexagram grid opens the detail screen', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: HexagramBrowserScreen(databaseService: db)),
+      MaterialApp(home: HexagramBrowserScreen()),
     );
     await tester.pumpAndSettle();
 
