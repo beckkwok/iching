@@ -29,7 +29,6 @@ const _guaJson = '''
 
 GenerationResult _result() {
   final gua = Gua(
-    id: 46,
     guaCode: 46,
     guaName: '地風升',
     guaContent: _guaJson,

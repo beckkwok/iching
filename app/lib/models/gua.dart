@@ -1,8 +1,7 @@
 import 'hexagram_content.dart';
 
-/// Represents a single Gua (hexagram) entry in the database.
+/// Represents a single Gua (hexagram), loaded from a JSON asset.
 class Gua {
-  final int? id;
   final int guaCode;
   final String guaName;
 
@@ -13,7 +12,6 @@ class Gua {
   HexagramContent? _parsed;
 
   Gua({
-    this.id,
     required this.guaCode,
     required this.guaName,
     required this.guaContent,
@@ -34,54 +32,18 @@ class Gua {
     }
   }
 
-  Gua copyWith({
-    int? id,
-    int? guaCode,
-    String? guaName,
-    String? guaContent,
-  }) {
-    return Gua(
-      id: id ?? this.id,
-      guaCode: guaCode ?? this.guaCode,
-      guaName: guaName ?? this.guaName,
-      guaContent: guaContent ?? this.guaContent,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    final map = <String, dynamic>{
-      'gua_code': guaCode,
-      'gua_name': guaName,
-      'gua_content': guaContent,
-    };
-    if (id != null) {
-      map['id'] = id;
-    }
-    return map;
-  }
-
-  factory Gua.fromMap(Map<String, dynamic> map) {
-    return Gua(
-      id: map['id'] as int?,
-      guaCode: map['gua_code'] as int,
-      guaName: map['gua_name'] as String,
-      guaContent: map['gua_content'] as String,
-    );
-  }
-
   @override
-  String toString() => 'Gua(id: $id, code: $guaCode, name: $guaName)';
+  String toString() => 'Gua(code: $guaCode, name: $guaName)';
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is Gua &&
           runtimeType == other.runtimeType &&
-          id == other.id &&
           guaCode == other.guaCode &&
           guaName == other.guaName &&
           guaContent == other.guaContent;
 
   @override
-  int get hashCode => Object.hash(id, guaCode, guaName, guaContent);
+  int get hashCode => Object.hash(guaCode, guaName, guaContent);
 }

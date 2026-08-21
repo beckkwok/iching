@@ -63,26 +63,11 @@ void main() async {
     }
   }
 
-  // List gua
-  print('\n═══════════════════════════════════════════');
-  print('  GUA');
-  print('═══════════════════════════════════════════');
-  final gua = await db.rawQuery(
-      'SELECT id, gua_code, gua_name FROM gua ORDER BY gua_code');
-  if (gua.isEmpty) {
-    print('  (no gua)');
-  } else {
-    for (final g in gua) {
-      print('  [${g['id']}] code=${g['gua_code']} ${g['gua_name']}');
-    }
-  }
-
   // Count summary
   print('\n═══════════════════════════════════════════');
   print('  SUMMARY');
   print('═══════════════════════════════════════════');
   print('  Settings: ${settings.length}');
-  print('  Gua: ${gua.length}');
   print('');
 
   await db.close();

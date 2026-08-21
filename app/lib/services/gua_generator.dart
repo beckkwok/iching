@@ -2,7 +2,7 @@ import 'dart:math';
 import '../data/trigram_hexagram_data.dart';
 import '../models/gua.dart';
 import '../models/yao_line_type.dart';
-import 'database_service.dart';
+import 'hexagram_loader.dart';
 
 /// How a hexagram was generated. Each method implies a different framing
 /// for the LLM interpretation prompt.
@@ -50,16 +50,18 @@ class GenerationResult {
 /// - Random Gua generation (with user consent)
 /// - Explicit Gua detection from user input
 /// - Multiple generator methods with different interpretation prompts
-/// - Gua association with conversations
+///
+/// Hexagrams are loaded from [HexagramLoader] (JSON assets). Pass a loader
+/// in tests to avoid depending on the bundled assets.
 class GuaGenerator {
-  final DatabaseService _db;
+  final HexagramLoader _loader;
   final _random = Random();
   List<Gua>? _allGua;
 
-  GuaGenerator(this._db); // cached after first load
+  GuaGenerator([HexagramLoader? loader]) : _loader = loader ?? HexagramLoader();
 
   Future<List<Gua>> get _guaList async {
-    _allGua ??= await _db.getAllGua();
+    _allGua ??= await _loader.loadAll();
     return _allGua!;
   }
 
@@ -92,7 +94,7 @@ class GuaGenerator {
   }
 
   /// Resolve a fixed 6-line [lines] cast (bottom → top) into a hexagram,
-  /// using [TrigramHexagramData] and the seeded gua table.
+  /// using [TrigramHexagramData] and the hexagrams loaded from JSON assets.
   ///
   /// Optionally pass [lineTypes] (the 老陰/少陽/少陰/老陽 per line) to keep
   /// on the result. Throws [ArgumentError] if [lines] is not exactly 6.

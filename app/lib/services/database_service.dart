@@ -1,19 +1,16 @@
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' as p;
 
-import '../models/gua.dart';
-
 /// Service for all SQLite database operations.
 ///
 /// In production, the database is stored at [defaultDatabasePath].
 /// For testing, pass [databasePath] = `inMemoryDatabasePath`
 /// (requires `sqflite_common_ffi` initialization).
 class DatabaseService {
-  static const String _guaTable = 'gua';
   static const String _settingsTable = 'settings';
 
   /// The database version for migration tracking.
-  static const int _databaseVersion = 5;
+  static const int _databaseVersion = 6;
 
   /// Custom database path (used for in-memory testing).
   final String? _customPath;
@@ -85,15 +82,6 @@ class DatabaseService {
   }
 
   Future<void> _createTables(Database db, int version) async {
-    await db.execute('''
-      CREATE TABLE $_guaTable (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        gua_code INTEGER NOT NULL,
-        gua_name TEXT NOT NULL,
-        gua_content TEXT NOT NULL
-      )
-    ''');
-
     await _createSettingsTable(db);
   }
 
@@ -110,81 +98,11 @@ class DatabaseService {
     if (oldVersion < 2) {
       await _createSettingsTable(db);
     }
-    if (oldVersion < 3) {
-      await _dropGuaColumns(db);
+    if (oldVersion < 6) {
+      // v5 → v6: the `gua` table was removed in favour of loading the
+      // hexagrams directly from JSON assets. Drop it if it still exists.
+      await db.execute('DROP TABLE IF EXISTS gua');
     }
-    if (oldVersion < 4) {
-      // v3 → v4: the gua data format changed to JSON (卦序/卦象/卦名 inside
-      // gua_content). Old rows store plain-text content that no longer parses,
-      // so clear the table and let GuaSeeder re-seed from the JSON assets.
-      await db.delete(_guaTable);
-    }
-    if (oldVersion < 5) {
-      // v4 → v5: the chat-based flow was removed. Drop the conversation and
-      // message tables entirely.
-      await db.execute('DROP TABLE IF EXISTS chat_messages');
-      await db.execute('DROP TABLE IF EXISTS conversations');
-    }
-  }
-
-  /// v2 → v3: remove `gua_summary` and `source` from the gua table.
-  /// SQLite 3.35+ supports ALTER TABLE DROP COLUMN; the bundled engine
-  /// (sqlite3 3.53.2) does. Falls back to a full table rebuild otherwise.
-  Future<void> _dropGuaColumns(Database db) async {
-    try {
-      await db.execute('ALTER TABLE $_guaTable DROP COLUMN gua_summary');
-      await db.execute('ALTER TABLE $_guaTable DROP COLUMN source');
-    } catch (_) {
-      // Older SQLite without DROP COLUMN — rebuild the table.
-      await db.execute('''
-        CREATE TABLE ${_guaTable}_new (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          gua_code INTEGER NOT NULL,
-          gua_name TEXT NOT NULL,
-          gua_content TEXT NOT NULL
-        )
-      ''');
-      await db.execute('''
-        INSERT INTO ${_guaTable}_new (id, gua_code, gua_name, gua_content)
-        SELECT id, gua_code, gua_name, gua_content FROM $_guaTable
-      ''');
-      await db.execute('DROP TABLE $_guaTable');
-      await db.execute(
-          'ALTER TABLE ${_guaTable}_new RENAME TO $_guaTable');
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Gua CRUD
-  // ---------------------------------------------------------------------------
-
-  /// Store a new Gua record and return it with the generated [id].
-  Future<Gua> createGua(Gua gua) async {
-    final db = await database;
-    final map = gua.toMap();
-    map.remove('id');
-    final id = await db.insert(_guaTable, map);
-    return gua.copyWith(id: id);
-  }
-
-  /// Get a single Gua by [id], or `null` if not found.
-  Future<Gua?> getGua(int id) async {
-    final db = await database;
-    final rows = await db.query(
-      _guaTable,
-      where: 'id = ?',
-      whereArgs: [id],
-      limit: 1,
-    );
-    if (rows.isEmpty) return null;
-    return Gua.fromMap(rows.first);
-  }
-
-  /// Return all Gua records.
-  Future<List<Gua>> getAllGua() async {
-    final db = await database;
-    final rows = await db.query(_guaTable);
-    return rows.map((row) => Gua.fromMap(row)).toList();
   }
 
   // ---------------------------------------------------------------------------

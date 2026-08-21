@@ -89,8 +89,10 @@ Explanation (解讀)
 
 ### Database Schema
 
-- **Gua** — id, code (1-64), name, content (full hexagram JSON)
-- **Settings** — key, value (model selection, language preference, custom system prompt)
+The database stores **only settings** (model selection, language preference,
+custom system prompt). Hexagrams are loaded directly from the bundled JSON
+assets (`assets/hexagrams/gua_<n>.json`) via `HexagramLoader` — there is no
+`gua` table.
 
 ---
 

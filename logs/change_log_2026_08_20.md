@@ -33,3 +33,37 @@ chat era. All four issues fixed in one commit.
 - `flutter analyze` — no new issues (only 2 pre-existing warnings)
 - `flutter test` — 88 tests pass
 - `flutter test -d windows integration_test/cast_and_browse_test.dart` — 2 tests pass
+
+## Task: Load hexagrams from JSON assets (drop `gua` DB table)
+
+User opted for the full refactor (previously deferred): remove the SQLite `gua`
+table and read all 64 hexagrams directly from the bundled JSON assets.
+
+### Changes
+- **New `HexagramLoader`** (`lib/services/hexagram_loader.dart`): loads
+  `assets/hexagrams/gua_<n>.json` into `Gua` objects (with an injectable loader
+  for tests). Replaces `GuaSeeder` + `DatabaseService.getAllGua()`.
+- **Deleted `GuaSeeder`** (`lib/services/gua_seeder.dart`) and its test.
+- **DatabaseService** — removed the `gua` table, `createGua`/`getGua`/`getAllGua`
+  CRUD, `_dropGuaColumns`, and bumped schema to v6 (migration drops any legacy
+  `gua` table). DB now stores only `settings`.
+- **Gua model** — removed `id`, `toMap`, `fromMap`, `copyWith` (no more DB row).
+- **GuaGenerator** — takes `HexagramLoader` instead of `DatabaseService`.
+- **QuestionFormScreen** — `GuaGenerator()` + optional injectable `guaGenerator`
+  and `hexagramLoader` params (for tests).
+- **HexagramBrowserScreen** — loads from `HexagramLoader` (optional injected
+  `loader`); no longer takes a `DatabaseService`.
+- **model_selection_screen / main** — `GuaGenerator()`; removed `GuaSeeder` from
+  startup seeding.
+- **db_inspector** — dumps `settings` only.
+- **Tests** — rewrote `database_service_test` (settings only), `gua_generator_test`
+  and `hexagram_browser_screen_test` (injected loader), `migration_v4_test` (v6
+  gua-drop), `question_form_screen_test` (injected generator/loader); added
+  `hexagram_loader_test`. Updated `Gua(id: ...)` usages across tests.
+- **Docs** — AGENTS.md / README.md / spec.md updated: hexagrams come from JSON
+  assets, DB stores only settings.
+
+### Verification
+- `flutter analyze` — only 1 pre-existing warning (`_selectedModel` unused)
+- `flutter test` — 82 unit tests pass
+- `flutter test -d windows integration_test/cast_and_browse_test.dart` — 2 pass

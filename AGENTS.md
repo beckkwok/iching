@@ -65,9 +65,9 @@ iching/
 │   │   ├── database_service_test.dart
 │   │   ├── explanation_screen_test.dart
 │   │   ├── gua_generator_test.dart
-│   │   ├── gua_seeder_test.dart
 │   │   ├── hexagram_browser_screen_test.dart
 │   │   ├── hexagram_content_test.dart
+│   │   ├── hexagram_loader_test.dart
 │   │   ├── hexagram_detail_screen_test.dart
 │   │   ├── language_preference_test.dart
 │   │   ├── migration_v4_test.dart
@@ -125,7 +125,7 @@ iching/
 - Use `sqflite_ffi` for tests: call `sqfliteFfiInit()` and set `databaseFactory = databaseFactoryFfi` in `setUpAll`.
 - Create `DatabaseService(databasePath: ':memory:')` for isolated test DBs.
 - Always `close()` the database in `tearDown`.
-- Seed gua data with `GuaSeeder` before tests that need gua records.
+- Hexagrams are loaded from JSON assets via `HexagramLoader` (inject a loader in tests); the DB only stores settings.
 - Use `group()` to organize related tests.
 - Widget tests must wrap the app widget directly (e.g., `MyApp(databaseService: db)`).
 
@@ -142,13 +142,9 @@ flutter test -d windows integration_test/all_tests.dart  # Integration tests (Wi
 
 ## 6. Database Schema
 
-### gua
-| Column       | Type    | Notes                       |
-|-------------|---------|-----------------------------|
-| id          | INTEGER | PK, AUTOINCREMENT           |
-| gua_code    | INTEGER | 1-64 (卦序)                 |
-| gua_name    | TEXT    | e.g. "乾為天" (卦名)        |
-| gua_content | TEXT    | Full hexagram JSON (see HexagramContent) |
+The database stores **only settings**. Hexagrams are loaded directly from JSON
+assets (`assets/hexagrams/gua_<n>.json`) via `HexagramLoader` — there is no
+`gua` table.
 
 ### settings
 | Column       | Type    | Notes                       |
@@ -160,11 +156,11 @@ flutter test -d windows integration_test/all_tests.dart  # Integration tests (Wi
 
 ## 7. Key Patterns
 
-- **GuaGenerator** uses `GeneratorMethod` enum (`manual`, `systemGenerated`) with different context prompt headers per method. Casts 6 yao lines via the three-coin method (`YaoLineType`: 老陰/少陽/少陰/老陽), resolves the hexagram via `TrigramHexagramData`.
+- **GuaGenerator** uses `GeneratorMethod` enum (`manual`, `systemGenerated`) with different context prompt headers per method. Casts 6 yao lines via the three-coin method (`YaoLineType`: 老陰/少陽/少陰/老陽), resolves the hexagram via `TrigramHexagramData`. Hexagrams are loaded from JSON assets through `HexagramLoader` (no DB table).
 - **Consultation flow** (form-based, low token usage): QuestionFormScreen → submit → `GuaGenerator.generateRandom()` → CastResultScreen (卦象 + per-line types) → "Get Explanation" → `LlmService.generateExplanation()` (one-shot, no multi-turn history, tool-free) → ExplanationScreen.
 - **LlmService** wraps flutter_gemma. `generateExplanation()` opens its own tool-free session (`openExplanationChat()`), sends one prompt combining hexagram context + question + language preference, and returns the response.
 - **Language & prompts**: `LanguagePreference` (en/cn) and a custom system prompt are stored in the `settings` table and injected into the explanation prompt.
-- **Gua seeding** happens at startup via `GuaSeeder.seedIfNeeded()` (seeds missing gua only; individual JSON files in `assets/hexagrams/gua_<n>.json`).
+- **Hexagram data** is read straight from the bundled JSON assets by `HexagramLoader`. The DB migration to v6 drops any legacy `gua` table.
 
 ---
 
