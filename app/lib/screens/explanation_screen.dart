@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/language_preference.dart';
 import '../services/gua_generator.dart';
 import '../services/llm_service.dart';
+import 'hexagram_detail_screen.dart';
 
 /// Shows the one-shot I-Ching explanation for a cast hexagram in relation to
 /// the user's question.
@@ -119,40 +120,54 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
           ),
           const SizedBox(height: 12),
 
-          // Hexagram card
+          // Hexagram card — tapping opens the full hexagram detail screen.
           Card(
+            clipBehavior: Clip.antiAlias,
             elevation: 1,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(color: theme.colorScheme.outlineVariant),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  if (symbol.isNotEmpty)
-                    Text(symbol, style: theme.textTheme.headlineMedium),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          gua.guaName,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          '第${gua.guaCode}卦',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
+            child: InkWell(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => HexagramDetailScreen(gua: gua),
                   ),
-                ],
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    if (symbol.isNotEmpty)
+                      Text(symbol, style: theme.textTheme.headlineMedium),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            gua.guaName,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            '第${gua.guaCode}卦 · Tap for details',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

@@ -67,3 +67,20 @@ table and read all 64 hexagrams directly from the bundled JSON assets.
 - `flutter analyze` — only 1 pre-existing warning (`_selectedModel` unused)
 - `flutter test` — 82 unit tests pass
 - `flutter test -d windows integration_test/cast_and_browse_test.dart` — 2 pass
+
+## Task: Explanation screen hexagram card opens the detail screen
+
+Tapping the hexagram card on `ExplanationScreen` now opens
+`HexagramDetailScreen`, matching the existing pattern on `CastResultScreen`.
+
+### Changes
+- `app/lib/screens/explanation_screen.dart`: wrapped the hexagram card in an
+  `InkWell` that navigates to `HexagramDetailScreen(gua: gua)`; added a
+  "Tap for details" hint and a chevron icon.
+- `app/test/explanation_screen_test.dart`: updated the exact `第46卦` assertion
+  to `textContaining` and added a test that tapping the hexagram card opens the
+  detail screen.
+
+### Verification
+- `flutter analyze` — no new issues
+- `flutter test` — 83 unit tests pass
