@@ -61,3 +61,12 @@ string) through to the explanation screen.
 
 Verification: `flutter analyze` clean, 108 unit tests pass, integration test
 passes.
+
+### Code review follow-up
+Manual review (per the code-review skill) found one more untranslated string:
+`ModelSelectionScreen`'s AppBar still hardcoded `'I-Ching Setup'` (and the
+`setupTitle` localization was unused). Fixed to use
+`AppLocalizations.of(context).setupTitle` and added a zh regression test.
+
+Verification: `flutter analyze` clean, 109 unit tests pass, integration test
+passes.

@@ -263,7 +263,7 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('I-Ching Setup'),
+        title: Text(AppLocalizations.of(context).setupTitle),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: _buildBody(context),
