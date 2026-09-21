@@ -99,22 +99,22 @@ Project Plan
     - Strategy pattern for GuaGenerator (GuaGeneratorStrategy interface)
     - Display independent image related to the gua
     - Enrich the gua content
-    - Load hexagrams directly from JSON assets (remove the `gua` DB table and `Gua.id`)
-    - add privacy / local-only enforcement checks
     - Android packaging and build verification
     - user documentation for usage and privacy assurances
 
 6. Testing, deployment, and documentation ✅ Completed
     - unit tests for gua generator (gua_generator_test.dart)
     - unit tests for data models / DB (database_service_test.dart, hexagram_content_test.dart)
-    - unit tests for gua seeder (gua_seeder_test.dart)
+    - unit tests for hexagram loader (hexagram_loader_test.dart)
+    - unit tests for the model catalog (model_catalog_test.dart)
     - unit tests for trigram mapping (trigram_hexagram_data_test.dart)
-    - widget tests for UI screens (question_form, cast_result, explanation, hexagram_browser, hexagram_detail, settings, prompt_editor)
+    - unit tests for the explanation prompt/response helpers (llm_service_test.dart)
+    - widget tests for UI screens (question_form, cast_result, explanation, hexagram_browser, hexagram_detail, model_selection, settings, prompt_editor)
+    - privacy enforcement tests (privacy_test.dart) — static allowlist + runtime no-network guard
     - integration test cast_and_browse_test.dart — cast flow + hexagram browser
     - FakeLlmService for deterministic LLM responses in tests
     - migration test (migration_v4_test.dart) verifies schema migrations
 
 6b. Testing, deployment, and documentation 🔲 Remaining
-    - privacy validation to ensure no network calls
     - Android packaging and build verification
     - user documentation for usage and privacy assurances
