@@ -45,3 +45,19 @@ setting.
 - `flutter analyze` — no new issues (2 pre-existing info lints)
 - `flutter test` — 107 unit tests pass
 - `flutter test -d windows integration_test/cast_and_browse_test.dart` — 2 pass
+
+### Follow-up: localized question category on the explanation page
+The consultation category was still shown in English (e.g. "Career
+Achievement") because the form passed `QuestionType.label` (a hardcoded English
+string) through to the explanation screen.
+
+- Moved `QuestionType` to `lib/models/question_type.dart` (dropped the hardcoded
+  `label`; the icon stays).
+- Added `AppLocalizations.questionTypeLabel(QuestionType)`.
+- `QuestionFormScreen` now passes the **localized** category label into the
+  consultation flow (used for display and the LLM prompt).
+- Added a regression test: with `locale: zh`, submitting the form yields
+  `questionTypeLabel == '事業成就'`.
+
+Verification: `flutter analyze` clean, 108 unit tests pass, integration test
+passes.

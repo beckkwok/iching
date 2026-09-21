@@ -42,6 +42,7 @@ iching/
 │   │   │   ├── hexagram_content.dart
 │   │   │   ├── language_preference.dart
 │   │   │   ├── model_info.dart
+│   │   │   ├── question_type.dart
 │   │   │   ├── trigram_hexagram.dart
 │   │   │   └── yao_line_type.dart
 │   │   ├── screens/              # UI screens
