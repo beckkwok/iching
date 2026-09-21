@@ -74,6 +74,7 @@ iching/
 │   │   ├── migration_v4_test.dart
 │   │   ├── model_catalog_test.dart
 │   │   ├── model_selection_screen_test.dart
+│   │   ├── privacy_test.dart
 │   │   ├── prompt_editor_screen_test.dart
 │   │   ├── question_form_screen_test.dart
 │   │   ├── settings_screen_test.dart

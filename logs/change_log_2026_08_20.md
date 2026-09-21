@@ -171,3 +171,24 @@ Also fixed leftover mojibake in `llm_service.dart` print strings
 - `flutter analyze` — no new issues
 - `flutter test` — 97 unit tests pass
 - `flutter test -d windows integration_test/cast_and_browse_test.dart` — 2 pass
+
+## Task: Privacy enforcement tests (no network calls)
+
+Enforced the app's "no network after model download" promise with
+`test/privacy_test.dart` (3 tests):
+
+1. **Static allowlist guard** — scans every `lib/**.dart` file and fails if any
+   network API (`package:http`, `HttpClient`, `WebSocket`, `RawDatagramSocket`,
+   `Socket`, `HttpOverrides`, `NetworkImage`, `Image.network`) appears outside
+   `lib/services/llm_service.dart` (the explicit, user-initiated model download).
+2. **Runtime guard** — an `HttpOverrides` that records and blocks every HTTP
+   request; a sanity test confirms it catches direct requests.
+3. **Consultation flow** — runs question form → cast result → explanation with
+   fakes under the blocking overrides and asserts zero requests.
+
+Updated `spec.md` (privacy items now completed) and the `AGENTS.md` test tree.
+
+### Verification
+- `flutter analyze` — no new issues
+- `flutter test` — 100 unit tests pass
+- `flutter test -d windows integration_test/cast_and_browse_test.dart` — 2 pass
