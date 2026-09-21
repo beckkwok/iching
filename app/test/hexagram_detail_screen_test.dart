@@ -58,7 +58,7 @@ void main() {
       MaterialApp(home: HexagramDetailScreen(gua: _gua46())),
     );
 
-    expect(find.text('第46卦'), findsOneWidget);
+    expect(find.text('Hexagram 46'), findsOneWidget);
     expect(find.text('地風升'), findsWidgets);
     expect(find.text('䷭（下巽上坤）'), findsOneWidget);
   });
@@ -69,20 +69,20 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('卦辭'), findsOneWidget);
-    expect(find.text('彖傳'), findsOneWidget);
-    expect(find.text('大象傳'), findsOneWidget);
-    expect(find.text('爻辭'), findsOneWidget);
+    expect(find.text('Judgment'), findsOneWidget);
+    expect(find.text('Tuan Commentary'), findsOneWidget);
+    expect(find.text('Great Image'), findsOneWidget);
+    expect(find.text('Line Texts'), findsOneWidget);
 
     // Scroll to reveal the lower sections.
     await tester.scrollUntilVisible(
-      find.text('備註'),
+      find.text('Remarks'),
       300,
       scrollable: find.byType(Scrollable),
     );
-    expect(find.text('象徵意義'), findsOneWidget);
-    expect(find.text('不同人解讀'), findsOneWidget);
-    expect(find.text('備註'), findsOneWidget);
+    expect(find.text('Symbolic Meaning'), findsOneWidget);
+    expect(find.text('Interpretations'), findsOneWidget);
+    expect(find.text('Remarks'), findsOneWidget);
   });
 
   testWidgets('detail screen shows line details', (tester) async {
@@ -94,7 +94,7 @@ void main() {
     expect(find.text('初六'), findsOneWidget);
     expect(find.text('允升，大吉。'), findsOneWidget);
     expect(find.text('九二'), findsOneWidget);
-    expect(find.textContaining('小象傳'), findsNWidgets(2));
+    expect(find.textContaining('Small Image'), findsNWidgets(2));
   });
 
   testWidgets('detail screen shows symbolic meaning and interpretations',
@@ -105,18 +105,18 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.text('備註'),
+      find.text('Remarks'),
       300,
       scrollable: find.byType(Scrollable),
     );
 
-    expect(find.text('基本卦象'), findsOneWidget);
-    expect(find.text('主要象徵'), findsOneWidget);
-    expect(find.text('生活與占事常見象徵'), findsOneWidget);
-    expect(find.text('總結'), findsOneWidget);
+    expect(find.text('Basic Symbol'), findsOneWidget);
+    expect(find.text('Main Symbols'), findsOneWidget);
+    expect(find.text('Life & Divination Symbols'), findsOneWidget);
+    expect(find.text('Summary'), findsOneWidget);
     expect(find.textContaining('地風升象徵樹木'), findsOneWidget);
     expect(find.text('程頤（伊川易傳）'), findsOneWidget);
-    expect(find.textContaining('卦辭解讀'), findsOneWidget);
+    expect(find.textContaining('Judgment interpretation'), findsOneWidget);
   });
 
   testWidgets('detail screen handles unparseable gua content gracefully',

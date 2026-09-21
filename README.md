@@ -13,7 +13,7 @@ Built with **Flutter**, **SQLite**, and **Gemma / Qwen** on-device models — no
 - **Form-based consultation** — pick a question type (Career Achievement, Intellectual and moral cultivation, Timing, Attitude), enter your question, and submit
 - **I-Ching (Gua) casting** — six yao lines are cast with the traditional three-coin method (老陰/少陽/少陰/老陽) and resolved into a hexagram
 - **One-shot LLM explanation** — a single, token-light call connects the hexagram context to your question (no multi-turn chat, so it stays within the on-device model's context window)
-- **Language preference** — choose English or Chinese (中文); the choice is injected into the explanation prompt
+- **Language preference** — choose English or Chinese (中文); the choice localizes the whole UI and is injected into the explanation prompt
 - **Editable system prompt** — view and customize the LLM instruction in Settings
 - **Hexagram browser** — browse all 64 hexagrams in a grid; tap any card for the full detail view (卦辭, 彖傳, 大象傳, 爻辭, 象徵意義, 不同人解讀)
 - **Local LLM integration** — runs a selectable on-device model via `flutter_gemma` (6 models available, e.g. Gemma 4, DeepSeek R1, Qwen3)

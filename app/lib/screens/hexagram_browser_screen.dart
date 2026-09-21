@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../models/gua.dart';
 import '../services/hexagram_loader.dart';
 import 'hexagram_detail_screen.dart';
@@ -43,7 +44,7 @@ class _HexagramBrowserScreenState extends State<HexagramBrowserScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Hexagrams'),
+        title: Text(AppLocalizations.of(context).hexagrams),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: _buildBody(context),
@@ -58,10 +59,8 @@ class _HexagramBrowserScreenState extends State<HexagramBrowserScreen> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_guaList!.isEmpty) {
-      return const Center(
-        child: Text(
-          'No hexagrams found.',
-        ),
+      return Center(
+        child: Text(AppLocalizations.of(context).noHexagrams),
       );
     }
 
@@ -92,6 +91,7 @@ class _HexagramTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final symbol = gua.content?.guaSymbol ?? '';
 
     return Card(
@@ -114,7 +114,7 @@ class _HexagramTile extends StatelessWidget {
             children: [
               // 卦序
               Text(
-                '第${gua.guaCode}卦',
+                l10n.hexagramNumber(gua.guaCode),
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: theme.colorScheme.primary,
                   fontWeight: FontWeight.bold,

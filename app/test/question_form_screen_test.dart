@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'package:app/l10n/app_localizations.dart';
+import 'package:app/models/question_type.dart';
 import 'package:app/screens/cast_result_screen.dart';
 import 'package:app/screens/question_form_screen.dart';
 import 'package:app/screens/settings_screen.dart';
@@ -170,5 +173,67 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(SettingsScreen), findsOneWidget);
+  });
+
+  testWidgets('first page renders Chinese when the locale is zh',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('zh'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: buildForm(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('易經諮詢'), findsOneWidget);
+    expect(find.text('您想向易經請教什麼？'), findsOneWidget);
+    expect(find.text('提交問題'), findsOneWidget);
+    expect(find.text('瀏覽六十四卦'), findsOneWidget);
+    // The English labels are gone.
+    expect(find.text('Submit Question'), findsNothing);
+  });
+
+  testWidgets('question category is localized through the consultation flow',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('zh'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: buildForm(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(DropdownButtonFormField<QuestionType>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('事業成就').last);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField), '我應該接受新工作嗎？');
+    await tester.tap(find.text('提交問題'));
+
+    for (var i = 0; i < 5; i++) {
+      await tester.runAsync(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      });
+      await tester.pump();
+    }
+    await tester.pump(const Duration(milliseconds: 200));
+
+    final cast = tester.widget<CastResultScreen>(find.byType(CastResultScreen));
+    expect(cast.questionTypeLabel, '事業成就');
   });
 }

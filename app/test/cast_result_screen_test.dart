@@ -57,7 +57,7 @@ void main() {
       MaterialApp(home: CastResultScreen(result: _result())),
     );
 
-    expect(find.text('第46卦'), findsOneWidget);
+    expect(find.text('Hexagram 46'), findsOneWidget);
     expect(find.text('地風升'), findsWidgets);
     expect(find.text('䷭（下巽上坤）'), findsOneWidget);
   });
@@ -67,7 +67,7 @@ void main() {
       MaterialApp(home: CastResultScreen(result: _result())),
     );
 
-    expect(find.text('爻象'), findsOneWidget);
+    expect(find.text('Line pattern'), findsOneWidget);
     // Old/changing lines get a 變 suffix.
     expect(find.textContaining('老陽'), findsOneWidget);
     expect(find.textContaining('老陰'), findsOneWidget);
@@ -99,7 +99,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(HexagramDetailScreen), findsOneWidget);
-    expect(find.text('第46卦'), findsWidgets);
+    expect(find.text('Hexagram 46'), findsWidgets);
   });
 
   testWidgets('Get Explanation button opens the explanation screen when a '

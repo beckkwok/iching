@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'package:app/l10n/locale_controller.dart';
 import 'package:app/main.dart';
+import 'package:app/models/language_preference.dart';
 import 'package:app/services/database_service.dart';
 
 /// Shared app used for all UI-only widget tests.
@@ -14,7 +16,10 @@ void main() {
     databaseFactory = databaseFactoryFfi;
     final db = DatabaseService(databasePath: ':memory:');
     await db.database;
-    _sharedApp = MyApp(databaseService: db);
+    _sharedApp = MyApp(
+      databaseService: db,
+      localeController: LocaleController(LanguagePreference.english),
+    );
   });
 
   tearDownAll(() async {
