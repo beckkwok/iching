@@ -78,49 +78,6 @@ class HexagramContent {
     );
   }
 
-  Map<String, dynamic> toMap() {
-    return {
-      '卦名': guaName,
-      '卦序': guaSequence,
-      '卦象': guaSymbol,
-      '卦辭': guaCi,
-      '彖傳': tuanZhuan,
-      '大象傳': daXiangZhuan,
-      '爻辭': lines.map((l) => l.toMap()).toList(),
-      '象徵意義': symbolicMeaning.toMap(),
-      '不同人解讀': interpretations.map((i) => i.toMap()).toList(),
-      '備註': remarks,
-    };
-  }
-
-  String toJson() => jsonEncode(toMap());
-
-  HexagramContent copyWith({
-    String? guaName,
-    int? guaSequence,
-    String? guaSymbol,
-    String? guaCi,
-    String? tuanZhuan,
-    String? daXiangZhuan,
-    List<HexagramLine>? lines,
-    SymbolicMeaning? symbolicMeaning,
-    List<Interpretation>? interpretations,
-    String? remarks,
-  }) {
-    return HexagramContent(
-      guaName: guaName ?? this.guaName,
-      guaSequence: guaSequence ?? this.guaSequence,
-      guaSymbol: guaSymbol ?? this.guaSymbol,
-      guaCi: guaCi ?? this.guaCi,
-      tuanZhuan: tuanZhuan ?? this.tuanZhuan,
-      daXiangZhuan: daXiangZhuan ?? this.daXiangZhuan,
-      lines: lines ?? this.lines,
-      symbolicMeaning: symbolicMeaning ?? this.symbolicMeaning,
-      interpretations: interpretations ?? this.interpretations,
-      remarks: remarks ?? this.remarks,
-    );
-  }
-
   @override
   String toString() =>
       'HexagramContent(guaName: $guaName, guaSequence: $guaSequence)';
@@ -179,24 +136,6 @@ class HexagramLine {
     );
   }
 
-  Map<String, dynamic> toMap() => {
-        '爻位': position,
-        '爻辭': text,
-        '小象傳': xiaoXiangZhuan,
-      };
-
-  HexagramLine copyWith({
-    String? position,
-    String? text,
-    String? xiaoXiangZhuan,
-  }) {
-    return HexagramLine(
-      position: position ?? this.position,
-      text: text ?? this.text,
-      xiaoXiangZhuan: xiaoXiangZhuan ?? this.xiaoXiangZhuan,
-    );
-  }
-
   @override
   String toString() => 'HexagramLine(position: $position, text: "$text")';
 
@@ -249,27 +188,6 @@ class SymbolicMeaning {
     );
   }
 
-  Map<String, dynamic> toMap() => {
-        '基本卦象': basicSymbol.toMap(),
-        '主要象徵': mainSymbols.map((s) => s.toMap()).toList(),
-        '生活與占事常見象徵': lifeSymbols,
-        '總結': summary,
-      };
-
-  SymbolicMeaning copyWith({
-    BasicSymbol? basicSymbol,
-    List<MainSymbol>? mainSymbols,
-    Map<String, String>? lifeSymbols,
-    String? summary,
-  }) {
-    return SymbolicMeaning(
-      basicSymbol: basicSymbol ?? this.basicSymbol,
-      mainSymbols: mainSymbols ?? this.mainSymbols,
-      lifeSymbols: lifeSymbols ?? this.lifeSymbols,
-      summary: summary ?? this.summary,
-    );
-  }
-
   @override
   String toString() => 'SymbolicMeaning(summary: "$summary")';
 
@@ -313,24 +231,6 @@ class BasicSymbol {
     );
   }
 
-  Map<String, dynamic> toMap() => {
-        '卦體': composition,
-        '自然取象': naturalImage,
-        '說明': explanation,
-      };
-
-  BasicSymbol copyWith({
-    String? composition,
-    String? naturalImage,
-    String? explanation,
-  }) {
-    return BasicSymbol(
-      composition: composition ?? this.composition,
-      naturalImage: naturalImage ?? this.naturalImage,
-      explanation: explanation ?? this.explanation,
-    );
-  }
-
   @override
   String toString() => 'BasicSymbol(composition: $composition)';
 
@@ -362,12 +262,6 @@ class MainSymbol {
       title: map['標題'] as String? ?? '',
       content: map['內容'] as String? ?? '',
     );
-  }
-
-  Map<String, dynamic> toMap() => {'標題': title, '內容': content};
-
-  MainSymbol copyWith({String? title, String? content}) {
-    return MainSymbol(title: title ?? this.title, content: content ?? this.content);
   }
 
   @override
@@ -409,24 +303,6 @@ class Interpretation {
       judgmentInterpretation: map['卦辭解讀'] as String? ?? '',
       lineInterpretations:
           lines.map((k, v) => MapEntry(k.toString(), v.toString())),
-    );
-  }
-
-  Map<String, dynamic> toMap() => {
-        '解讀者': commentator,
-        '卦辭解讀': judgmentInterpretation,
-        '爻辭解讀': lineInterpretations,
-      };
-
-  Interpretation copyWith({
-    String? commentator,
-    String? judgmentInterpretation,
-    Map<String, String>? lineInterpretations,
-  }) {
-    return Interpretation(
-      commentator: commentator ?? this.commentator,
-      judgmentInterpretation: judgmentInterpretation ?? this.judgmentInterpretation,
-      lineInterpretations: lineInterpretations ?? this.lineInterpretations,
     );
   }
 

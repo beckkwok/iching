@@ -11,7 +11,7 @@ const _trigramChars = ['坤', '艮', '坎', '巽', '震', '離', '兌', '乾'];
 
 /// Builds the list of all 64 (low, high) trigram combos, reordered so
 /// gua_code 1 = 乾為天 (8,8) and gua_code 2 = 坤為地 (1,1) — matching the
-/// King Wen convention used by the findInText tests.
+/// King Wen convention.
 List<(int, int)> _allCombos() {
   final combos = <(int, int)>[
     for (var low = 1; low <= 8; low++)
@@ -166,33 +166,6 @@ void main() {
           throwsA(isA<ArgumentError>()));
     });
 
-    test('findInText detects gua by number with manual method',
-        () async {
-      final result = await generator.findInText('Tell me about gua 23');
-      expect(result, isNotNull);
-      expect(result!.gua.guaCode, 23);
-      expect(result.method, GeneratorMethod.manual);
-    });
-
-    test('findInText detects gua by hexagram keyword', () async {
-      final result = await generator.findInText('What does hexagram 1 mean?');
-      expect(result, isNotNull);
-      expect(result!.gua.guaCode, 1);
-    });
-
-    test('findInText detects gua by classical name', () async {
-      final result = await generator.findInText('我想知道乾為天卦的含義');
-      expect(result, isNotNull);
-      expect(result!.gua.guaCode, 1);
-    });
-
-    test('findInText returns null for unrelated text', () async {
-      final result = await generator.findInText(
-        'I feel uncertain about my career path',
-      );
-      expect(result, isNull);
-    });
-
     test('formatContext includes method header and gua details', () async {
       final result = await generator.generateRandom();
       final context = generator.formatContext(result);
@@ -233,18 +206,6 @@ void main() {
       expect(manual, isNot(equals(systemGenerated)));
       expect(manual, contains('specifically asked'));
       expect(systemGenerated, contains('at the user\'s request'));
-    });
-
-    test('findInText detects gua by classical name 坤為地', () async {
-      final result = await generator.findInText('坤為地卦怎麼說？');
-      expect(result, isNotNull);
-      expect(result!.gua.guaCode, 2);
-    });
-
-    test('findInText detects gua number with Chinese 卦 prefix', () async {
-      final result = await generator.findInText('卦 42');
-      expect(result, isNotNull);
-      expect(result!.gua.guaCode, 42);
     });
   });
 }

@@ -54,12 +54,4 @@ class HexagramLoader {
     guaList.sort((a, b) => a.guaCode.compareTo(b.guaCode));
     return guaList;
   }
-
-  /// Load a single hexagram by [guaCode], or `null` if the asset is missing
-  /// or malformed.
-  Future<Gua?> loadByCode(int guaCode) async {
-    final json = await _loadAsset(guaCode);
-    if (json == null) return null;
-    return _parse(guaCode, json);
-  }
 }

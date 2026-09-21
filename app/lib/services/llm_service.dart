@@ -32,24 +32,8 @@ class LlmService {
   /// The current model filename (e.g. "Qwen3-0.6B.litertlm").
   String get modelFilename => modelInfo.filename;
 
-  /// The directory where models are stored.
-  Future<String> get modelDir => _modelsDir;
-
   /// Full absolute path to the model file.
-  /// Returns the custom path if set, otherwise the default models directory.
-  String? _customModelPath;
-  Future<String> get modelFilePath async =>
-      _customModelPath ?? await _modelPath;
-
-  /// The download URL for the selected model.
-  String get modelUrl => modelInfo.downloadUrl;
-
-  /// Switch to a different model file path. Closes the current chat session.
-  /// After calling this, call [openExplanationChat] to load it.
-  Future<void> setModelFile(String filePath) async {
-    await closeChat();
-    _customModelPath = filePath;
-  }
+  Future<String> get modelFilePath async => _modelPath;
 
   /// Set the Gua generator used to format hexagram context for explanations.
   set guaGenerator(GuaGenerator? g) => _guaGenerator = g;
@@ -62,9 +46,6 @@ class LlmService {
 
   /// Human-readable model name for UI display.
   String get modelDisplayName => modelInfo.modelFamily;
-
-  /// Approximate file size for UI display.
-  String get modelSize => modelInfo.sizeLabel;
 
   Future<String> get _modelsDir async {
     final appDir = await getApplicationSupportDirectory();
@@ -86,9 +67,6 @@ class LlmService {
       inferenceEngines: [LiteRtLmEngine()],
     );
   }
-
-  Future<bool> isModelInstalled() async =>
-      FlutterGemma.isModelInstalled(modelInfo.filename);
 
   Future<void> downloadModel({
     String? token,
@@ -133,10 +111,7 @@ class LlmService {
       // ignore: avoid_print
       print('âœ… Model file found at: $modelPath');
     }
-    // Only copy to flutter_gemma path for default (downloaded) models.
-    if (_customModelPath == null) {
-      await _copyToFlutterGemmaPath(modelPath);
-    }
+    await _copyToFlutterGemmaPath(modelPath);
     await FlutterGemma.installModel(
       modelType: modelInfo.modelType,
       fileType: _fileType,

@@ -140,14 +140,4 @@ class TrigramHexagramData {
     }
     return null;
   }
-
-  /// Look up a hexagram by its binary [resultCode] (1–64).
-  static TrigramHexagram? byResultCode(int resultCode) {
-    for (final entry in all) {
-      if (entry.resultCode == resultCode) {
-        return entry;
-      }
-    }
-    return null;
-  }
 }

@@ -143,63 +143,6 @@ class GuaGenerator {
     return list[_random.nextInt(list.length)];
   }
 
-  /// Try to find a Gua mentioned in [text]. Returns `null` if none found.
-  ///
-  /// Matches:
-  /// - Chinese names: 乾, 坤, 屯, 蒙, etc.
-  /// - Pinyin: qian, kun, zhun, etc.
-  /// - Numbers: "gua 1", "hexagram 23", "gua 64"
-  Future<GenerationResult?> findInText(String text) async {
-    final list = await _guaList;
-    final lower = text.toLowerCase();
-
-    // 1. Try matching a Gua number
-    final numberMatch = RegExp(r'(?:gua|hexagram|卦)\s*[:：#]?\s*(\d{1,2})')
-        .firstMatch(lower);
-    if (numberMatch != null) {
-      final num = int.tryParse(numberMatch.group(1)!);
-      if (num != null && num >= 1 && num <= 64) {
-        return GenerationResult(
-          gua: list.firstWhere(
-            (g) => g.guaCode == num,
-            orElse: () => list[_random.nextInt(list.length)],
-          ),
-          method: GeneratorMethod.manual,
-        );
-      }
-    }
-
-    // 2. Try matching Chinese name
-    for (final gua in list) {
-      final chineseName = gua.guaName.split(' ').first;
-      if (lower.contains(chineseName)) {
-        return GenerationResult(
-          gua: gua,
-          method: GeneratorMethod.manual,
-        );
-      }
-    }
-
-    // 3. Try matching pinyin (accents stripped)
-    for (final gua in list) {
-      final pinyinMatch = RegExp(r'\(([^)]+)\)').firstMatch(gua.guaName);
-      if (pinyinMatch != null) {
-        final pinyin = pinyinMatch.group(1)!.toLowerCase();
-        final stripped = _stripAccents(pinyin);
-        if (stripped.isNotEmpty &&
-            RegExp('\\b$stripped\\b', caseSensitive: false)
-                .hasMatch(lower)) {
-          return GenerationResult(
-            gua: gua,
-            method: GeneratorMethod.manual,
-          );
-        }
-      }
-    }
-
-    return null;
-  }
-
   /// Element-wise equality for two [List]s (Dart `==` on lists is identity).
   static bool _listsEqual(List<dynamic> a, List<dynamic> b) {
     if (a.length != b.length) return false;
@@ -207,35 +150,6 @@ class GuaGenerator {
       if (a[i] != b[i]) return false;
     }
     return true;
-  }
-
-  /// Strip common diacritics from pinyin so "qián" matches "qian".
-  static String _stripAccents(String s) {
-    return s
-        .replaceAll('á', 'a')
-        .replaceAll('à', 'a')
-        .replaceAll('â', 'a')
-        .replaceAll('ã', 'a')
-        .replaceAll('ä', 'a')
-        .replaceAll('é', 'e')
-        .replaceAll('è', 'e')
-        .replaceAll('ê', 'e')
-        .replaceAll('ë', 'e')
-        .replaceAll('í', 'i')
-        .replaceAll('ì', 'i')
-        .replaceAll('î', 'i')
-        .replaceAll('ï', 'i')
-        .replaceAll('ó', 'o')
-        .replaceAll('ò', 'o')
-        .replaceAll('ô', 'o')
-        .replaceAll('õ', 'o')
-        .replaceAll('ö', 'o')
-        .replaceAll('ú', 'u')
-        .replaceAll('ù', 'u')
-        .replaceAll('û', 'u')
-        .replaceAll('ü', 'u')
-        .replaceAll('ñ', 'n')
-        .replaceAll('ç', 'c');
   }
 
   // ---------------------------------------------------------------------------
