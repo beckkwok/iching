@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../data/trigram_hexagram_data.dart';
+import '../l10n/app_localizations.dart';
 import '../models/gua.dart';
 import '../models/hexagram_content.dart';
 
@@ -14,13 +15,14 @@ class HexagramDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final content = gua.content;
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(gua.guaName),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         leading: IconButton(
           icon: const Icon(Icons.close),
-          tooltip: 'Close',
+          tooltip: l10n.close,
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -31,11 +33,17 @@ class HexagramDetailScreen extends StatelessWidget {
               children: [
                 _HeaderCard(gua: gua),
                 if (content.guaCi.isNotEmpty)
-                  _SectionCard(title: '卦辭', child: Text(content.guaCi)),
+                  _SectionCard(title: l10n.judgment, child: Text(content.guaCi)),
                 if (content.tuanZhuan.isNotEmpty)
-                  _SectionCard(title: '彖傳', child: Text(content.tuanZhuan)),
+                  _SectionCard(
+                    title: l10n.tuanCommentary,
+                    child: Text(content.tuanZhuan),
+                  ),
                 if (content.daXiangZhuan.isNotEmpty)
-                  _SectionCard(title: '大象傳', child: Text(content.daXiangZhuan)),
+                  _SectionCard(
+                    title: l10n.greatImage,
+                    child: Text(content.daXiangZhuan),
+                  ),
                 if (content.lines.isNotEmpty) _LinesCard(lines: content.lines),
                 _SymbolicMeaningCard(meaning: content.symbolicMeaning),
                 if (content.interpretations.isNotEmpty)
@@ -43,7 +51,7 @@ class HexagramDetailScreen extends StatelessWidget {
                     interpretations: content.interpretations,
                   ),
                 if (content.remarks.isNotEmpty)
-                  _SectionCard(title: '備註', child: Text(content.remarks)),
+                  _SectionCard(title: l10n.remarks, child: Text(content.remarks)),
               ],
             ),
     );
@@ -54,7 +62,7 @@ class HexagramDetailScreen extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Text(
-          'Unable to read the hexagram content for ${gua.guaName}.',
+          AppLocalizations.of(context).unableToRead(gua.guaName),
           textAlign: TextAlign.center,
         ),
       ),
@@ -71,6 +79,7 @@ class _HeaderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final content = gua.content!;
     final lines = content.guaSymbol.isNotEmpty
         ? TrigramHexagramData.linesFromSymbol(content.guaSymbol)
@@ -89,7 +98,7 @@ class _HeaderCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  '第${gua.guaCode}卦',
+                  l10n.hexagramNumber(gua.guaCode),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -192,8 +201,9 @@ class _LinesCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return _SectionCard(
-      title: '爻辭',
+      title: l10n.lineTexts,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -230,7 +240,7 @@ class _LinesCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 0, top: 2, bottom: 8),
                 child: Text(
-                  '小象傳：${line.xiaoXiangZhuan}',
+                  '${l10n.smallImage}：${line.xiaoXiangZhuan}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontStyle: FontStyle.italic,
                     color: theme.colorScheme.onSurfaceVariant,
@@ -254,6 +264,7 @@ class _SymbolicMeaningCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final basic = meaning.basicSymbol;
     final hasBasic =
         basic.composition.isNotEmpty ||
@@ -261,27 +272,29 @@ class _SymbolicMeaningCard extends StatelessWidget {
         basic.explanation.isNotEmpty;
 
     return _SectionCard(
-      title: '象徵意義',
+      title: l10n.symbolicMeaning,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (hasBasic) ...[
             Text(
-              '基本卦象',
+              l10n.basicSymbol,
               style: theme.textTheme.titleSmall?.copyWith(
                 color: theme.colorScheme.primary,
               ),
             ),
             const SizedBox(height: 4),
-            if (basic.composition.isNotEmpty) Text('卦體：${basic.composition}'),
+            if (basic.composition.isNotEmpty)
+              Text('${l10n.structure}：${basic.composition}'),
             if (basic.naturalImage.isNotEmpty)
-              Text('自然取象：${basic.naturalImage}'),
-            if (basic.explanation.isNotEmpty) Text('說明：${basic.explanation}'),
+              Text('${l10n.naturalImage}：${basic.naturalImage}'),
+            if (basic.explanation.isNotEmpty)
+              Text('${l10n.explanationLabel}：${basic.explanation}'),
             const SizedBox(height: 12),
           ],
           if (meaning.mainSymbols.isNotEmpty) ...[
             Text(
-              '主要象徵',
+              l10n.mainSymbols,
               style: theme.textTheme.titleSmall?.copyWith(
                 color: theme.colorScheme.primary,
               ),
@@ -305,7 +318,7 @@ class _SymbolicMeaningCard extends StatelessWidget {
           ],
           if (meaning.lifeSymbols.isNotEmpty) ...[
             Text(
-              '生活與占事常見象徵',
+              l10n.lifeSymbols,
               style: theme.textTheme.titleSmall?.copyWith(
                 color: theme.colorScheme.primary,
               ),
@@ -320,7 +333,7 @@ class _SymbolicMeaningCard extends StatelessWidget {
           ],
           if (meaning.summary.isNotEmpty) ...[
             Text(
-              '總結',
+              l10n.summary,
               style: theme.textTheme.titleSmall?.copyWith(
                 color: theme.colorScheme.primary,
               ),
@@ -346,8 +359,9 @@ class _InterpretationsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return _SectionCard(
-      title: '不同人解讀',
+      title: l10n.interpretations,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -362,7 +376,10 @@ class _InterpretationsCard extends StatelessWidget {
             if (interpretation.judgmentInterpretation.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: Text('卦辭解讀：${interpretation.judgmentInterpretation}'),
+                child: Text(
+                  '${l10n.judgmentInterpretation}：'
+                  '${interpretation.judgmentInterpretation}',
+                ),
               ),
             if (interpretation.lineInterpretations.isNotEmpty) ...[
               const SizedBox(height: 4),

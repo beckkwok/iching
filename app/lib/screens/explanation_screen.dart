@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../models/language_preference.dart';
 import '../services/gua_generator.dart';
 import '../services/llm_service.dart';
@@ -37,9 +38,14 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
   bool _loading = true;
   String? _error;
 
+  bool _started = false;
+
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Run once, after the first build context (and localizations) exist.
+    if (_started) return;
+    _started = true;
     _generate();
   }
 
@@ -48,10 +54,7 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
     if (llm == null || !llm.isReady) {
       setState(() {
         _loading = false;
-        _explanation =
-            'No model available to provide an explanation. '
-            'Here is the hexagram that was cast — reflect on its imagery '
-            'in relation to your question.';
+        _explanation = AppLocalizations.of(context).noModelExplanation;
       });
       return;
     }
@@ -81,12 +84,13 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final gua = widget.result.gua;
     final symbol = gua.content?.guaSymbol ?? '';
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Explanation'),
+        title: Text(l10n.explanation),
         backgroundColor: theme.colorScheme.inversePrimary,
       ),
       body: ListView(
@@ -154,7 +158,8 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
                             ),
                           ),
                           Text(
-                            '第${gua.guaCode}卦 · Tap for details',
+                            '${l10n.hexagramNumber(gua.guaCode)} · '
+                            '${l10n.tapForDetails}',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -186,7 +191,7 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '解讀',
+                    l10n.interpretation,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -199,7 +204,7 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
                     )
                   else if (_error != null)
                     Text(
-                      'Failed to generate explanation: $_error',
+                      l10n.failedExplanation('$_error'),
                       style: TextStyle(color: theme.colorScheme.error),
                     )
                   else

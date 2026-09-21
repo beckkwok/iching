@@ -94,6 +94,8 @@ Project Plan
     - build hexagram browser and detail screens
     - build form-based consultation flow
         - QuestionFormScreen → CastResultScreen → ExplanationScreen
+    - localize the UI (English / Traditional Chinese)
+        - AppLocalizations + LocaleController drive MaterialApp.locale from the saved setting
 
 5b. Implementation tasks 🔲 Remaining
     - Strategy pattern for GuaGenerator (GuaGeneratorStrategy interface)

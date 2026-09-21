@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
+import '../l10n/locale_controller.dart';
 import '../models/language_preference.dart';
 import '../services/database_service.dart';
 import '../services/llm_service.dart';
@@ -22,17 +24,27 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  String _modelFilename = 'Loading...';
-  String _modelFullPath = 'Loading...';
-  String _modelDisplayName = 'Loading...';
+  String _modelFilename = '';
+  String _modelFullPath = '';
+  String _modelDisplayName = '';
   bool _loading = true;
   LanguagePreference _language = LanguagePreference.english;
+
+  bool _modelInfoLoaded = false;
 
   @override
   void initState() {
     super.initState();
-    _loadModelInfo();
     _loadLanguage();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Run once, after the first build context (and localizations) exist.
+    if (_modelInfoLoaded) return;
+    _modelInfoLoaded = true;
+    _loadModelInfo();
   }
 
   Future<void> _loadLanguage() async {
@@ -46,6 +58,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _setLanguage(LanguagePreference value) async {
     setState(() => _language = value);
+    // Update the app-wide locale immediately.
+    LocaleScope.maybeOf(context)?.setLanguage(value);
     final db = widget.databaseService;
     if (db != null) {
       await db.setSetting(LanguagePreference.settingsKey, value.code);
@@ -53,12 +67,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadModelInfo() async {
+    final l10n = AppLocalizations.of(context);
     final svc = widget.llmService;
     if (svc == null) {
       setState(() {
-        _modelDisplayName = 'No LLM service';
-        _modelFilename = 'Not available';
-        _modelFullPath = 'Not available';
+        _modelDisplayName = l10n.noLlmService;
+        _modelFilename = l10n.notAvailable;
+        _modelFullPath = l10n.notAvailable;
         _loading = false;
       });
       return;
@@ -76,8 +91,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _modelDisplayName = 'Error';
-          _modelFilename = 'Error';
+          _modelDisplayName = l10n.error;
+          _modelFilename = l10n.error;
           _modelFullPath = '$e';
           _loading = false;
         });
@@ -86,22 +101,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _removeModelFile() async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Remove Model File?'),
-        content: const Text(
-          'This will delete the model file and reset your selection. '
-          'The app will restart with the model selection screen.',
-        ),
+        title: Text(l10n.removeModelFileTitle),
+        content: Text(l10n.removeModelFileBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Remove'),
+            child: Text(l10n.remove),
           ),
         ],
       ),
@@ -137,18 +150,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to remove model: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${l10n.failedToRemoveModel}$e')),
+        );
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: Text(l10n.settings),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: _loading
@@ -156,10 +170,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           : ListView(
               children: [
                 // --- Model ---
-                _buildSectionHeader(context, 'Model'),
+                _buildSectionHeader(context, l10n.model),
                 ListTile(
                   leading: const Icon(Icons.storage),
-                  title: const Text('Model'),
+                  title: Text(l10n.model),
                   subtitle: Text(
                     _modelDisplayName,
                     style: const TextStyle(
@@ -170,7 +184,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 ListTile(
                   leading: const Icon(Icons.description),
-                  title: const Text('File Name'),
+                  title: Text(l10n.fileName),
                   subtitle: Text(
                     _modelFilename,
                     style: const TextStyle(
@@ -181,7 +195,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 ListTile(
                   leading: const Icon(Icons.folder_open),
-                  title: const Text('Full Path'),
+                  title: Text(l10n.fullPath),
                   subtitle: Text(
                     _modelFullPath,
                     style: const TextStyle(
@@ -198,7 +212,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: OutlinedButton.icon(
                     onPressed: _removeModelFile,
                     icon: const Icon(Icons.delete_outline),
-                    label: const Text('Remove Model File'),
+                    label: Text(l10n.removeModelFile),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.red,
                       side: const BorderSide(color: Colors.red),
@@ -208,7 +222,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const Divider(),
 
                 // --- Language ---
-                _buildSectionHeader(context, 'Language'),
+                _buildSectionHeader(context, l10n.language),
                 RadioGroup<LanguagePreference>(
                   groupValue: _language,
                   onChanged: (value) {
@@ -216,13 +230,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                   child: Column(
                     children: [
-                      const RadioListTile<LanguagePreference>(
+                      RadioListTile<LanguagePreference>(
                         value: LanguagePreference.english,
-                        title: Text('English'),
+                        title: Text(l10n.english),
                       ),
-                      const RadioListTile<LanguagePreference>(
+                      RadioListTile<LanguagePreference>(
                         value: LanguagePreference.chinese,
-                        title: Text('中文 (Chinese)'),
+                        title: Text(l10n.chinese),
                       ),
                     ],
                   ),
@@ -230,11 +244,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const Divider(),
 
                 // --- Prompts ---
-                _buildSectionHeader(context, 'Prompts'),
+                _buildSectionHeader(context, l10n.prompts),
                 ListTile(
                   leading: const Icon(Icons.psychology),
-                  title: const Text('System Prompt'),
-                  subtitle: const Text('Customize the LLM instruction'),
+                  title: Text(l10n.systemPrompt),
+                  subtitle: Text(l10n.systemPromptSubtitle),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
                     Navigator.of(context).push(
@@ -250,22 +264,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const Divider(),
 
                 // --- Privacy ---
-                _buildSectionHeader(context, 'Privacy'),
+                _buildSectionHeader(context, l10n.privacy),
                 ListTile(
                   leading: const Icon(Icons.privacy_tip_outlined),
-                  title: const Text('Privacy Notice'),
-                  subtitle: const Text('Data stays local, no internet calls'),
+                  title: Text(l10n.privacyNotice),
+                  subtitle: Text(l10n.privacySubtitle),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _showPrivacyNotice(context),
                 ),
                 const Divider(),
 
                 // --- App Info ---
-                _buildSectionHeader(context, 'About'),
-                const ListTile(
-                  leading: Icon(Icons.info_outline),
-                  title: Text('Version'),
-                  subtitle: Text('1.0.0'),
+                _buildSectionHeader(context, l10n.about),
+                ListTile(
+                  leading: const Icon(Icons.info_outline),
+                  title: Text(l10n.version),
+                  subtitle: const Text('1.0.0'),
                 ),
               ],
             ),
@@ -286,24 +300,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showPrivacyNotice(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Privacy Notice'),
-        content: const SingleChildScrollView(
-          child: Text(
-            'This app runs entirely offline. No data is sent to any server.\n\n'
-            'All conversations and hexagram data are stored locally on your '
-            'device using SQLite. The AI model runs on-device '
-            'via flutter_gemma.\n\n'
-            'No internet connection is required after the initial model '
-            'download. Your privacy is fully protected.',
-          ),
-        ),
+        title: Text(l10n.privacyNotice),
+        content: SingleChildScrollView(child: Text(l10n.privacyNoticeBody)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('OK'),
+            child: Text(l10n.ok),
           ),
         ],
       ),

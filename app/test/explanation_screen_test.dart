@@ -71,8 +71,8 @@ void main() {
     expect(find.text('Career Achievement'), findsOneWidget);
     expect(find.text('Should I take the new job?'), findsOneWidget);
     expect(find.text('地風升'), findsOneWidget);
-    expect(find.textContaining('第46卦'), findsOneWidget);
-    expect(find.text('解讀'), findsOneWidget);
+    expect(find.textContaining('Hexagram 46'), findsOneWidget);
+    expect(find.text('Interpretation'), findsOneWidget);
     expect(find.text('A gentle mirror for your question.'), findsOneWidget);
   });
 
@@ -96,7 +96,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(HexagramDetailScreen), findsOneWidget);
-    expect(find.text('第46卦'), findsOneWidget);
+    expect(find.text('Hexagram 46'), findsOneWidget);
   });
 
   testWidgets('shows placeholder when no LLM is available', (tester) async {
