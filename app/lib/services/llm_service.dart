@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:flutter_gemma_litertlm/flutter_gemma_litertlm.dart';
 import 'package:path/path.dart' as p;
@@ -74,7 +74,7 @@ class LlmService {
   }) async {
     final targetPath = await _modelPath;
     // ignore: avoid_print
-    print('ðŸ“¥ Downloading model to: $targetPath');
+    print('📥 Downloading model to: $targetPath');
     final file = File(targetPath);
     final request = http.Request('GET', Uri.parse(modelInfo.downloadUrl));
     if (token != null && token.isNotEmpty) {
@@ -105,11 +105,11 @@ class LlmService {
     final file = File(modelPath);
     if (!await file.exists()) {
       // ignore: avoid_print
-      print('âŒ Model file not found at: $modelPath');
+      print('❌ Model file not found at: $modelPath');
       throw StateError('Model file not found at: $modelPath');
     } else {
       // ignore: avoid_print
-      print('âœ… Model file found at: $modelPath');
+      print('✅ Model file found at: $modelPath');
     }
     await _copyToFlutterGemmaPath(modelPath);
     await FlutterGemma.installModel(
@@ -188,26 +188,17 @@ class LlmService {
     await openExplanationChat();
 
     final context = _guaGenerator!.formatContext(result);
-
-    final languageInstruction = switch (language) {
-      LanguagePreference.english => 'Respond in English.',
-      LanguagePreference.chinese => 'Respond in Traditional Chinese.',
-    };
-
-    final prompt =
-        'The user asked: "$question"'
-        '${questionTypeLabel != null ? ' (category: $questionTypeLabel)' : ''}'
-        '\n\n'
-        'The hexagram below was cast for them:\n$context\n\n'
-        'Provide a compassionate I-Ching explanation that connects this '
-        'hexagram to the user\'s question. Never predict fortune. Keep it to '
-        '3-5 sentences and frame it as an invitation for reflection.\n'
-        '$languageInstruction';
+    final prompt = buildExplanationPrompt(
+      question: question,
+      questionTypeLabel: questionTypeLabel,
+      hexagramContext: context,
+      language: language,
+    );
 
     // Print the full prompt so the developer can verify the hexagram info,
     // the user's question, and the language preference are all included.
     // ignore: avoid_print
-    print('ðŸ“ Explanation prompt:\n$prompt');
+    print('📝 Explanation prompt:\n$prompt');
 
     await _chat!.addQuery(Message(text: prompt, isUser: true));
 
@@ -216,14 +207,9 @@ class LlmService {
         () => _chat!.generateChatResponse(),
       ).timeout(_responseTimeout);
       if (response is TextResponse) {
-        var text = response.token;
-        text = text.replaceAll(RegExp(r'<think>.*?</think>', dotAll: true), '');
-        text = text.replaceAll(RegExp(r'<think>', dotAll: true), '');
-        text = text.replaceAll(RegExp(r'</think>', dotAll: true), '');
-        text = text.replaceAll(RegExp(r'<\|endoftext\|>?'), '');
-        final trimmed = text.trim();
-        if (trimmed.isNotEmpty) {
-          return trimmed;
+        final cleaned = cleanResponseText(response.token);
+        if (cleaned.isNotEmpty) {
+          return cleaned;
         }
       }
     } on TimeoutException {
@@ -232,7 +218,45 @@ class LlmService {
     return '(The explanation could not be generated.)';
   }
 
-// ---------------------------------------------------------------------------
+  /// Build the one-shot user message that asks the model for an explanation.
+  ///
+  /// Pure and side-effect free, so it can be unit-tested without an LLM.
+  static String buildExplanationPrompt({
+    required String question,
+    String? questionTypeLabel,
+    required String hexagramContext,
+    LanguagePreference language = LanguagePreference.english,
+  }) {
+    final languageInstruction = switch (language) {
+      LanguagePreference.english => 'Respond in English.',
+      LanguagePreference.chinese => 'Respond in Traditional Chinese.',
+    };
+    return 'The user asked: "$question"'
+        '${questionTypeLabel != null ? ' (category: $questionTypeLabel)' : ''}'
+        '\n\n'
+        'The hexagram below was cast for them:\n$hexagramContext\n\n'
+        'Provide a compassionate I-Ching explanation that connects this '
+        'hexagram to the user\'s question. Never predict fortune. Keep it to '
+        '3-5 sentences and frame it as an invitation for reflection.\n'
+        '$languageInstruction';
+  }
+
+  /// Strip model artifacts from a raw response: `<think>` blocks (and stray
+  /// opening/closing tags) and `<|endoftext|>` tokens. Returns the trimmed
+  /// result. Pure and side-effect free, so it can be unit-tested.
+  static String cleanResponseText(String text) {
+    var cleaned = text;
+    cleaned =
+        cleaned.replaceAll(RegExp(r'<think>.*?</think>', dotAll: true), '');
+    cleaned = cleaned.replaceAll(RegExp(r'<think>', dotAll: true), '');
+    cleaned = cleaned.replaceAll(RegExp(r'</think>', dotAll: true), '');
+    cleaned = cleaned.replaceAll(RegExp(r'<\|endoftext\|>?'), '');
+    return cleaned.trim();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Cleanup
+  // ---------------------------------------------------------------------------
   // Cleanup
   // ---------------------------------------------------------------------------
   // Cleanup
