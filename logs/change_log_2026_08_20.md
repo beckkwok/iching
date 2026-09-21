@@ -122,3 +122,29 @@ Audited the source for dead code / unused members and files without unit tests.
   test locals); the `_selectedModel` warning is gone.
 - `flutter test` — 78 unit tests pass
 - `flutter test -d windows integration_test/cast_and_browse_test.dart` — 2 pass
+
+## Task: Widget tests for ModelSelectionScreen
+
+Added `test/model_selection_screen_test.dart` (6 widget tests) covering the
+previously untested startup screen:
+- setup title renders
+- selection grid lists every catalog model (name + size)
+- tapping a model card opens the confirmation dialog with the right copy
+- cancelling the dialog returns to the grid (last card scrolled into view)
+- startup failure shows the error view
+- "Continue anyway" navigates to the question form
+
+### Testability notes
+- The screen's model-file check calls `getApplicationSupportDirectory()`, so the
+  test injects a fake `PathProviderPlatform` (added
+  `path_provider_platform_interface` + `plugin_platform_interface` as
+  dev_dependencies).
+- Calling the real sqflite-ffi `DatabaseService.getSetting()` from `initState`
+  deadlocks `pumpWidget` under the widget-test fake async, so the tests use a
+  lightweight in-memory `DatabaseService` subclass overriding the settings
+  methods (the screen only reads/writes settings).
+
+### Verification
+- `flutter analyze` — no new issues
+- `flutter test` — 84 unit tests pass
+- `flutter test -d windows integration_test/cast_and_browse_test.dart` — 2 pass
