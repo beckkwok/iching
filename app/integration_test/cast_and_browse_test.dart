@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'package:app/models/question_type.dart';
 import 'package:app/screens/cast_result_screen.dart';
 import 'package:app/screens/explanation_screen.dart';
 import 'package:app/screens/hexagram_browser_screen.dart';

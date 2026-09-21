@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../models/question_type.dart';
+
 /// Hand-written localizations for the app (English / Traditional Chinese).
 ///
 /// Wired into [MaterialApp] via [delegate] and [supportedLocales]. Access the
@@ -59,11 +61,16 @@ class AppLocalizations {
   String get enableGenerationHint =>
       _t('Enable hexagram generation to begin your reading.', '請啟用起卦以開始您的解讀。');
 
-  String get questionTypeCareer => _t('Career Achievement', '事業成就');
-  String get questionTypeCultivation =>
-      _t('Intellectual and moral cultivation', '進德修業');
-  String get questionTypeTiming => _t('Timing', '時機');
-  String get questionTypeAttitude => _t('Attitude', '心態');
+  /// Localized label for a consultation [QuestionType].
+  String questionTypeLabel(QuestionType type) {
+    return switch (type) {
+      QuestionType.careerAchievement => _t('Career Achievement', '事業成就'),
+      QuestionType.intellectualMoralCultivation =>
+        _t('Intellectual and moral cultivation', '進德修業'),
+      QuestionType.timing => _t('Timing', '時機'),
+      QuestionType.attitude => _t('Attitude', '心態'),
+    };
+  }
 
   // --- Settings ---------------------------------------------------------
   String get model => _t('Model', '模型');

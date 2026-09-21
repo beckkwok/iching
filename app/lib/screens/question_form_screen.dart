@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../models/language_preference.dart';
+import '../models/question_type.dart';
 import '../services/database_service.dart';
 import '../services/gua_generator.dart';
 import '../services/hexagram_loader.dart';
@@ -8,22 +9,6 @@ import '../services/llm_service.dart';
 import 'cast_result_screen.dart';
 import 'hexagram_browser_screen.dart';
 import 'settings_screen.dart';
-
-/// Question categories the user can choose from when starting a consultation.
-enum QuestionType {
-  careerAchievement('Career Achievement', Icons.work_outline),
-  intellectualMoralCultivation(
-    'Intellectual and moral cultivation',
-    Icons.school_outlined,
-  ),
-  timing('Timing', Icons.schedule_outlined),
-  attitude('Attitude', Icons.self_improvement_outlined);
-
-  final String label;
-  final IconData icon;
-
-  const QuestionType(this.label, this.icon);
-}
 
 /// First screen of the consultation flow: asks the user what kind of question
 /// they want to ask, captures the exact question text, and submits it.
@@ -73,6 +58,9 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
 
     final question = _questionController.text.trim();
     final type = _selectedType ?? QuestionType.attitude;
+    final l10n = AppLocalizations.of(context);
+    // Send the category in the active language (shown on the explanation page).
+    final typeLabel = l10n.questionTypeLabel(type);
 
     setState(() => _isSubmitting = true);
     try {
@@ -92,7 +80,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
               builder: (_) => CastResultScreen(
                 result: result,
                 question: question,
-                questionTypeLabel: type.label,
+                questionTypeLabel: typeLabel,
                 llmService: widget.llmService,
                 language: language,
               ),
@@ -112,17 +100,6 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
-  }
-
-  /// Localized label for the [type] shown in the dropdown. The enum's own
-  /// [QuestionType.label] stays English and is what gets sent to the LLM.
-  String _localizedTypeLabel(AppLocalizations l10n, QuestionType type) {
-    return switch (type) {
-      QuestionType.careerAchievement => l10n.questionTypeCareer,
-      QuestionType.intellectualMoralCultivation => l10n.questionTypeCultivation,
-      QuestionType.timing => l10n.questionTypeTiming,
-      QuestionType.attitude => l10n.questionTypeAttitude,
-    };
   }
 
   @override
@@ -202,7 +179,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                             children: [
                               Icon(type.icon, size: 18),
                               const SizedBox(width: 8),
-                              Text(_localizedTypeLabel(l10n, type)),
+                              Text(l10n.questionTypeLabel(type)),
                             ],
                           ),
                         ),
