@@ -70,6 +70,7 @@ iching/
 │   │   ├── hexagram_loader_test.dart
 │   │   ├── hexagram_detail_screen_test.dart
 │   │   ├── language_preference_test.dart
+│   │   ├── llm_service_test.dart
 │   │   ├── migration_v4_test.dart
 │   │   ├── model_catalog_test.dart
 │   │   ├── model_selection_screen_test.dart

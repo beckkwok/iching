@@ -148,3 +148,26 @@ previously untested startup screen:
 - `flutter analyze` — no new issues
 - `flutter test` — 84 unit tests pass
 - `flutter test -d windows integration_test/cast_and_browse_test.dart` — 2 pass
+
+## Task: Unit-test the explanation prompt/response helpers
+
+Made the `llm_service` explanation logic testable by extracting two pure
+functions, then unit-tested them (no LLM/plugin needed):
+- `LlmService.buildExplanationPrompt(...)` — assembles the one-shot user
+  message (question, optional category, hexagram context, language instruction).
+- `LlmService.cleanResponseText(...)` — strips `<think>` blocks/stray tags and
+  `<|endoftext|>` tokens and trims.
+
+`generateExplanation` now delegates to both.
+
+Added `test/llm_service_test.dart` (13 tests) covering: question/category
+inclusion & omission, context inclusion, English/Chinese instructions, absence
+of a JSON request, and response cleanup edge cases.
+
+Also fixed leftover mojibake in `llm_service.dart` print strings
+(📥 / ❌ / ✅) introduced by an earlier PowerShell edit.
+
+### Verification
+- `flutter analyze` — no new issues
+- `flutter test` — 97 unit tests pass
+- `flutter test -d windows integration_test/cast_and_browse_test.dart` — 2 pass
