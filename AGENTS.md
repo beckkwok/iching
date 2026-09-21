@@ -36,11 +36,13 @@ iching/
 ├── app/                          # Flutter application
 │   ├── lib/
 │   │   ├── data/                 # Static data (model_catalog.dart, trigram_hexagram_data.dart)
+│   │   ├── l10n/                 # Localization (app_localizations.dart, locale_controller.dart)
 │   │   ├── models/               # Dart data models
 │   │   │   ├── gua.dart
 │   │   │   ├── hexagram_content.dart
 │   │   │   ├── language_preference.dart
 │   │   │   ├── model_info.dart
+│   │   │   ├── question_type.dart
 │   │   │   ├── trigram_hexagram.dart
 │   │   │   └── yao_line_type.dart
 │   │   ├── screens/              # UI screens
@@ -56,11 +58,12 @@ iching/
 │   │   │   ├── database_service.dart
 │   │   │   ├── fake_llm_service.dart
 │   │   │   ├── gua_generator.dart
-│   │   │   ├── gua_seeder.dart
+│   │   │   ├── hexagram_loader.dart
 │   │   │   └── llm_service.dart
 │   │   └── main.dart
 │   ├── assets/hexagrams/         # Individual hexagram JSON files
 │   ├── test/
+│   │   ├── app_localizations_test.dart
 │   │   ├── cast_result_screen_test.dart
 │   │   ├── database_service_test.dart
 │   │   ├── explanation_screen_test.dart

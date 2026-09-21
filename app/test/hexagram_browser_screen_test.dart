@@ -84,7 +84,7 @@ void main() {
     );
 
     // First card shows 卦序 + 卦名
-    expect(find.text('第1卦'), findsOneWidget);
+    expect(find.text('Hexagram 1'), findsOneWidget);
     expect(find.text('乾為天'), findsOneWidget);
     expect(find.textContaining('下乾上乾'), findsWidgets);
   });
@@ -105,7 +105,7 @@ void main() {
       400,
       scrollable: find.byType(Scrollable).last,
     );
-    expect(find.text('第64卦'), findsOneWidget);
+    expect(find.text('Hexagram 64'), findsOneWidget);
     expect(find.text('未濟'), findsOneWidget);
   });
 
@@ -124,7 +124,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(HexagramDetailScreen), findsOneWidget);
-    expect(find.text('第1卦'), findsOneWidget);
+    expect(find.text('Hexagram 1'), findsOneWidget);
   });
 
   testWidgets('question form has a Browse Hexagrams button', (tester) async {

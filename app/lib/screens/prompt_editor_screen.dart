@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../services/database_service.dart';
 import '../services/llm_service.dart';
 
@@ -67,16 +68,19 @@ class _PromptEditorScreenState extends State<PromptEditorScreen> {
         await db.setSetting(LlmService.systemPromptSettingsKey, text);
       }
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Prompt saved.')));
+        ).showSnackBar(SnackBar(content: Text(l10n.promptSaved)));
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to save prompt: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).failedToSavePrompt('$e')),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -90,9 +94,10 @@ class _PromptEditorScreenState extends State<PromptEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('System Prompt'),
+        title: Text(l10n.systemPrompt),
         backgroundColor: theme.colorScheme.inversePrimary,
       ),
       body: _loading
@@ -106,9 +111,7 @@ class _PromptEditorScreenState extends State<PromptEditorScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Edit the instruction sent to the model before each '
-                          'consultation. Keep the JSON response instruction '
-                          'intact.',
+                          l10n.editInstruction,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -120,9 +123,9 @@ class _PromptEditorScreenState extends State<PromptEditorScreen> {
                             maxLines: null,
                             expands: true,
                             textAlignVertical: TextAlignVertical.top,
-                            decoration: const InputDecoration(
-                              hintText: 'Enter your system prompt...',
-                              border: OutlineInputBorder(),
+                            decoration: InputDecoration(
+                              hintText: l10n.promptHint,
+                              border: const OutlineInputBorder(),
                               alignLabelWithHint: true,
                             ),
                           ),
@@ -139,7 +142,7 @@ class _PromptEditorScreenState extends State<PromptEditorScreen> {
                         child: OutlinedButton.icon(
                           onPressed: _saving ? null : _reset,
                           icon: const Icon(Icons.restart_alt),
-                          label: const Text('Reset'),
+                          label: Text(l10n.reset),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -155,7 +158,7 @@ class _PromptEditorScreenState extends State<PromptEditorScreen> {
                                   ),
                                 )
                               : const Icon(Icons.save),
-                          label: const Text('Save'),
+                          label: Text(l10n.save),
                         ),
                       ),
                     ],

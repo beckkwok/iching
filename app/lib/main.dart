@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+
+import 'l10n/app_localizations.dart';
+import 'l10n/locale_controller.dart';
+import 'models/language_preference.dart';
 import 'screens/model_selection_screen.dart';
 import 'services/database_service.dart';
 
@@ -14,23 +19,58 @@ void main() async {
     db = null;
   }
 
-  runApp(MyApp(databaseService: db));
+  // Seed the locale from the saved language preference (defaults to English).
+  var language = LanguagePreference.english;
+  if (db != null) {
+    try {
+      final code = await db.getSetting(LanguagePreference.settingsKey);
+      language = LanguagePreference.fromCode(code);
+    } catch (_) {
+      // Fall back to the default language.
+    }
+  }
+
+  runApp(
+    MyApp(
+      databaseService: db,
+      localeController: LocaleController(language),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
   final DatabaseService? databaseService;
+  final LocaleController localeController;
 
-  const MyApp({super.key, required this.databaseService});
+  const MyApp({
+    super.key,
+    required this.databaseService,
+    required this.localeController,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'I-Ching',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+    return LocaleScope(
+      controller: localeController,
+      child: ListenableBuilder(
+        listenable: localeController,
+        builder: (context, _) => MaterialApp(
+          title: 'I-Ching',
+          locale: localeController.locale,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+            useMaterial3: true,
+          ),
+          home: ModelSelectionScreen(databaseService: databaseService),
+        ),
       ),
-      home: ModelSelectionScreen(databaseService: databaseService),
     );
   }
 }

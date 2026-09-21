@@ -1,11 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'package:app/data/model_catalog.dart';
+import 'package:app/l10n/app_localizations.dart';
 import 'package:app/screens/model_selection_screen.dart';
 import 'package:app/screens/question_form_screen.dart';
 import 'package:app/services/database_service.dart';
@@ -181,5 +183,26 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(QuestionFormScreen), findsOneWidget);
+  });
+
+  testWidgets('shows the Chinese setup title when the locale is zh',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('zh'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: ModelSelectionScreen(databaseService: _FakeDatabaseService()),
+      ),
+    );
+    await settleStartup(tester);
+
+    expect(find.text('易經設定'), findsOneWidget);
+    expect(find.text('I-Ching Setup'), findsNothing);
   });
 }

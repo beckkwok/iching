@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'package:app/models/question_type.dart';
 import 'package:app/screens/cast_result_screen.dart';
 import 'package:app/screens/explanation_screen.dart';
 import 'package:app/screens/hexagram_browser_screen.dart';
@@ -70,7 +71,7 @@ void main() {
 
     // Land on the cast result screen with the 卦象 and yao lines.
     expect(find.byType(CastResultScreen), findsOneWidget);
-    expect(find.text('爻象'), findsOneWidget);
+    expect(find.text('Line pattern'), findsOneWidget);
     expect(find.text('Tap for details'), findsOneWidget);
     expect(find.text('Get Explanation'), findsOneWidget);
 
@@ -80,7 +81,7 @@ void main() {
 
     expect(find.byType(HexagramDetailScreen), findsOneWidget);
     // Detail screen shows the detail sections.
-    expect(find.text('卦辭'), findsOneWidget);
+    expect(find.text('Judgment'), findsOneWidget);
 
     // Close the detail screen → back to the cast result screen.
     await tester.tap(find.byIcon(Icons.close));
@@ -93,7 +94,7 @@ void main() {
 
     expect(find.byType(ExplanationScreen), findsOneWidget);
     expect(find.text('Should I take the new job?'), findsOneWidget);
-    expect(find.text('解讀'), findsOneWidget);
+    expect(find.text('Interpretation'), findsOneWidget);
   });
 
   testWidgets('browse hexagram grid opens the detail screen', (tester) async {

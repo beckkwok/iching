@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../data/model_catalog.dart';
+import '../l10n/app_localizations.dart';
 import '../models/model_info.dart';
 import '../services/llm_service.dart';
 import '../services/database_service.dart';
@@ -39,9 +40,14 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
   String _statusText = '';
   String? _errorMessage;
 
+  bool _startupStarted = false;
+
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Run once, after the first build context (and localizations) exist.
+    if (_startupStarted) return;
+    _startupStarted = true;
     _startupCheck();
   }
 
@@ -50,10 +56,8 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
   // ---------------------------------------------------------------------------
 
   Future<void> _startupCheck() async {
-    setState(() {
-      _phase = _ScreenPhase.initialising;
-      _statusText = 'Checking setup...';
-    });
+    final l10n = AppLocalizations.of(context);
+    _statusText = l10n.checkingSetup;
 
     try {
       final db = widget.databaseService;
@@ -78,8 +82,8 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
               if (mounted) {
                 setState(() {
                   _phase = _ScreenPhase.error;
-                  _errorMessage = 'Model file found but failed to load: $e';
-                  _statusText = 'Load failed';
+                  _errorMessage = l10n.modelLoadFailed('$e');
+                  _statusText = l10n.loadFailed;
                 });
               }
             }
@@ -110,8 +114,8 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
           if (mounted) {
             setState(() {
               _phase = _ScreenPhase.error;
-              _errorMessage = 'Auto-detected model failed to load: $e';
-              _statusText = 'Load failed';
+              _errorMessage = l10n.autoDetectFailed('$e');
+              _statusText = l10n.loadFailed;
             });
           }
         }
@@ -122,7 +126,7 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
       if (mounted) {
         setState(() {
           _phase = _ScreenPhase.selecting;
-          _statusText = 'Choose a model to get started';
+          _statusText = l10n.chooseModelToStart;
         });
       }
     } catch (e) {
@@ -130,7 +134,7 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
         setState(() {
           _phase = _ScreenPhase.error;
           _errorMessage = '$e';
-          _statusText = 'Startup failed';
+          _statusText = l10n.startupFailed;
         });
       }
     }
@@ -160,10 +164,11 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
 
   Future<void> _startDownload() async {
     if (_llmService == null) return;
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _phase = _ScreenPhase.downloading;
       _downloadProgress = 0.0;
-      _statusText = 'Downloading... 0%';
+      _statusText = l10n.downloadingPercent(0);
     });
 
     try {
@@ -173,7 +178,7 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
             setState(() {
               _downloadProgress = progress;
               _statusText =
-                  'Downloading... ${(progress * 100).toStringAsFixed(0)}%';
+                  l10n.downloadingPercent((progress * 100).round());
             });
           }
         },
@@ -182,7 +187,7 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
       if (mounted) {
         setState(() {
           _phase = _ScreenPhase.loading;
-          _statusText = 'Loading model...';
+          _statusText = l10n.loadingModel;
         });
         try {
           await _applySavedPrompt();
@@ -192,8 +197,8 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
           if (mounted) {
             setState(() {
               _phase = _ScreenPhase.error;
-              _errorMessage = 'Model downloaded but failed to load: $openError';
-              _statusText = 'Chat session failed';
+              _errorMessage = l10n.modelDownloadedFailed('$openError');
+              _statusText = l10n.chatSessionFailed;
             });
           }
         }
@@ -202,8 +207,8 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
       if (mounted) {
         setState(() {
           _phase = _ScreenPhase.error;
-          _errorMessage = 'Download failed: $e';
-          _statusText = 'Download failed';
+          _errorMessage = l10n.downloadFailedWith('$e');
+          _statusText = l10n.downloadFailed;
         });
       }
     }
@@ -258,7 +263,7 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('I-Ching Setup'),
+        title: Text(AppLocalizations.of(context).setupTitle),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: _buildBody(context),
@@ -266,15 +271,16 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
   }
 
   Widget _buildBody(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     switch (_phase) {
       case _ScreenPhase.initialising:
-        return const Center(
+        return Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Checking setup...'),
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(l10n.checkingSetup),
             ],
           ),
         );
@@ -286,13 +292,13 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
         return _buildDownloadProgress(context);
 
       case _ScreenPhase.loading:
-        return const Center(
+        return Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Loading model...'),
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(l10n.loadingModel),
             ],
           ),
         );
@@ -303,6 +309,7 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
   }
 
   Widget _buildSelectionGrid(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final models = ModelCatalog.all;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -310,12 +317,12 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Choose Your Model',
+            l10n.chooseYourModel,
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 4),
           Text(
-            'All models run fully offline on your device.',
+            l10n.modelsOffline,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -336,25 +343,25 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
   }
 
   void _confirmSelection(BuildContext context, ModelInfo model) {
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Download ${model.modelFamily}?'),
+        title: Text(l10n.downloadModelTitle(model.modelFamily)),
         content: Text(
-          'This will download the ${model.modelFamily} model (${model.sizeLabel}).\n\n'
-          'Once confirmed, the model choice cannot be changed later.',
+          l10n.downloadModelBody(model.modelFamily, model.sizeLabel),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
               Navigator.of(ctx).pop();
               _selectModel(model);
             },
-            child: const Text('Confirm & Download'),
+            child: Text(l10n.confirmDownload),
           ),
         ],
       ),
@@ -383,11 +390,10 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 8),
-            const Text(
-              'This is a one-time download. '
-              'The model runs fully offline after installation.',
+            Text(
+              AppLocalizations.of(context).oneTimeDownload,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey, fontSize: 12),
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
             ),
           ],
         ),
@@ -424,7 +430,7 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
             FilledButton.icon(
               onPressed: _skipDownload,
               icon: const Icon(Icons.chat),
-              label: const Text('Continue anyway'),
+              label: Text(AppLocalizations.of(context).continueAnyway),
             ),
           ],
         ),

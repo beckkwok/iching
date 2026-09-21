@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../models/language_preference.dart';
+import '../models/question_type.dart';
 import '../services/database_service.dart';
 import '../services/gua_generator.dart';
 import '../services/hexagram_loader.dart';
@@ -7,22 +9,6 @@ import '../services/llm_service.dart';
 import 'cast_result_screen.dart';
 import 'hexagram_browser_screen.dart';
 import 'settings_screen.dart';
-
-/// Question categories the user can choose from when starting a consultation.
-enum QuestionType {
-  careerAchievement('Career Achievement', Icons.work_outline),
-  intellectualMoralCultivation(
-    'Intellectual and moral cultivation',
-    Icons.school_outlined,
-  ),
-  timing('Timing', Icons.schedule_outlined),
-  attitude('Attitude', Icons.self_improvement_outlined);
-
-  final String label;
-  final IconData icon;
-
-  const QuestionType(this.label, this.icon);
-}
 
 /// First screen of the consultation flow: asks the user what kind of question
 /// they want to ask, captures the exact question text, and submits it.
@@ -72,6 +58,9 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
 
     final question = _questionController.text.trim();
     final type = _selectedType ?? QuestionType.attitude;
+    final l10n = AppLocalizations.of(context);
+    // Send the category in the active language (shown on the explanation page).
+    final typeLabel = l10n.questionTypeLabel(type);
 
     setState(() => _isSubmitting = true);
     try {
@@ -91,7 +80,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
               builder: (_) => CastResultScreen(
                 result: result,
                 question: question,
-                questionTypeLabel: type.label,
+                questionTypeLabel: typeLabel,
                 llmService: widget.llmService,
                 language: language,
               ),
@@ -104,8 +93,8 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
       // No DB or generation disabled — nothing to show yet.
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Enable hexagram generation to begin your reading.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).enableGenerationHint),
         ),
       );
     } finally {
@@ -116,14 +105,15 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('I-Ching Consultation'),
+        title: Text(l10n.appTitle),
         backgroundColor: theme.colorScheme.inversePrimary,
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
-            tooltip: 'Settings',
+            tooltip: l10n.settings,
             onSelected: (value) {
               if (value == 'settings') {
                 Navigator.of(context).push(
@@ -136,12 +126,12 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                 );
               }
             },
-            itemBuilder: (_) => const [
+            itemBuilder: (_) => [
               PopupMenuItem(
                 value: 'settings',
                 child: ListTile(
-                  leading: Icon(Icons.settings),
-                  title: Text('Settings'),
+                  leading: const Icon(Icons.settings),
+                  title: Text(l10n.settings),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
@@ -166,20 +156,20 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'What would you like to ask the I-Ching?',
+                    l10n.askPrompt,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.titleMedium,
                   ),
                   const SizedBox(height: 24),
 
                   // Question type selector
-                  Text('Question type', style: theme.textTheme.labelLarge),
+                  Text(l10n.questionType, style: theme.textTheme.labelLarge),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<QuestionType>(
                     initialValue: _selectedType,
-                    decoration: const InputDecoration(
-                      labelText: 'Select a category',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.selectCategory,
+                      border: const OutlineInputBorder(),
                     ),
                     items: [
                       for (final type in QuestionType.values)
@@ -189,31 +179,31 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                             children: [
                               Icon(type.icon, size: 18),
                               const SizedBox(width: 8),
-                              Text(type.label),
+                              Text(l10n.questionTypeLabel(type)),
                             ],
                           ),
                         ),
                     ],
                     onChanged: (value) => setState(() => _selectedType = value),
                     validator: (value) =>
-                        value == null ? 'Please select a question type' : null,
+                        value == null ? l10n.selectTypeError : null,
                   ),
                   const SizedBox(height: 16),
 
                   // Exact question
-                  Text('Your question', style: theme.textTheme.labelLarge),
+                  Text(l10n.yourQuestion, style: theme.textTheme.labelLarge),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _questionController,
                     maxLines: 4,
                     minLines: 3,
-                    decoration: const InputDecoration(
-                      hintText: 'Type your question here...',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: l10n.questionHint,
+                      border: const OutlineInputBorder(),
                     ),
                     validator: (value) =>
                         (value == null || value.trim().isEmpty)
-                        ? 'Please enter your question'
+                        ? l10n.enterQuestionError
                         : null,
                     textInputAction: TextInputAction.newline,
                   ),
@@ -224,7 +214,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                     value: _generateHexagram,
                     onChanged: (value) =>
                         setState(() => _generateHexagram = value ?? true),
-                    title: const Text('Help me to generate hexagram'),
+                    title: Text(l10n.generateHexagram),
                     controlAffinity: ListTileControlAffinity.leading,
                     contentPadding: EdgeInsets.zero,
                     dense: true,
@@ -244,7 +234,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                             )
                           : const Icon(Icons.question_answer),
                       label: Text(
-                        _isSubmitting ? 'Casting...' : 'Submit Question',
+                        _isSubmitting ? l10n.casting : l10n.submitQuestion,
                       ),
                     ),
                   ),
@@ -264,7 +254,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                         );
                       },
                       icon: const Icon(Icons.grid_view),
-                      label: const Text('Browse Hexagrams'),
+                      label: Text(l10n.browseHexagrams),
                     ),
                   ),
                 ],
