@@ -71,6 +71,7 @@ iching/
 │   │   ├── hexagram_detail_screen_test.dart
 │   │   ├── language_preference_test.dart
 │   │   ├── migration_v4_test.dart
+│   │   ├── model_catalog_test.dart
 │   │   ├── prompt_editor_screen_test.dart
 │   │   ├── question_form_screen_test.dart
 │   │   ├── settings_screen_test.dart
@@ -88,7 +89,7 @@ iching/
 
 ### Models
 
-- Each model has `copyWith()`, `toMap()`, and `factory ModelName.fromMap()`.
+- Models parsed from JSON/assets expose `factory fromMap()` / `fromJson()`; add `toMap()`/`copyWith()` only when a round-trip or copy is actually needed.
 - DB column names use `snake_case`. Dart fields use `camelCase`.
 - Override `toString()`, `==`, and `hashCode` for every model.
 - Use `?` nullable fields for DB auto-generated IDs (`int? id`).

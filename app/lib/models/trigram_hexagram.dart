@@ -35,28 +35,6 @@ class TrigramHexagram {
     required this.resultName,
   });
 
-  Map<String, dynamic> toMap() {
-    return {
-      'low_code': lowCode,
-      'low_desc': lowDesc,
-      'high_code': highCode,
-      'high_name': highName,
-      'result_code': resultCode,
-      'result_name': resultName,
-    };
-  }
-
-  factory TrigramHexagram.fromMap(Map<String, dynamic> map) {
-    return TrigramHexagram(
-      lowCode: map['low_code'] as int,
-      lowDesc: map['low_desc'] as String,
-      highCode: map['high_code'] as int,
-      highName: map['high_name'] as String,
-      resultCode: map['result_code'] as int,
-      resultName: map['result_name'] as String,
-    );
-  }
-
   @override
   String toString() =>
       'TrigramHexagram(low: $lowCode$lowDesc, high: $highCode$highName, '

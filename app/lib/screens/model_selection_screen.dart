@@ -34,7 +34,6 @@ enum _ScreenPhase { initialising, selecting, downloading, loading, error }
 
 class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
   _ScreenPhase _phase = _ScreenPhase.initialising;
-  ModelInfo? _selectedModel;
   LlmService? _llmService;
   double _downloadProgress = 0.0;
   String _statusText = '';
@@ -69,7 +68,6 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
         if (model != null) {
           final fileExists = await _modelFileExists(model.filename);
           if (fileExists) {
-            _selectedModel = model;
             _llmService = LlmService(modelInfo: model);
             try {
               await _llmService!.initialize();
@@ -88,7 +86,6 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
             return;
           }
           // File missing — download it
-          _selectedModel = model;
           _llmService = LlmService(modelInfo: model);
           await _llmService!.initialize();
           if (mounted) _startDownload();
@@ -100,7 +97,6 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
       const oldDefault = 'gemma-4-E2B-it.litertlm';
       if (await _modelFileExists(oldDefault)) {
         final gemma4 = ModelCatalog.byKey('gemma4_e2b')!;
-        _selectedModel = gemma4;
         _llmService = LlmService(modelInfo: gemma4);
         if (db != null) {
           await db.setSetting('selected_model_key', 'gemma4_e2b');
@@ -214,7 +210,6 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
   }
 
   Future<void> _selectModel(ModelInfo model) async {
-    _selectedModel = model;
     _llmService = LlmService(modelInfo: model);
 
     // Persist the selection immediately.

@@ -89,7 +89,7 @@ Project Plan
     - build gua generator
         - GuaGenerator class with generateRandom() and GeneratorMethod enum
         - formatContext() with different headers per method
-    - build gua parser / trigram mapping
+    - build trigram mapping
         - TrigramHexagramData resolves cast lines to hexagram
     - build hexagram browser and detail screens
     - build form-based consultation flow

@@ -84,3 +84,41 @@ Tapping the hexagram card on `ExplanationScreen` now opens
 ### Verification
 - `flutter analyze` — no new issues
 - `flutter test` — 83 unit tests pass
+
+## Task: Dead-code cleanup + ModelCatalog test
+
+Audited the source for dead code / unused members and files without unit tests.
+
+### Removed (unused in the app)
+- `LlmService`: `modelUrl`, `modelSize`, `modelDir`, `isModelInstalled()`,
+  `setModelFile()` + the now-dead `_customModelPath` field (simplified
+  `modelFilePath` and `_registerAndLoad`).
+- `GuaGenerator.findInText()` + `_stripAccents()` (only the form-based cast flow
+  is used; nothing else calls text parsing) and its 6 tests.
+- `HexagramLoader.loadByCode()` + its 2 tests.
+- `TrigramHexagramData.byResultCode()` + its test.
+- Unused model boilerplate (per revised AGENTS.md §4 convention):
+  `HexagramContent.toMap/toJson/copyWith`, `HexagramLine.toMap/copyWith`,
+  `SymbolicMeaning.toMap/copyWith`, `BasicSymbol.toMap/copyWith`,
+  `MainSymbol.toMap/copyWith`, `Interpretation.toMap/copyWith`,
+  `TrigramHexagram.toMap/fromMap`, plus their round-trip tests.
+- Unused private field `_selectedModel` in `model_selection_screen.dart`
+  (fixed the last analyzer warning).
+
+### Added
+- `test/model_catalog_test.dart` — catalog completeness, unique keys/filenames,
+  `byKey` hit/miss (previously untested).
+
+### Kept intentionally
+- `GeneratorMethod.manual` + the `formatContext` manual header (domain enum;
+  still covered by `formatContext` tests).
+
+### Notes (still untested)
+- `llm_service.dart` (flutter_gemma dependency) and
+  `model_selection_screen.dart` have no dedicated unit tests.
+
+### Verification
+- `flutter analyze` — only 2 pre-existing `info` lints (leading underscores in
+  test locals); the `_selectedModel` warning is gone.
+- `flutter test` — 78 unit tests pass
+- `flutter test -d windows integration_test/cast_and_browse_test.dart` — 2 pass

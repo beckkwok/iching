@@ -27,33 +27,4 @@ void main() {
     expect(content.interpretations.first.lineInterpretations, isNotEmpty);
     expect(content.remarks, isNotEmpty);
   });
-
-  test('HexagramContent round-trips through toJson', () {
-    final content = HexagramContent(
-      guaName: '乾',
-      guaSequence: 1,
-      guaSymbol: '䷀',
-      guaCi: '元亨',
-      tuanZhuan: '',
-      daXiangZhuan: '',
-      lines: const [],
-      symbolicMeaning: const SymbolicMeaning(
-        basicSymbol: BasicSymbol(composition: '', naturalImage: '', explanation: ''),
-        mainSymbols: [],
-        lifeSymbols: {},
-        summary: '',
-      ),
-      interpretations: const [],
-      remarks: '',
-    );
-    final reparsed = HexagramContent.fromJson(content.toJson());
-    expect(reparsed.guaName, content.guaName);
-    expect(reparsed.guaSequence, content.guaSequence);
-    expect(reparsed.guaSymbol, content.guaSymbol);
-    expect(reparsed.guaCi, content.guaCi);
-    expect(reparsed.lines, content.lines);
-    expect(reparsed.symbolicMeaning.summary, content.symbolicMeaning.summary);
-    expect(reparsed.interpretations, content.interpretations);
-    expect(reparsed.remarks, content.remarks);
-  });
 }

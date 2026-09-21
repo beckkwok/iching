@@ -41,19 +41,6 @@ void main() {
     expect(all.first.guaName, '卦1');
   });
 
-  test('loadByCode returns the matching hexagram', () async {
-    final gua = await loader.loadByCode(23);
-    expect(gua, isNotNull);
-    expect(gua!.guaCode, 23);
-    expect(gua.guaName, '卦23');
-  });
-
-  test('loadByCode returns null for a missing code', () async {
-    final loader = HexagramLoader((code) async => null);
-    final gua = await loader.loadByCode(1);
-    expect(gua, isNull);
-  });
-
   test('loadAll skips malformed JSON', () async {
     final loader = HexagramLoader((code) async {
       if (code == 2) return 'not json';

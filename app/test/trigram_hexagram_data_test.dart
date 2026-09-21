@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:app/data/trigram_hexagram_data.dart';
-import 'package:app/models/trigram_hexagram.dart';
 
 void main() {
   group('TrigramHexagramData', () {
@@ -83,30 +82,9 @@ void main() {
       expect(TrigramHexagramData.byCodes(1, 1)?.resultCode, 1);
     });
 
-    test('byResultCode returns matching entry', () {
-      expect(TrigramHexagramData.byResultCode(64)?.resultName, '乾為天');
-      expect(TrigramHexagramData.byResultCode(25)?.resultName, '地風升');
-      expect(TrigramHexagramData.byResultCode(1)?.resultName, '坤為地');
-      expect(TrigramHexagramData.byResultCode(0), isNull);
-      expect(TrigramHexagramData.byResultCode(65), isNull);
-    });
-
     test('byCodes returns null for invalid combo', () {
       expect(TrigramHexagramData.byCodes(9, 1), isNull);
       expect(TrigramHexagramData.byCodes(1, 0), isNull);
-    });
-
-    test('model round-trips through toMap/fromMap', () {
-      const entry = TrigramHexagram(
-        lowCode: 4,
-        lowDesc: '風',
-        highCode: 1,
-        highName: '地',
-        resultCode: 25,
-        resultName: '地風升',
-      );
-      final reparsed = TrigramHexagram.fromMap(entry.toMap());
-      expect(reparsed, entry);
     });
   });
 }
