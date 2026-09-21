@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../models/language_preference.dart';
 import '../models/yao_line_type.dart';
 import '../services/gua_generator.dart';
@@ -38,6 +39,7 @@ class CastResultScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final gua = result.gua;
     final content = gua.content;
     final symbol = content?.guaSymbol ?? '';
@@ -49,7 +51,7 @@ class CastResultScreen extends StatelessWidget {
         backgroundColor: theme.colorScheme.inversePrimary,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          tooltip: 'Back to question',
+          tooltip: l10n.backToQuestion,
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -77,7 +79,7 @@ class CastResultScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      '第${gua.guaCode}卦',
+                      l10n.hexagramNumber(gua.guaCode),
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: theme.colorScheme.primary,
                         fontWeight: FontWeight.bold,
@@ -105,7 +107,7 @@ class CastResultScreen extends StatelessWidget {
                       ),
                     const SizedBox(height: 8),
                     Text(
-                      'Tap for details',
+                      l10n.tapForDetails,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -120,7 +122,7 @@ class CastResultScreen extends StatelessWidget {
           // Each yao line with its type
           if (lineTypes.length == 6) ...[
             Text(
-              '爻象',
+              l10n.linePattern,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -130,10 +132,10 @@ class CastResultScreen extends StatelessWidget {
             for (int i = lineTypes.length - 1; i >= 0; i--)
               _YaoLineRow(lineType: lineTypes[i], lineIndex: i),
           ] else
-            const Center(
+            Center(
               child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text('No cast details available.'),
+                padding: const EdgeInsets.all(24),
+                child: Text(l10n.noCastDetails),
               ),
             ),
           const SizedBox(height: 16),
@@ -157,7 +159,7 @@ class CastResultScreen extends StatelessWidget {
                   );
                 },
                 icon: const Icon(Icons.auto_awesome),
-                label: const Text('Get Explanation'),
+                label: Text(l10n.getExplanation),
               ),
             ),
         ],
