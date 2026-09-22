@@ -96,11 +96,14 @@ Project Plan
         - QuestionFormScreen → CastResultScreen → ExplanationScreen
     - localize the UI (English / Traditional Chinese)
         - AppLocalizations + LocaleController drive MaterialApp.locale from the saved setting
+    - redesign the UI for mobile (issue #6, phase 1)
+        - HomeShell with a forui bottom nav (History, Profile, Ask, Browse, Preference) + Rive-animated icons; header bar removed; History/Profile are placeholders
 
 5b. Implementation tasks 🔲 Remaining
     - Strategy pattern for GuaGenerator (GuaGeneratorStrategy interface)
     - Display independent image related to the gua
     - Enrich the gua content
+    - Mobile UI phase 2 (per-tab portrait redesign; History in issue #8, Profile in issue #3)
     - Android packaging and build verification (requires an arm64-v8a device)
     - Embed the model via a Play Asset Pack (offline from install) — deferred follow-up to issue #4
     - user documentation for usage and privacy assurances

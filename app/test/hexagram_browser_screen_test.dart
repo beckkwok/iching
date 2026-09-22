@@ -4,7 +4,6 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:app/screens/hexagram_browser_screen.dart';
 import 'package:app/screens/hexagram_detail_screen.dart';
-import 'package:app/screens/question_form_screen.dart';
 import 'package:app/services/database_service.dart';
 import 'package:app/services/hexagram_loader.dart';
 
@@ -72,8 +71,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    // AppBar + grid
-    expect(find.text('Hexagrams'), findsOneWidget);
+    // Grid (the header bar was removed in the mobile redesign).
     expect(find.byType(GridView), findsOneWidget);
 
     // Verify the grid fills width via max-cross-axis-extent.
@@ -127,44 +125,4 @@ void main() {
     expect(find.text('Hexagram 1'), findsOneWidget);
   });
 
-  testWidgets('question form has a Browse Hexagrams button', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(home: QuestionFormScreen(
-        databaseService: db,
-        hexagramLoader: loader,
-      )),
-    );
-
-    expect(find.text('Browse Hexagrams'), findsOneWidget);
-  });
-
-  testWidgets('Browse Hexagrams button opens the browser', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(home: QuestionFormScreen(
-        databaseService: db,
-        hexagramLoader: loader,
-      )),
-    );
-
-    // Scroll the form down to reveal the browse button.
-    await tester.drag(
-      find.byType(SingleChildScrollView),
-      const Offset(0, -400),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-    await tester.tap(find.text('Browse Hexagrams'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-
-    expect(find.byType(HexagramBrowserScreen), findsOneWidget);
-
-    await tester.runAsync(() async {
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-    });
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
-
-    expect(find.byType(GridView), findsOneWidget);
-  });
 }

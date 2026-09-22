@@ -10,6 +10,7 @@ Built with **Flutter**, **SQLite**, and **Gemma / Qwen** on-device models — no
 ## ✨ Features
 
 ### ✅ Implemented
+- **Mobile shell** — portrait-first UI with a `forui` bottom navigation bar (History, Profile, Ask, Browse, Preference) and Rive-animated icons; the header bar was removed
 - **Form-based consultation** — pick a question type (Career Achievement, Intellectual and moral cultivation, Timing, Attitude), enter your question, and submit
 - **I-Ching (Gua) casting** — six yao lines are cast with the traditional three-coin method (老陰/少陽/少陰/老陽) and resolved into a hexagram
 - **One-shot LLM explanation** — a single, token-light call connects the hexagram context to your question (no multi-turn chat, so it stays within the on-device model's context window)
