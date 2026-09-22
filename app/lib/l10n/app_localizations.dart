@@ -135,6 +135,11 @@ class AppLocalizations {
             'installation.',
         '這是一次性下載。安裝後模型將完全離線運行。',
       );
+  String get internetNotice => _t(
+        'Internet is used only to download the model. Your questions and '
+            'personal data stay on your device and are never uploaded.',
+        '網路僅用於下載模型。您的問題與個人資料保留在裝置上，絕不會上傳。',
+      );
   String get startupFailed => _t('Startup failed', '啟動失敗');
   String get loadFailed => _t('Load failed', '載入失敗');
   String get chatSessionFailed => _t('Chat session failed', '工作階段失敗');
@@ -142,8 +147,6 @@ class AppLocalizations {
   String get continueAnyway => _t('Continue anyway', '仍要繼續');
   String modelLoadFailed(String error) =>
       _t('Model file found but failed to load: $error', '找到模型檔案但載入失敗：$error');
-  String autoDetectFailed(String error) =>
-      _t('Auto-detected model failed to load: $error', '自動偵測的模型載入失敗：$error');
   String modelDownloadedFailed(String error) =>
       _t('Model downloaded but failed to load: $error', '模型已下載但載入失敗：$error');
   String downloadFailedWith(String error) =>

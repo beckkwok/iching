@@ -38,5 +38,12 @@ void main() {
     test('byKey returns null for an unknown key', () {
       expect(ModelCatalog.byKey('does_not_exist'), isNull);
     });
+
+    test('defaultModel resolves to the configured default key', () {
+      expect(ModelCatalog.byKey(ModelCatalog.defaultModelKey), isNotNull);
+      expect(ModelCatalog.defaultModel.key, ModelCatalog.defaultModelKey);
+      // Qwen3-0.6B is the production default (see issue #4).
+      expect(ModelCatalog.defaultModelKey, 'qwen3');
+    });
   });
 }
