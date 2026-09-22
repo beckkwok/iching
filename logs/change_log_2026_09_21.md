@@ -85,3 +85,18 @@ wide (160px), thin (5px) bars, so the figure was wider than tall.
 
 Verification: `flutter analyze` clean, 112 unit tests pass, integration test
 passes.
+
+### Follow-up: hexagram on the cast result page
+The cast result page (`CastResultScreen`) still drew the hexagram wide:
+- The 卦象 card showed only the Unicode symbol text.
+- The 爻象 rows used full-width (`Expanded`) bars.
+
+Fixed:
+- The 卦象 card now shows a `HexagramView` figure (taller than wide), with the
+  Unicode symbol kept as a small caption.
+- `_YaoLineRow` bars are now a fixed 72px wide, so the six stacked bars form a
+  tall figure instead of a wide one.
+- Added a regression test asserting the result page's figure is taller than wide.
+
+Verification: `flutter analyze` clean, 113 unit tests pass, integration test
+passes.
