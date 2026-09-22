@@ -35,6 +35,7 @@
 iching/
 ├── app/                          # Flutter application
 │   ├── lib/
+│   │   ├── config/               # Build-time config (app_config.dart)
 │   │   ├── data/                 # Static data (model_catalog.dart, trigram_hexagram_data.dart)
 │   │   ├── l10n/                 # Localization (app_localizations.dart, locale_controller.dart)
 │   │   ├── models/               # Dart data models
@@ -171,6 +172,8 @@ assets (`assets/hexagrams/gua_<n>.json`) via `HexagramLoader` — there is no
 - **LlmService** wraps flutter_gemma. `generateExplanation()` opens its own tool-free session (`openExplanationChat()`), sends one prompt combining hexagram context + question + language preference, and returns the response.
 - **Language & prompts**: `LanguagePreference` (en/cn) and a custom system prompt are stored in the `settings` table and injected into the explanation prompt.
 - **Hexagram data** is read straight from the bundled JSON assets by `HexagramLoader`. The DB migration to v6 drops any legacy `gua` table.
+- **Model startup**: production auto-selects and downloads `ModelCatalog.defaultModel` (Qwen3-0.6B) on first launch; the model-selection grid is development-only, gated by `AppConfig.allowModelSelection` (`--dart-define=ALLOW_MODEL_SELECTION`, defaults to `kDebugMode`). Internet is used only to download the model; no personal data is uploaded.
+- **`.litertlm` platform support**: the model requires an **arm64-v8a** Android device (or Windows desktop). The x86_64 Android emulator cannot run it.
 
 ---
 
