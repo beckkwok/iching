@@ -70,3 +70,18 @@ Manual review (per the code-review skill) found one more untranslated string:
 
 Verification: `flutter analyze` clean, 109 unit tests pass, integration test
 passes.
+
+## Task: Fix hexagram display collapsed (issue #12)
+
+The 6-line hexagram figure in `HexagramDetailScreen`'s header was drawn with
+wide (160px), thin (5px) bars, so the figure was wider than tall.
+
+- Added `lib/widgets/hexagram_view.dart` — `HexagramView` renders the six yao
+  lines bottom→top with narrow bars (default 72px wide, 9px thick, 6px gaps),
+  making the figure taller than it is wide.
+- `HexagramDetailScreen` now uses `HexagramView`; removed the local `_Line`.
+- Added `test/hexagram_view_test.dart` — asserts the figure is taller than wide,
+  yang = one bar / yin = two segments, and custom dimensions.
+
+Verification: `flutter analyze` clean, 112 unit tests pass, integration test
+passes.
