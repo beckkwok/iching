@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:forui/forui.dart';
 
 import 'l10n/app_localizations.dart';
 import 'l10n/locale_controller.dart';
@@ -67,6 +68,11 @@ class MyApp extends StatelessWidget {
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
             useMaterial3: true,
+          ),
+          // forui theme for the mobile widgets (bottom navigation, etc.).
+          builder: (context, child) => FTheme(
+            data: FThemeData(touch: true, colors: FColors.neutralLight),
+            child: child!,
           ),
           home: ModelSelectionScreen(databaseService: databaseService),
         ),

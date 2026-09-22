@@ -32,8 +32,24 @@ class AppLocalizations {
       Localizations.of<AppLocalizations>(context, AppLocalizations) ??
       AppLocalizations(const Locale('en'));
 
+  // --- Navigation (bottom bar) -----------------------------------------
+  String get navHistory => _t('History', '歷史');
+  String get navProfile => _t('Profile', '個人');
+  String get navAsk => _t('Ask', '提問');
+  String get navBrowse => _t('Browse', '卦象');
+  String get navPreference => _t('Preference', '偏好');
+
+  // --- Placeholder screens ---------------------------------------------
+  String get historyPlaceholder => _t(
+        'Your past consultations will appear here.',
+        '您過往的諮詢紀錄將顯示於此。',
+      );
+  String get profilePlaceholder => _t(
+        'Profile settings are coming soon.',
+        '個人設定即將推出。',
+      );
+
   // --- Common -----------------------------------------------------------
-  String get appTitle => _t('I-Ching Consultation', '易經諮詢');
   String get settings => _t('Settings', '設定');
   String get cancel => _t('Cancel', '取消');
   String get remove => _t('Remove', '移除');
@@ -57,7 +73,6 @@ class AppLocalizations {
   String get generateHexagram => _t('Help me to generate hexagram', '幫我起卦');
   String get submitQuestion => _t('Submit Question', '提交問題');
   String get casting => _t('Casting...', '起卦中…');
-  String get browseHexagrams => _t('Browse Hexagrams', '瀏覽六十四卦');
   String get enableGenerationHint =>
       _t('Enable hexagram generation to begin your reading.', '請啟用起卦以開始您的解讀。');
 

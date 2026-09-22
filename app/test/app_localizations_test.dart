@@ -11,7 +11,7 @@ void main() {
       final l10n = AppLocalizations(const Locale('en'));
 
       expect(l10n.isChinese, isFalse);
-      expect(l10n.appTitle, 'I-Ching Consultation');
+      expect(l10n.navAsk, 'Ask');
       expect(l10n.submitQuestion, 'Submit Question');
       expect(l10n.interpretation, 'Interpretation');
     });
@@ -20,7 +20,7 @@ void main() {
       final l10n = AppLocalizations(const Locale('zh'));
 
       expect(l10n.isChinese, isTrue);
-      expect(l10n.appTitle, '易經諮詢');
+      expect(l10n.navAsk, '提問');
       expect(l10n.submitQuestion, '提交問題');
       expect(l10n.interpretation, '解讀');
     });
