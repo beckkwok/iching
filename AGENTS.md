@@ -148,11 +148,17 @@ iching/
 **Run tests:**
 ```bash
 cd app
+flutter analyze                 # Static analysis
 flutter test                    # Unit + widget tests
-flutter test -d windows integration_test/all_tests.dart  # Integration tests (Windows desktop)
+flutter test -d windows integration_test/cast_and_browse_test.dart  # Integration (Windows desktop)
 ```
 
-**Before every commit** run `flutter test && flutter test -d windows integration_test/cast_and_browse_test.dart` to verify nothing is broken.
+**Default verification before a commit:** `flutter analyze && flutter test`.
+
+**Workflow preferences:**
+- Only run integration/Android/device tests when explicitly requested — they are
+  slow, and Android real-model tests need an arm64-v8a device.
+- Skip the code-review step unless a merge conflict occurs.
 
 ---
 
