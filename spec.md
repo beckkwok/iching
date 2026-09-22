@@ -82,7 +82,7 @@ Project Plan
     - Hexagrams loaded directly from JSON assets via HexagramLoader (no gua DB table)
     - integrate offline Gemma-compatible local model runtime
         - flutter_gemma plugin integrated
-        - Model catalog (6 models) + download on first run
+        - Default model (Qwen3-0.6B) auto-downloaded on first run; selection is development-only
         - openExplanationChat() tool-free session
     - customize server prompt design
         - I-Ching consultant system prompt with reflection guidelines
@@ -101,7 +101,8 @@ Project Plan
     - Strategy pattern for GuaGenerator (GuaGeneratorStrategy interface)
     - Display independent image related to the gua
     - Enrich the gua content
-    - Android packaging and build verification
+    - Android packaging and build verification (requires an arm64-v8a device)
+    - Embed the model via a Play Asset Pack (offline from install) — deferred follow-up to issue #4
     - user documentation for usage and privacy assurances
 
 6. Testing, deployment, and documentation ✅ Completed

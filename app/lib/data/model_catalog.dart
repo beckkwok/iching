@@ -93,6 +93,12 @@ class ModelCatalog {
     ),
   ];
 
+  /// The model used by default in production (auto-downloaded on first run).
+  static const String defaultModelKey = 'qwen3';
+
+  /// The default model, or the first catalog entry if the key is missing.
+  static ModelInfo get defaultModel => byKey(defaultModelKey) ?? all.first;
+
   /// Look up a model by its [key].
   static ModelInfo? byKey(String key) {
     for (final m in all) {
