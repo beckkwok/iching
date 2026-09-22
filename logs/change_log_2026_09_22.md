@@ -48,3 +48,33 @@ is surfaced to the user via the new notice and matches the privacy screen.
 - `flutter analyze` — no new issues
 - `flutter test` — 117 unit tests pass
 - `flutter test -d windows integration_test/cast_and_browse_test.dart` — 2 pass
+
+## Task: Mobile UI redesign — Phase 1 (issue #6)
+
+Portrait-first shell with a bottom navigation bar; header bars removed.
+
+### Changes
+- Added `forui: ^0.25.0` (newest compatible with Flutter 3.44) and
+  `rive: ^0.13.20` (the version matching the Rive sample's API).
+- Copied the sample's `icons.riv`/`menu_button.riv` to `assets/RiveAssets/`.
+- **`lib/screens/home_shell.dart`** (new) — Material `Scaffold` +
+  `forui` `FBottomNavigationBar` hosting five lazily-built tabs (History,
+  Profile, Ask, Browse, Preference) with Rive-animated icons
+  (`assets/RiveAssets/icons.riv`). `HomeShell.enableRiveAnimations` is disabled
+  in widget tests (no Rive native library there) with a Material-icon fallback.
+- **`lib/screens/history_screen.dart`**, **`profile_screen.dart`** (new
+  placeholders — real work tracked in issues #8 and #3).
+- Removed the `AppBar` from `QuestionFormScreen`, `HexagramBrowserScreen`, and
+  `SettingsScreen`; removed the now-redundant settings menu and "Browse
+  Hexagrams" button from the form.
+- `main.dart` — wrapped `MaterialApp` in `forui` `FTheme`.
+- `ModelSelectionScreen` now proceeds to `HomeShell` after the model loads.
+
+### Verification
+- `flutter analyze` — clean
+- `flutter test` — 118 unit tests pass
+- **Android** (x86_64 emulator): shell + Rive nav smoke test passed ✅
+- **Windows**: ❌ blocked — the `rive_common` plugin hardcodes the **ClangCL**
+  VS toolset, which isn't installed (`error MSB8020`). Windows builds need the
+  "C++ Clang Compiler for Windows" component. Non-interactive install attempt
+  returned exit 5007 (elevation required).

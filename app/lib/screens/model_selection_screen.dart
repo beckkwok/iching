@@ -9,7 +9,7 @@ import '../models/model_info.dart';
 import '../services/llm_service.dart';
 import '../services/database_service.dart';
 import '../services/gua_generator.dart';
-import 'question_form_screen.dart';
+import 'home_shell.dart';
 
 /// Startup screen that loads the model and proceeds to the consultation.
 ///
@@ -247,7 +247,7 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => QuestionFormScreen(
+        builder: (_) => HomeShell(
           databaseService: widget.databaseService,
           llmService: _llmService,
         ),
@@ -259,7 +259,7 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) =>
-            QuestionFormScreen(databaseService: widget.databaseService),
+            HomeShell(databaseService: widget.databaseService),
       ),
     );
   }

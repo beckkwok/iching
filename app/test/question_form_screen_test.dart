@@ -7,7 +7,6 @@ import 'package:app/l10n/app_localizations.dart';
 import 'package:app/models/question_type.dart';
 import 'package:app/screens/cast_result_screen.dart';
 import 'package:app/screens/question_form_screen.dart';
-import 'package:app/screens/settings_screen.dart';
 import 'package:app/services/database_service.dart';
 import 'package:app/services/gua_generator.dart';
 import 'package:app/services/hexagram_loader.dart';
@@ -59,12 +58,10 @@ void main() {
   });
 
   final generator = GuaGenerator(HexagramLoader((code) async => fixtureJson(code)));
-  final loader = HexagramLoader((code) async => fixtureJson(code));
 
   QuestionFormScreen buildForm() => QuestionFormScreen(
         databaseService: db,
         guaGenerator: generator,
-        hexagramLoader: loader,
       );
 
   testWidgets('question form shows type selector, text box and submit button',
@@ -162,19 +159,6 @@ void main() {
     expect(find.byType(CastResultScreen), findsNothing);
   });
 
-  testWidgets('settings menu opens the settings screen', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(home: buildForm()),
-    );
-
-    await tester.tap(find.byIcon(Icons.more_vert));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Settings'));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(SettingsScreen), findsOneWidget);
-  });
-
   testWidgets('first page renders Chinese when the locale is zh',
       (tester) async {
     await tester.pumpWidget(
@@ -192,10 +176,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('易經諮詢'), findsOneWidget);
     expect(find.text('您想向易經請教什麼？'), findsOneWidget);
     expect(find.text('提交問題'), findsOneWidget);
-    expect(find.text('瀏覽六十四卦'), findsOneWidget);
     // The English labels are gone.
     expect(find.text('Submit Question'), findsNothing);
   });

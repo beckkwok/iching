@@ -4,11 +4,8 @@ import '../models/language_preference.dart';
 import '../models/question_type.dart';
 import '../services/database_service.dart';
 import '../services/gua_generator.dart';
-import '../services/hexagram_loader.dart';
 import '../services/llm_service.dart';
 import 'cast_result_screen.dart';
-import 'hexagram_browser_screen.dart';
-import 'settings_screen.dart';
 
 /// First screen of the consultation flow: asks the user what kind of question
 /// they want to ask, captures the exact question text, and submits it.
@@ -23,16 +20,11 @@ class QuestionFormScreen extends StatefulWidget {
   /// the bundled JSON assets is used.
   final GuaGenerator? guaGenerator;
 
-  /// Optional loader for tests. When omitted, the bundled JSON assets are used
-  /// by the hexagram browser.
-  final HexagramLoader? hexagramLoader;
-
   const QuestionFormScreen({
     super.key,
     required this.databaseService,
     this.llmService,
     this.guaGenerator,
-    this.hexagramLoader,
   });
 
   @override
@@ -107,38 +99,6 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.appTitle),
-        backgroundColor: theme.colorScheme.inversePrimary,
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            tooltip: l10n.settings,
-            onSelected: (value) {
-              if (value == 'settings') {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => SettingsScreen(
-                      llmService: widget.llmService,
-                      databaseService: widget.databaseService,
-                    ),
-                  ),
-                );
-              }
-            },
-            itemBuilder: (_) => [
-              PopupMenuItem(
-                value: 'settings',
-                child: ListTile(
-                  leading: const Icon(Icons.settings),
-                  title: Text(l10n.settings),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -236,25 +196,6 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                       label: Text(
                         _isSubmitting ? l10n.casting : l10n.submitQuestion,
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Browse hexagrams
-                  SizedBox(
-                    height: 48,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => HexagramBrowserScreen(
-                              loader: widget.hexagramLoader,
-                            ),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.grid_view),
-                      label: Text(l10n.browseHexagrams),
                     ),
                   ),
                 ],
