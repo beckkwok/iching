@@ -43,10 +43,6 @@ class _HexagramBrowserScreenState extends State<HexagramBrowserScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context).hexagrams),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
       body: _buildBody(context),
     );
   }

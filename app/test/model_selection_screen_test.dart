@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:forui/forui.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
@@ -10,10 +11,20 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:app/data/model_catalog.dart';
 import 'package:app/l10n/app_localizations.dart';
 import 'package:app/models/model_info.dart';
+import 'package:app/screens/home_shell.dart';
 import 'package:app/screens/model_selection_screen.dart';
-import 'package:app/screens/question_form_screen.dart';
 import 'package:app/services/database_service.dart';
 import 'package:app/services/llm_service.dart';
+
+/// A [MaterialApp] wrapped in an [FTheme] so forui widgets (the bottom nav in
+/// [HomeShell]) can render.
+Widget _app(Widget home) => MaterialApp(
+      builder: (context, child) => FTheme(
+        data: FThemeData(touch: true, colors: FColors.neutralLight),
+        child: child!,
+      ),
+      home: home,
+    );
 
 /// Fake platform directory provider so the screen's model-file check runs
 /// against an empty temp directory instead of the real app support dir.
@@ -99,6 +110,8 @@ void main() {
   late Directory tempDir;
 
   setUp(() async {
+    // The Rive native library isn't available in the widget-test VM.
+    HomeShell.enableRiveAnimations = false;
     tempDir = await Directory.systemTemp.createTemp('iching_model_test');
     PathProviderPlatform.instance = _FakePathProvider(tempDir.path);
   });
@@ -210,16 +223,16 @@ void main() {
     expect(find.byIcon(Icons.error_outline), findsOneWidget);
   });
 
-  testWidgets('"Continue anyway" opens the question form', (tester) async {
+  testWidgets('"Continue anyway" opens the app shell', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: ModelSelectionScreen(databaseService: _ThrowingDatabaseService())),
+      _app(ModelSelectionScreen(databaseService: _ThrowingDatabaseService())),
     );
     await settleStartup(tester);
 
     await tester.tap(find.text('Continue anyway'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(QuestionFormScreen), findsOneWidget);
+    expect(find.byType(HomeShell), findsOneWidget);
   });
 
   testWidgets('shows the Chinese setup title when the locale is zh',
@@ -248,8 +261,8 @@ void main() {
     _FakeLlmService? created;
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: ModelSelectionScreen(
+      _app(
+        ModelSelectionScreen(
           databaseService: db,
           allowSelection: false,
           llmServiceFactory: (model) => created = _FakeLlmService(model),
@@ -267,7 +280,7 @@ void main() {
       await db.getSetting('selected_model_key'),
       ModelCatalog.defaultModelKey,
     );
-    expect(find.byType(QuestionFormScreen), findsOneWidget);
+    expect(find.byType(HomeShell), findsOneWidget);
   });
 
   testWidgets('production loads an installed model without downloading',
@@ -286,8 +299,8 @@ void main() {
     _FakeLlmService? created;
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: ModelSelectionScreen(
+      _app(
+        ModelSelectionScreen(
           databaseService: db,
           allowSelection: false,
           llmServiceFactory: (model) => created = _FakeLlmService(model),
@@ -300,6 +313,6 @@ void main() {
     expect(created, isNotNull);
     expect(created!.downloadCalls, 0);
     expect(created!.openChatCalls, 1);
-    expect(find.byType(QuestionFormScreen), findsOneWidget);
+    expect(find.byType(HomeShell), findsOneWidget);
   });
 }

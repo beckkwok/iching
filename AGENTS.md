@@ -51,7 +51,10 @@ iching/
 │   │   │   ├── explanation_screen.dart
 │   │   │   ├── hexagram_browser_screen.dart
 │   │   │   ├── hexagram_detail_screen.dart
+│   │   │   ├── history_screen.dart
+│   │   │   ├── home_shell.dart
 │   │   │   ├── model_selection_screen.dart
+│   │   │   ├── profile_screen.dart
 │   │   │   ├── prompt_editor_screen.dart
 │   │   │   ├── question_form_screen.dart
 │   │   │   └── settings_screen.dart
@@ -65,6 +68,7 @@ iching/
 │   │   │   └── hexagram_view.dart
 │   │   └── main.dart
 │   ├── assets/hexagrams/         # Individual hexagram JSON files
+│   ├── assets/RiveAssets/        # Rive animations (bottom-nav icons)
 │   ├── test/
 │   │   ├── app_localizations_test.dart
 │   │   ├── cast_result_screen_test.dart
@@ -72,6 +76,7 @@ iching/
 │   │   ├── explanation_screen_test.dart
 │   │   ├── gua_generator_test.dart
 │   │   ├── hexagram_browser_screen_test.dart
+│   │   ├── home_shell_test.dart
 │   │   ├── hexagram_content_test.dart
 │   │   ├── hexagram_loader_test.dart
 │   │   ├── hexagram_detail_screen_test.dart
@@ -174,6 +179,8 @@ assets (`assets/hexagrams/gua_<n>.json`) via `HexagramLoader` — there is no
 - **Hexagram data** is read straight from the bundled JSON assets by `HexagramLoader`. The DB migration to v6 drops any legacy `gua` table.
 - **Model startup**: production auto-selects and downloads `ModelCatalog.defaultModel` (Qwen3-0.6B) on first launch; the model-selection grid is development-only, gated by `AppConfig.allowModelSelection` (`--dart-define=ALLOW_MODEL_SELECTION`, defaults to `kDebugMode`). Internet is used only to download the model; no personal data is uploaded.
 - **`.litertlm` platform support**: the model requires an **arm64-v8a** Android device (or Windows desktop). The x86_64 Android emulator cannot run it.
+- **Mobile shell** (`HomeShell`): a `forui` `FBottomNavigationBar` hosts five tabs — History, Profile, Ask, Browse, Preference — with Rive-animated icons from `assets/RiveAssets/icons.riv`. The header bar was removed (issue #6). History (issue #8) and Profile (issue #3) are placeholders. `HomeShell.enableRiveAnimations` is set to `false` in widget tests because the Rive native library isn't available there.
+- **Rive + Windows**: the `rive_common` plugin hardcodes the **ClangCL** VS toolset, so Windows builds require the "C++ Clang Compiler for Windows" component (not installed by default). Android builds are unaffected.
 
 ---
 
