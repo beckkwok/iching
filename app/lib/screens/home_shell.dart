@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:rive/rive.dart';
@@ -21,6 +22,15 @@ const List<({String artboard, String machine})> _navItems = [
   (artboard: 'HOME', machine: 'HOME_interactivity'),
 ];
 
+/// Material fallback icons (used when Rive animations are disabled).
+const List<IconData> _fallbackIcons = [
+  Icons.history,
+  Icons.person_outline,
+  Icons.question_answer_outlined,
+  Icons.grid_view_outlined,
+  Icons.tune,
+];
+
 /// The app shell: a bottom navigation bar hosting the five top-level tabs.
 ///
 /// The header bar was intentionally removed as part of the mobile redesign
@@ -28,9 +38,11 @@ const List<({String artboard, String machine})> _navItems = [
 class HomeShell extends StatefulWidget {
   /// Whether to render the Rive-animated navigation icons.
   ///
-  /// Disabled in widget tests, where the Rive native library isn't available
-  /// (a plain Material icon is used instead).
-  static bool enableRiveAnimations = true;
+  /// Disabled on Windows (the Rive runtime crashes there) and in widget tests
+  /// (no Rive native library) — a plain Material icon is used instead. Rive is
+  /// used on Android/iOS.
+  static bool enableRiveAnimations =
+      !kIsWeb && defaultTargetPlatform != TargetPlatform.windows;
 
   final DatabaseService? databaseService;
   final LlmService? llmService;
@@ -51,11 +63,66 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   late int _index = widget.initialIndex;
-  final List<SMIBool?> _navInputs =
-      List<SMIBool?>.filled(_navItems.length, null);
 
   /// Lazily-built tabs, kept alive once visited.
   final List<Widget?> _tabs = List<Widget?>.filled(_navItems.length, null);
+
+  File? _riveFile;
+  final List<RiveWidgetController?> _navControllers =
+      List<RiveWidgetController?>.filled(_navItems.length, null);
+
+  @override
+  void initState() {
+    super.initState();
+    if (HomeShell.enableRiveAnimations) _loadRive();
+  }
+
+  Future<void> _loadRive() async {
+    File? file;
+    try {
+      file = await File.asset(
+        'assets/RiveAssets/icons.riv',
+        riveFactory: Factory.rive,
+      );
+    } catch (e) {
+      // ignore: avoid_print
+      print('Rive load failed: $e');
+      return;
+    }
+    if (file == null || !mounted) return;
+    for (var i = 0; i < _navItems.length; i++) {
+      try {
+        _navControllers[i] = RiveWidgetController(
+          file,
+          artboardSelector: ArtboardNamed(_navItems[i].artboard),
+          stateMachineSelector: StateMachineNamed(_navItems[i].machine),
+        );
+      } catch (_) {
+        // Artboard/state machine missing — the fallback icon is used.
+      }
+    }
+    if (mounted) setState(() => _riveFile = file);
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _navControllers) {
+      controller?.dispose();
+    }
+    _riveFile?.dispose();
+    super.dispose();
+  }
+
+  void _select(int i) {
+    if (i != _index) setState(() => _index = i);
+    final input = _navControllers[i]?.stateMachine.boolean('active');
+    if (input != null) {
+      input.value = true;
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) input.value = false;
+      });
+    }
+  }
 
   Widget _buildTab(int i) => switch (i) {
         0 => const HistoryScreen(),
@@ -70,25 +137,6 @@ class _HomeShellState extends State<HomeShell> {
             llmService: widget.llmService,
           ),
       };
-
-  void _onNavInit(int i, Artboard artboard) {
-    final controller =
-        StateMachineController.fromArtboard(artboard, _navItems[i].machine);
-    if (controller == null) return;
-    artboard.addController(controller);
-    _navInputs[i] = controller.findInput<bool>('active') as SMIBool?;
-  }
-
-  void _select(int i) {
-    if (i != _index) setState(() => _index = i);
-    final input = _navInputs[i];
-    if (input != null) {
-      input.change(true);
-      Future.delayed(const Duration(seconds: 1), () {
-        if (mounted) input.change(false);
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -117,9 +165,9 @@ class _HomeShellState extends State<HomeShell> {
           for (var i = 0; i < _navItems.length; i++)
             FBottomNavigationBarItem(
               icon: _RiveNavIcon(
-                artboard: _navItems[i].artboard,
+                controller: _navControllers[i],
+                fallbackIcon: _fallbackIcons[i],
                 active: _index == i,
-                onInit: (artboard) => _onNavInit(i, artboard),
               ),
               label: Text(labels[i]),
             ),
@@ -131,41 +179,27 @@ class _HomeShellState extends State<HomeShell> {
 
 /// A Rive-animated navigation icon from `assets/RiveAssets/icons.riv`.
 class _RiveNavIcon extends StatelessWidget {
-  final String artboard;
+  final RiveWidgetController? controller;
+  final IconData fallbackIcon;
   final bool active;
-  final ValueChanged<Artboard> onInit;
 
   const _RiveNavIcon({
-    required this.artboard,
+    required this.controller,
+    required this.fallbackIcon,
     required this.active,
-    required this.onInit,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (!HomeShell.enableRiveAnimations) {
-      return Icon(_fallbackIcon, size: 22);
-    }
+    final controller = this.controller;
+    if (controller == null) return Icon(fallbackIcon, size: 22);
     return SizedBox(
       height: 26,
       width: 26,
       child: Opacity(
         opacity: active ? 1 : 0.55,
-        child: RiveAnimation.asset(
-          'assets/RiveAssets/icons.riv',
-          artboard: artboard,
-          onInit: onInit,
-        ),
+        child: RiveWidget(controller: controller, fit: Fit.contain),
       ),
     );
   }
-
-  /// Material fallback used when Rive animations are disabled (tests).
-  IconData get _fallbackIcon => switch (artboard) {
-        'TIMER' => Icons.history,
-        'USER' => Icons.person_outline,
-        'CHAT' => Icons.question_answer_outlined,
-        'SEARCH' => Icons.grid_view_outlined,
-        _ => Icons.tune,
-      };
 }
