@@ -197,23 +197,30 @@ class _YaoLineRow extends StatelessWidget {
         ? theme.colorScheme.primary
         : theme.colorScheme.tertiary;
 
+    // The 爻位 and type boxes share a width so the bar sits dead centre.
+    const sideWidth = 72.0;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // 爻位
           SizedBox(
-            width: 40,
+            width: sideWidth,
             child: Text(
               _positionLabel,
+              textAlign: TextAlign.right,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ),
+          const SizedBox(width: 12),
           // Line pattern (solid or broken) — narrow so the stacked bars form
-          // a tall hexagram figure rather than a wide one.
+          // a tall hexagram figure; a fixed width keeps every bar aligned.
           SizedBox(
+            key: ValueKey('yao-bar-$lineIndex'),
             width: 72,
             child: lineType.isYang
                 ? Container(
@@ -249,21 +256,24 @@ class _YaoLineRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           // Type label
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: lineType.isChanging
-                  ? theme.colorScheme.errorContainer
-                  : theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              '${lineType.label}${lineType.isChanging ? ' 變' : ''}',
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+          SizedBox(
+            width: sideWidth,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
                 color: lineType.isChanging
-                    ? theme.colorScheme.onErrorContainer
-                    : theme.colorScheme.onSurface,
+                    ? theme.colorScheme.errorContainer
+                    : theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '${lineType.label}${lineType.isChanging ? ' 變' : ''}',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: lineType.isChanging
+                      ? theme.colorScheme.onErrorContainer
+                      : theme.colorScheme.onSurface,
+                ),
               ),
             ),
           ),

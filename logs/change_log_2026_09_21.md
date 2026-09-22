@@ -100,3 +100,12 @@ Fixed:
 
 Verification: `flutter analyze` clean, 113 unit tests pass, integration test
 passes.
+
+### Follow-up: centre the 爻象 bars
+The narrowed 爻象 bars were left-aligned. `_YaoLineRow` now uses
+`MainAxisAlignment.center` with equal-width (72px) 爻位/type boxes so the six
+bars are vertically aligned and centred on the page. Added a test asserting the
+bar centres coincide and sit at the screen centre.
+
+Verification: `flutter analyze` clean, 114 unit tests pass, integration test
+passes.
