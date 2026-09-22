@@ -7,6 +7,7 @@ import 'package:app/screens/cast_result_screen.dart';
 import 'package:app/screens/explanation_screen.dart';
 import 'package:app/screens/hexagram_detail_screen.dart';
 import 'package:app/services/gua_generator.dart';
+import 'package:app/widgets/hexagram_view.dart';
 
 const _guaJson = '''
 {
@@ -60,6 +61,35 @@ void main() {
     expect(find.text('Hexagram 46'), findsOneWidget);
     expect(find.text('地風升'), findsWidgets);
     expect(find.text('䷭（下巽上坤）'), findsOneWidget);
+  });
+
+  testWidgets('cast result shows a hexagram figure taller than it is wide',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(home: CastResultScreen(result: _result())),
+    );
+
+    final figure = find.byType(HexagramView);
+    expect(figure, findsOneWidget);
+    final size = tester.getSize(figure);
+    expect(size.height, greaterThan(size.width));
+  });
+
+  testWidgets('爻象 bars are aligned and centred', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(home: CastResultScreen(result: _result())),
+    );
+
+    final centers = <double>[];
+    for (var i = 0; i < 6; i++) {
+      centers.add(tester.getCenter(find.byKey(ValueKey('yao-bar-$i'))).dx);
+    }
+
+    // Every bar shares the same horizontal centre...
+    expect(centers.toSet().length, 1);
+    // ...and that centre is the middle of the screen.
+    final screenCenter = tester.getSize(find.byType(MaterialApp)).width / 2;
+    expect((centers.first - screenCenter).abs(), lessThan(1));
   });
 
   testWidgets('cast result shows all four yao line types', (tester) async {

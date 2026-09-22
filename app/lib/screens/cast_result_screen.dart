@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import '../data/trigram_hexagram_data.dart';
 import '../l10n/app_localizations.dart';
 import '../models/language_preference.dart';
 import '../models/yao_line_type.dart';
 import '../services/gua_generator.dart';
 import '../services/llm_service.dart';
+import '../widgets/hexagram_view.dart';
 import 'explanation_screen.dart';
 import 'hexagram_detail_screen.dart';
 
@@ -44,6 +46,11 @@ class CastResultScreen extends StatelessWidget {
     final content = gua.content;
     final symbol = content?.guaSymbol ?? '';
     final lineTypes = result.lineTypes;
+    // The six lines to draw: the cast lines when available, else derived from
+    // the hexagram symbol.
+    final lines = result.hasCast
+        ? result.lines
+        : TrigramHexagramData.linesFromSymbol(symbol);
 
     return Scaffold(
       appBar: AppBar(
@@ -93,18 +100,18 @@ class CastResultScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    if (symbol.isNotEmpty)
+                    // Hexagram figure — taller than it is wide.
+                    HexagramView(lines: lines),
+                    if (symbol.isNotEmpty) ...[
+                      const SizedBox(height: 12),
                       Text(
                         symbol,
                         textAlign: TextAlign.center,
-                        style: theme.textTheme.headlineMedium,
-                      )
-                    else
-                      Icon(
-                        Icons.auto_awesome,
-                        size: 64,
-                        color: theme.colorScheme.primary,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
+                    ],
                     const SizedBox(height: 8),
                     Text(
                       l10n.tapForDetails,
@@ -190,22 +197,31 @@ class _YaoLineRow extends StatelessWidget {
         ? theme.colorScheme.primary
         : theme.colorScheme.tertiary;
 
+    // The 爻位 and type boxes share a width so the bar sits dead centre.
+    const sideWidth = 72.0;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // 爻位
           SizedBox(
-            width: 40,
+            width: sideWidth,
             child: Text(
               _positionLabel,
+              textAlign: TextAlign.right,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ),
-          // Line pattern (solid or broken)
-          Expanded(
+          const SizedBox(width: 12),
+          // Line pattern (solid or broken) — narrow so the stacked bars form
+          // a tall hexagram figure; a fixed width keeps every bar aligned.
+          SizedBox(
+            key: ValueKey('yao-bar-$lineIndex'),
+            width: 72,
             child: lineType.isYang
                 ? Container(
                     height: 8,
@@ -225,7 +241,7 @@ class _YaoLineRow extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 20),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: Container(
                           height: 8,
@@ -240,21 +256,24 @@ class _YaoLineRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           // Type label
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: lineType.isChanging
-                  ? theme.colorScheme.errorContainer
-                  : theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              '${lineType.label}${lineType.isChanging ? ' 變' : ''}',
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+          SizedBox(
+            width: sideWidth,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
                 color: lineType.isChanging
-                    ? theme.colorScheme.onErrorContainer
-                    : theme.colorScheme.onSurface,
+                    ? theme.colorScheme.errorContainer
+                    : theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '${lineType.label}${lineType.isChanging ? ' 變' : ''}',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: lineType.isChanging
+                      ? theme.colorScheme.onErrorContainer
+                      : theme.colorScheme.onSurface,
+                ),
               ),
             ),
           ),

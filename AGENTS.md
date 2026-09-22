@@ -60,6 +60,8 @@ iching/
 │   │   │   ├── gua_generator.dart
 │   │   │   ├── hexagram_loader.dart
 │   │   │   └── llm_service.dart
+│   │   ├── widgets/              # Reusable UI components
+│   │   │   └── hexagram_view.dart
 │   │   └── main.dart
 │   ├── assets/hexagrams/         # Individual hexagram JSON files
 │   ├── test/
@@ -72,6 +74,7 @@ iching/
 │   │   ├── hexagram_content_test.dart
 │   │   ├── hexagram_loader_test.dart
 │   │   ├── hexagram_detail_screen_test.dart
+│   │   ├── hexagram_view_test.dart
 │   │   ├── language_preference_test.dart
 │   │   ├── llm_service_test.dart
 │   │   ├── migration_v4_test.dart
