@@ -38,9 +38,6 @@ dependencies:
   # UI library (shadcn-inspired) for the mobile redesign.
   forui: ^0.25.0
 
-  # Rive animations for the animated bottom navigation.
-  rive: ^0.14.11
-
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
@@ -91,7 +88,6 @@ flutter:
 
   assets:
     - assets/hexagrams/
-    - assets/RiveAssets/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

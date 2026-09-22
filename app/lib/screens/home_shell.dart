@@ -1,7 +1,5 @@
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
-import 'package:rive/rive.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/database_service.dart';
@@ -12,18 +10,9 @@ import 'profile_screen.dart';
 import 'question_form_screen.dart';
 import 'settings_screen.dart';
 
-/// The bottom-nav destinations, in order: History, Profile, Ask, Browse,
-/// Preference. Each maps to an artboard/state machine in `icons.riv`.
-const List<({String artboard, String machine})> _navItems = [
-  (artboard: 'TIMER', machine: 'TIMER_Interactivity'),
-  (artboard: 'USER', machine: 'USER_Interactivity'),
-  (artboard: 'CHAT', machine: 'CHAT_Interactivity'),
-  (artboard: 'SEARCH', machine: 'SEARCH_Interactivity'),
-  (artboard: 'HOME', machine: 'HOME_interactivity'),
-];
-
-/// Material fallback icons (used when Rive animations are disabled).
-const List<IconData> _fallbackIcons = [
+/// Icons for the five bottom-nav destinations, in order:
+/// History, Profile, Ask, Browse, Preference.
+const List<IconData> _navIcons = [
   Icons.history,
   Icons.person_outline,
   Icons.question_answer_outlined,
@@ -36,14 +25,6 @@ const List<IconData> _fallbackIcons = [
 /// The header bar was intentionally removed as part of the mobile redesign
 /// (issue #6).
 class HomeShell extends StatefulWidget {
-  /// Whether to render the Rive-animated navigation icons.
-  ///
-  /// Disabled on Windows (the Rive runtime crashes there) and in widget tests
-  /// (no Rive native library) — a plain Material icon is used instead. Rive is
-  /// used on Android/iOS.
-  static bool enableRiveAnimations =
-      !kIsWeb && defaultTargetPlatform != TargetPlatform.windows;
-
   final DatabaseService? databaseService;
   final LlmService? llmService;
 
@@ -65,63 +46,10 @@ class _HomeShellState extends State<HomeShell> {
   late int _index = widget.initialIndex;
 
   /// Lazily-built tabs, kept alive once visited.
-  final List<Widget?> _tabs = List<Widget?>.filled(_navItems.length, null);
-
-  File? _riveFile;
-  final List<RiveWidgetController?> _navControllers =
-      List<RiveWidgetController?>.filled(_navItems.length, null);
-
-  @override
-  void initState() {
-    super.initState();
-    if (HomeShell.enableRiveAnimations) _loadRive();
-  }
-
-  Future<void> _loadRive() async {
-    File? file;
-    try {
-      file = await File.asset(
-        'assets/RiveAssets/icons.riv',
-        riveFactory: Factory.rive,
-      );
-    } catch (e) {
-      // ignore: avoid_print
-      print('Rive load failed: $e');
-      return;
-    }
-    if (file == null || !mounted) return;
-    for (var i = 0; i < _navItems.length; i++) {
-      try {
-        _navControllers[i] = RiveWidgetController(
-          file,
-          artboardSelector: ArtboardNamed(_navItems[i].artboard),
-          stateMachineSelector: StateMachineNamed(_navItems[i].machine),
-        );
-      } catch (_) {
-        // Artboard/state machine missing — the fallback icon is used.
-      }
-    }
-    if (mounted) setState(() => _riveFile = file);
-  }
-
-  @override
-  void dispose() {
-    for (final controller in _navControllers) {
-      controller?.dispose();
-    }
-    _riveFile?.dispose();
-    super.dispose();
-  }
+  final List<Widget?> _tabs = List<Widget?>.filled(_navIcons.length, null);
 
   void _select(int i) {
     if (i != _index) setState(() => _index = i);
-    final input = _navControllers[i]?.stateMachine.boolean('active');
-    if (input != null) {
-      input.value = true;
-      Future.delayed(const Duration(seconds: 1), () {
-        if (mounted) input.value = false;
-      });
-    }
   }
 
   Widget _buildTab(int i) => switch (i) {
@@ -152,7 +80,7 @@ class _HomeShellState extends State<HomeShell> {
     // Build the active tab on first visit; previously-visited tabs stay alive.
     _tabs[_index] ??= _buildTab(_index);
     final tabs = <Widget>[
-      for (var i = 0; i < _navItems.length; i++)
+      for (var i = 0; i < _navIcons.length; i++)
         _tabs[i] ?? const SizedBox.shrink(),
     ];
 
@@ -162,13 +90,9 @@ class _HomeShellState extends State<HomeShell> {
         index: _index,
         onChange: _select,
         children: [
-          for (var i = 0; i < _navItems.length; i++)
+          for (var i = 0; i < _navIcons.length; i++)
             FBottomNavigationBarItem(
-              icon: _RiveNavIcon(
-                controller: _navControllers[i],
-                fallbackIcon: _fallbackIcons[i],
-                active: _index == i,
-              ),
+              icon: _NavIcon(icon: _navIcons[i], active: _index == i),
               label: Text(labels[i]),
             ),
         ],
@@ -177,29 +101,26 @@ class _HomeShellState extends State<HomeShell> {
   }
 }
 
-/// A Rive-animated navigation icon from `assets/RiveAssets/icons.riv`.
-class _RiveNavIcon extends StatelessWidget {
-  final RiveWidgetController? controller;
-  final IconData fallbackIcon;
+/// A bottom-nav icon that scales up and tints when it is the active tab.
+class _NavIcon extends StatelessWidget {
+  final IconData icon;
   final bool active;
 
-  const _RiveNavIcon({
-    required this.controller,
-    required this.fallbackIcon,
-    required this.active,
-  });
+  const _NavIcon({required this.icon, required this.active});
 
   @override
   Widget build(BuildContext context) {
-    final controller = this.controller;
-    if (controller == null) return Icon(fallbackIcon, size: 22);
-    return SizedBox(
-      height: 26,
-      width: 26,
-      child: Opacity(
-        opacity: active ? 1 : 0.55,
-        child: RiveWidget(controller: controller, fit: Fit.contain),
-      ),
+    final theme = Theme.of(context);
+    final color = active
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurfaceVariant;
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 1, end: active ? 1.25 : 1),
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutBack,
+      builder: (context, scale, child) =>
+          Transform.scale(scale: scale, child: child),
+      child: Icon(icon, size: 22, color: color),
     );
   }
 }
