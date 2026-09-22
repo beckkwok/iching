@@ -75,6 +75,23 @@ void main() {
     expect(size.height, greaterThan(size.width));
   });
 
+  testWidgets('爻象 bars are aligned and centred', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(home: CastResultScreen(result: _result())),
+    );
+
+    final centers = <double>[];
+    for (var i = 0; i < 6; i++) {
+      centers.add(tester.getCenter(find.byKey(ValueKey('yao-bar-$i'))).dx);
+    }
+
+    // Every bar shares the same horizontal centre...
+    expect(centers.toSet().length, 1);
+    // ...and that centre is the middle of the screen.
+    final screenCenter = tester.getSize(find.byType(MaterialApp)).width / 2;
+    expect((centers.first - screenCenter).abs(), lessThan(1));
+  });
+
   testWidgets('cast result shows all four yao line types', (tester) async {
     await tester.pumpWidget(
       MaterialApp(home: CastResultScreen(result: _result())),
