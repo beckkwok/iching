@@ -3,6 +3,7 @@ import '../data/trigram_hexagram_data.dart';
 import '../l10n/app_localizations.dart';
 import '../models/gua.dart';
 import '../models/hexagram_content.dart';
+import '../widgets/hexagram_view.dart';
 
 /// Full-screen detail view of a single hexagram, rendered as a series of
 /// cards. Displays every field of the hexagram's JSON content: 卦象, 卦辭,
@@ -118,22 +119,8 @@ class _HeaderCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          // 6-line pattern (drawn bottom-to-top)
-          Center(
-            child: SizedBox(
-              width: 160,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (int i = 5; i >= 0; i--)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: _Line(isSolid: lines[i]),
-                    ),
-                ],
-              ),
-            ),
-          ),
+          // 6-line pattern (drawn bottom-to-top), taller than it is wide.
+          Center(child: HexagramView(lines: lines)),
           const SizedBox(height: 16),
           if (content.guaSymbol.isNotEmpty)
             Center(
@@ -144,50 +131,6 @@ class _HeaderCard extends StatelessWidget {
             ),
         ],
       ),
-    );
-  }
-}
-
-/// A single yao line bar: solid (━━━) or broken (━ ━).
-class _Line extends StatelessWidget {
-  final bool isSolid;
-
-  const _Line({required this.isSolid});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.primary;
-    if (isSolid) {
-      return Container(
-        height: 5,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(2),
-        ),
-      );
-    }
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 5,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-        ),
-        const SizedBox(width: 20),
-        Expanded(
-          child: Container(
-            height: 5,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

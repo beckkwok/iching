@@ -70,3 +70,42 @@ Manual review (per the code-review skill) found one more untranslated string:
 
 Verification: `flutter analyze` clean, 109 unit tests pass, integration test
 passes.
+
+## Task: Fix hexagram display collapsed (issue #12)
+
+The 6-line hexagram figure in `HexagramDetailScreen`'s header was drawn with
+wide (160px), thin (5px) bars, so the figure was wider than tall.
+
+- Added `lib/widgets/hexagram_view.dart` — `HexagramView` renders the six yao
+  lines bottom→top with narrow bars (default 72px wide, 9px thick, 6px gaps),
+  making the figure taller than it is wide.
+- `HexagramDetailScreen` now uses `HexagramView`; removed the local `_Line`.
+- Added `test/hexagram_view_test.dart` — asserts the figure is taller than wide,
+  yang = one bar / yin = two segments, and custom dimensions.
+
+Verification: `flutter analyze` clean, 112 unit tests pass, integration test
+passes.
+
+### Follow-up: hexagram on the cast result page
+The cast result page (`CastResultScreen`) still drew the hexagram wide:
+- The 卦象 card showed only the Unicode symbol text.
+- The 爻象 rows used full-width (`Expanded`) bars.
+
+Fixed:
+- The 卦象 card now shows a `HexagramView` figure (taller than wide), with the
+  Unicode symbol kept as a small caption.
+- `_YaoLineRow` bars are now a fixed 72px wide, so the six stacked bars form a
+  tall figure instead of a wide one.
+- Added a regression test asserting the result page's figure is taller than wide.
+
+Verification: `flutter analyze` clean, 113 unit tests pass, integration test
+passes.
+
+### Follow-up: centre the 爻象 bars
+The narrowed 爻象 bars were left-aligned. `_YaoLineRow` now uses
+`MainAxisAlignment.center` with equal-width (72px) 爻位/type boxes so the six
+bars are vertically aligned and centred on the page. Added a test asserting the
+bar centres coincide and sit at the screen centre.
+
+Verification: `flutter analyze` clean, 114 unit tests pass, integration test
+passes.
