@@ -110,8 +110,6 @@ void main() {
   late Directory tempDir;
 
   setUp(() async {
-    // The Rive native library isn't available in the widget-test VM.
-    HomeShell.enableRiveAnimations = false;
     tempDir = await Directory.systemTemp.createTemp('iching_model_test');
     PathProviderPlatform.instance = _FakePathProvider(tempDir.path);
   });

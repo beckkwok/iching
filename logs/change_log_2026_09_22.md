@@ -78,3 +78,23 @@ Portrait-first shell with a bottom navigation bar; header bars removed.
   VS toolset, which isn't installed (`error MSB8020`). Windows builds need the
   "C++ Clang Compiler for Windows" component. Non-interactive install attempt
   returned exit 5007 (elevation required).
+
+## Task: Remove Rive from the bottom navigation
+
+Rive was only used for the five bottom-nav icons in `HomeShell`. It was
+unstable on Windows (the runtime crashed with an access violation even with the
+0.14 `rive_native` backend), so it was removed in favour of pure-Flutter
+animated icons.
+
+### Changes
+- Removed the `rive` dependency and the `assets/RiveAssets/` entry from
+  `pubspec.yaml`; deleted the `.riv` assets.
+- `HomeShell` now uses Material icons with a small scale/tint animation
+  (`TweenAnimationBuilder`) on the active tab — no native animation dependency.
+- Dropped `HomeShell.enableRiveAnimations` and the Rive load/controller code.
+- Updated tests and docs.
+
+### Verification
+- `flutter analyze` — clean
+- `flutter test` — 118 tests pass
+- `flutter build windows --debug` + launch — builds and stays up ✅

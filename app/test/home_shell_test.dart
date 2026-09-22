@@ -8,11 +8,6 @@ import 'package:app/screens/profile_screen.dart';
 import 'package:app/screens/question_form_screen.dart';
 
 void main() {
-  setUp(() {
-    // The Rive native library isn't available in the widget-test VM.
-    HomeShell.enableRiveAnimations = false;
-  });
-
   Widget app() => MaterialApp(
         builder: (context, child) => FTheme(
           data: FThemeData(touch: true, colors: FColors.neutralLight),
