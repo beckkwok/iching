@@ -3,14 +3,17 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'package:app/data/model_catalog.dart';
 import 'package:app/l10n/app_localizations.dart';
+import 'package:app/models/model_info.dart';
 import 'package:app/screens/model_selection_screen.dart';
 import 'package:app/screens/question_form_screen.dart';
 import 'package:app/services/database_service.dart';
+import 'package:app/services/llm_service.dart';
 
 /// Fake platform directory provider so the screen's model-file check runs
 /// against an empty temp directory instead of the real app support dir.
@@ -56,6 +59,38 @@ class _ThrowingDatabaseService extends DatabaseService {
   Future<String?> getSetting(String key) async {
     throw StateError('boom');
   }
+}
+
+/// A [LlmService] that records the calls made by the startup flow, so the
+/// embedded/auto-download path can be tested without `flutter_gemma`.
+class _FakeLlmService extends LlmService {
+  _FakeLlmService(ModelInfo modelInfo) : super(modelInfo: modelInfo);
+
+  int initializeCalls = 0;
+  int downloadCalls = 0;
+  int openChatCalls = 0;
+
+  @override
+  Future<void> initialize({String? huggingFaceToken}) async {
+    initializeCalls++;
+  }
+
+  @override
+  Future<void> downloadModel({
+    String? token,
+    void Function(double progress)? onProgress,
+  }) async {
+    downloadCalls++;
+    onProgress?.call(1.0);
+  }
+
+  @override
+  Future<void> openExplanationChat() async {
+    openChatCalls++;
+  }
+
+  @override
+  bool get isReady => true;
 }
 
 void main() {
@@ -124,6 +159,8 @@ void main() {
     );
     await settleStartup(tester);
 
+    await tester.ensureVisible(find.text('Gemma 3 1B'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Gemma 3 1B'));
     await tester.pumpAndSettle();
 
@@ -204,5 +241,65 @@ void main() {
 
     expect(find.text('易經設定'), findsOneWidget);
     expect(find.text('I-Ching Setup'), findsNothing);
+  });
+
+  testWidgets('production auto-downloads the default model', (tester) async {
+    final db = _FakeDatabaseService();
+    _FakeLlmService? created;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ModelSelectionScreen(
+          databaseService: db,
+          allowSelection: false,
+          llmServiceFactory: (model) => created = _FakeLlmService(model),
+        ),
+      ),
+    );
+    await settleStartup(tester);
+    await tester.pumpAndSettle();
+
+    expect(created, isNotNull);
+    expect(created!.modelInfo.key, ModelCatalog.defaultModelKey);
+    expect(created!.downloadCalls, 1);
+    expect(created!.openChatCalls, 1);
+    expect(
+      await db.getSetting('selected_model_key'),
+      ModelCatalog.defaultModelKey,
+    );
+    expect(find.byType(QuestionFormScreen), findsOneWidget);
+  });
+
+  testWidgets('production loads an installed model without downloading',
+      (tester) async {
+    // The default model file already exists on disk.
+    await tester.runAsync(() async {
+      final modelsDir = Directory(p.join(tempDir.path, 'models'));
+      await modelsDir.create(recursive: true);
+      await File(p.join(modelsDir.path, 'Qwen3-0.6B.litertlm'))
+          .writeAsBytes([0]);
+    });
+
+    final db = _FakeDatabaseService(
+      settings: {'selected_model_key': ModelCatalog.defaultModelKey},
+    );
+    _FakeLlmService? created;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ModelSelectionScreen(
+          databaseService: db,
+          allowSelection: false,
+          llmServiceFactory: (model) => created = _FakeLlmService(model),
+        ),
+      ),
+    );
+    await settleStartup(tester);
+    await tester.pumpAndSettle();
+
+    expect(created, isNotNull);
+    expect(created!.downloadCalls, 0);
+    expect(created!.openChatCalls, 1);
+    expect(find.byType(QuestionFormScreen), findsOneWidget);
   });
 }

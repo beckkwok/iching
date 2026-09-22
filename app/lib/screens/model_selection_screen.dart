@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import '../config/app_config.dart';
 import '../data/model_catalog.dart';
 import '../l10n/app_localizations.dart';
 import '../models/model_info.dart';
@@ -10,22 +11,31 @@ import '../services/database_service.dart';
 import '../services/gua_generator.dart';
 import 'question_form_screen.dart';
 
-/// Startup screen that either auto-detects a saved model, shows the model
-/// selection card grid, or shows download progress for a previously chosen
-/// model whose file is missing.
+/// Startup screen that loads the model and proceeds to the consultation.
 ///
 /// Flow:
-/// 1. Check `settings` table for `selected_model_key`.
-/// 2. If found → look up ModelInfo, check file existence.
-///    - File exists → proceed to the question form.
-///    - File missing → download that model.
-/// 3. If no key → check old default file for backward compatibility.
-///    - Exists → auto-select Gemma4, save, proceed to the question form.
-/// 4. Otherwise → show the 6-model selection grid.
+/// 1. If `selected_model_key` is saved → load it (downloading if the file is
+///    missing).
+/// 2. Otherwise, if [allowSelection] is true (development) → show the model
+///    selection grid.
+/// 3. Otherwise (production) → auto-select and download
+///    [ModelCatalog.defaultModel].
 class ModelSelectionScreen extends StatefulWidget {
   final DatabaseService? databaseService;
 
-  const ModelSelectionScreen({super.key, required this.databaseService});
+  /// When true, show the model-selection grid (development). When false,
+  /// auto-select and download [ModelCatalog.defaultModel] (production).
+  final bool allowSelection;
+
+  /// Optional factory for tests to inject a fake [LlmService].
+  final LlmService Function(ModelInfo model)? llmServiceFactory;
+
+  const ModelSelectionScreen({
+    super.key,
+    required this.databaseService,
+    this.allowSelection = AppConfig.allowModelSelection,
+    this.llmServiceFactory,
+  });
 
   @override
   State<ModelSelectionScreen> createState() => _ModelSelectionScreenState();
@@ -62,72 +72,43 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
     try {
       final db = widget.databaseService;
       String? savedKey;
-
       if (db != null) {
         savedKey = await db.getSetting('selected_model_key');
       }
 
+      // 1. A previously chosen model.
       if (savedKey != null && savedKey.isNotEmpty) {
         final model = ModelCatalog.byKey(savedKey);
         if (model != null) {
-          final fileExists = await _modelFileExists(model.filename);
-          if (fileExists) {
-            _llmService = LlmService(modelInfo: model);
-            try {
-              await _llmService!.initialize();
-              await _applySavedPrompt();
-              await _llmService!.openExplanationChat();
-              if (mounted) _proceed();
-            } catch (e) {
-              if (mounted) {
-                setState(() {
-                  _phase = _ScreenPhase.error;
-                  _errorMessage = l10n.modelLoadFailed('$e');
-                  _statusText = l10n.loadFailed;
-                });
-              }
-            }
-            return;
+          if (await _modelFileExists(model.filename)) {
+            await _loadExistingModel(model, l10n);
+          } else {
+            await _downloadModel(model);
           }
-          // File missing — download it
-          _llmService = LlmService(modelInfo: model);
-          await _llmService!.initialize();
-          if (mounted) _startDownload();
           return;
         }
       }
 
-      // No saved key — check old default model (backward compat)
-      const oldDefault = 'gemma-4-E2B-it.litertlm';
-      if (await _modelFileExists(oldDefault)) {
-        final gemma4 = ModelCatalog.byKey('gemma4_e2b')!;
-        _llmService = LlmService(modelInfo: gemma4);
-        if (db != null) {
-          await db.setSetting('selected_model_key', 'gemma4_e2b');
-        }
-        try {
-          await _llmService!.initialize();
-          await _applySavedPrompt();
-          await _llmService!.openExplanationChat();
-          if (mounted) _proceed();
-        } catch (e) {
-          if (mounted) {
-            setState(() {
-              _phase = _ScreenPhase.error;
-              _errorMessage = l10n.autoDetectFailed('$e');
-              _statusText = l10n.loadFailed;
-            });
-          }
+      // 2. Development: let the user choose a model.
+      if (widget.allowSelection) {
+        if (mounted) {
+          setState(() {
+            _phase = _ScreenPhase.selecting;
+            _statusText = l10n.chooseModelToStart;
+          });
         }
         return;
       }
 
-      // Nothing found — show selection screen
-      if (mounted) {
-        setState(() {
-          _phase = _ScreenPhase.selecting;
-          _statusText = l10n.chooseModelToStart;
-        });
+      // 3. Production: use the default model, downloading it if needed.
+      final model = ModelCatalog.defaultModel;
+      if (db != null) {
+        await db.setSetting('selected_model_key', model.key);
+      }
+      if (await _modelFileExists(model.filename)) {
+        await _loadExistingModel(model, l10n);
+      } else {
+        await _downloadModel(model);
       }
     } catch (e) {
       if (mounted) {
@@ -138,6 +119,38 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
         });
       }
     }
+  }
+
+  LlmService _createLlmService(ModelInfo model) =>
+      widget.llmServiceFactory?.call(model) ?? LlmService(modelInfo: model);
+
+  /// Load an already-installed [model] and proceed to the consultation.
+  Future<void> _loadExistingModel(
+    ModelInfo model,
+    AppLocalizations l10n,
+  ) async {
+    _llmService = _createLlmService(model);
+    try {
+      await _llmService!.initialize();
+      await _applySavedPrompt();
+      await _llmService!.openExplanationChat();
+      if (mounted) _proceed();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _phase = _ScreenPhase.error;
+          _errorMessage = l10n.modelLoadFailed('$e');
+          _statusText = l10n.loadFailed;
+        });
+      }
+    }
+  }
+
+  /// Download [model], then proceed to the consultation.
+  Future<void> _downloadModel(ModelInfo model) async {
+    _llmService = _createLlmService(model);
+    await _llmService!.initialize();
+    if (mounted) _startDownload();
   }
 
   Future<bool> _modelFileExists(String filename) async {
@@ -215,16 +228,12 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
   }
 
   Future<void> _selectModel(ModelInfo model) async {
-    _llmService = LlmService(modelInfo: model);
-
     // Persist the selection immediately.
     final db = widget.databaseService;
     if (db != null) {
       await db.setSetting('selected_model_key', model.key);
     }
-
-    await _llmService!.initialize();
-    _startDownload();
+    await _downloadModel(model);
   }
 
   GuaGenerator get _guaGenerator => GuaGenerator();
@@ -327,6 +336,13 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.internetNotice,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
           const SizedBox(height: 16),
           ...models.map(
             (model) => Padding(
@@ -392,6 +408,12 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
             const SizedBox(height: 8),
             Text(
               AppLocalizations.of(context).oneTimeDownload,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              AppLocalizations.of(context).internetNotice,
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.grey, fontSize: 12),
             ),

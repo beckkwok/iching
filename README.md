@@ -17,7 +17,7 @@ Built with **Flutter**, **SQLite**, and **Gemma / Qwen** on-device models — no
 - **Editable system prompt** — view and customize the LLM instruction in Settings
 - **Hexagram browser** — browse all 64 hexagrams in a grid; tap any card for the full detail view (卦辭, 彖傳, 大象傳, 爻辭, 象徵意義, 不同人解讀)
 - **Local LLM integration** — runs a selectable on-device model via `flutter_gemma` (6 models available, e.g. Gemma 4, DeepSeek R1, Qwen3)
-- **Model selection** — choose and download a model at first run; persisted in Settings
+- **Default model** — Qwen3-0.6B is auto-downloaded on first run (no selection); the model grid is a development-only option. Internet is used only to fetch the model — no personal data is uploaded.
 - **Cross-platform** — runs on Android, Windows, macOS, Linux, and Web
 
 ### 🚧 Planned
@@ -37,7 +37,7 @@ Built with **Flutter**, **SQLite**, and **Gemma / Qwen** on-device models — no
 | Language     | Dart 3.12+                              |
 | Database     | SQLite via `sqflite` (settings) + JSON asset files (hexagrams) |
 | LLM Runtime  | `flutter_gemma` + `flutter_gemma_litertlm` |
-| Model        | Selectable at first run (6 models: Gemma 4 E2B/E4B, DeepSeek R1, Gemma 3 1B, Qwen2.5, Qwen3) |
+| Model        | Qwen3-0.6B by default (auto-downloaded on first run); selection available in development |
 | Platform     | Android (primary), Windows, macOS, Linux, Web |
 
 ---
