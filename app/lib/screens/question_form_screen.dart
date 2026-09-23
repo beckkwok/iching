@@ -74,6 +74,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                 question: question,
                 questionTypeLabel: typeLabel,
                 llmService: widget.llmService,
+                databaseService: widget.databaseService,
                 language: language,
               ),
             ),

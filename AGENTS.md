@@ -39,6 +39,7 @@ iching/
 │   │   ├── data/                 # Static data (model_catalog.dart, trigram_hexagram_data.dart)
 │   │   ├── l10n/                 # Localization (app_localizations.dart, locale_controller.dart)
 │   │   ├── models/               # Dart data models
+│   │   │   ├── consultation.dart
 │   │   │   ├── gua.dart
 │   │   │   ├── hexagram_content.dart
 │   │   │   ├── language_preference.dart
@@ -75,6 +76,7 @@ iching/
 │   │   ├── explanation_screen_test.dart
 │   │   ├── gua_generator_test.dart
 │   │   ├── hexagram_browser_screen_test.dart
+│   │   ├── history_screen_test.dart
 │   │   ├── home_shell_test.dart
 │   │   ├── hexagram_content_test.dart
 │   │   ├── hexagram_loader_test.dart
@@ -163,15 +165,26 @@ flutter test -d windows integration_test/cast_and_browse_test.dart  # Integratio
 
 ## 6. Database Schema
 
-The database stores **only settings**. Hexagrams are loaded directly from JSON
-assets (`assets/hexagrams/gua_<n>.json`) via `HexagramLoader` — there is no
-`gua` table.
+The database stores **settings and consultation history**. Hexagrams are loaded
+directly from JSON assets (`assets/hexagrams/gua_<n>.json`) via `HexagramLoader`
+— there is no `gua` table.
 
 ### settings
 | Column       | Type    | Notes                       |
 |-------------|---------|-----------------------------|
 | key          | TEXT    | PK (e.g. language, system_prompt, selected_model_key) |
 | value        | TEXT    |                            |
+
+### consultations
+| Column         | Type    | Notes                       |
+|---------------|---------|-----------------------------|
+| id            | INTEGER | PK, AUTOINCREMENT           |
+| question      | TEXT    | the user's question         |
+| question_type | TEXT    | nullable category label     |
+| hexagram_code | INTEGER | 1-64 (卦序)                 |
+| hexagram_name | TEXT    | e.g. "乾為天" (卦名)        |
+| explanation   | TEXT    | the LLM explanation         |
+| created_at    | TEXT    | ISO 8601                    |
 
 ---
 
@@ -184,7 +197,7 @@ assets (`assets/hexagrams/gua_<n>.json`) via `HexagramLoader` — there is no
 - **Hexagram data** is read straight from the bundled JSON assets by `HexagramLoader`. The DB migration to v6 drops any legacy `gua` table.
 - **Model startup**: production auto-selects and downloads `ModelCatalog.defaultModel` (Qwen3-0.6B) on first launch; the model-selection grid is development-only, gated by `AppConfig.allowModelSelection` (`--dart-define=ALLOW_MODEL_SELECTION`, defaults to `kDebugMode`). Internet is used only to download the model; no personal data is uploaded.
 - **`.litertlm` platform support**: the model requires an **arm64-v8a** Android device (or Windows desktop). The x86_64 Android emulator cannot run it.
-- **Mobile shell** (`HomeShell`): a `forui` `FBottomNavigationBar` hosts five tabs — History, Profile, Ask, Browse, Preference — with pure-Flutter animated Material icons (no native animation dependency). The header bar was removed (issue #6). History (issue #8) and Profile (issue #3) are placeholders.
+- **Mobile shell** (`HomeShell`): a `forui` `FBottomNavigationBar` hosts five tabs — History, Profile, Ask, Browse, Preference — with pure-Flutter animated Material icons (no native animation dependency). The header bar was removed (issue #6). History lists the recorded consultations (issue #8); Profile (issue #3) is a placeholder.
 
 ---
 

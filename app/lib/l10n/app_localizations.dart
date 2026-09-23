@@ -40,9 +40,9 @@ class AppLocalizations {
   String get navPreference => _t('Preference', '偏好');
 
   // --- Placeholder screens ---------------------------------------------
-  String get historyPlaceholder => _t(
-        'Your past consultations will appear here.',
-        '您過往的諮詢紀錄將顯示於此。',
+  String get historyEmpty => _t(
+        'No consultations yet. Ask a question to get started.',
+        '尚無諮詢紀錄。請提問以開始。',
       );
   String get profilePlaceholder => _t(
         'Profile settings are coming soon.',
