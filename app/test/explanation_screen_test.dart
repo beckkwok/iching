@@ -9,6 +9,7 @@ import 'package:app/screens/hexagram_detail_screen.dart';
 import 'package:app/services/database_service.dart';
 import 'package:app/services/fake_llm_service.dart';
 import 'package:app/services/gua_generator.dart';
+import 'package:app/services/llm_service.dart';
 
 const _guaJson = '''
 {
@@ -176,6 +177,28 @@ void main() {
     expect(db.feedback.first.$3, 'Very helpful');
     expect(find.text('Thanks for your feedback!'), findsOneWidget);
   });
+
+  testWidgets('builds agent memory after the explanation', (tester) async {
+    final llm = _MemoryLlm();
+    llm.explanationResponse = 'A gentle mirror for your question.';
+    final db = _RecordingDb();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ExplanationScreen(
+          question: 'Should I take the new job?',
+          result: _result(),
+          llmService: llm,
+          databaseService: db,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(db.merges, hasLength(1));
+    expect(db.merges.first.$2, contains('considering a job change'));
+    expect(db.merges.first.$3, contains('values stability'));
+  });
 }
 
 /// A [DatabaseService] that records consultations and feedback instead of
@@ -209,5 +232,33 @@ class _RecordingDb extends DatabaseService {
     String? comment,
   }) async {
     feedback.add((id, rating, comment));
+  }
+
+  final List<(String, List<String>, List<String>)> merges = [];
+
+  @override
+  Future<void> mergeAgentMemory({
+    required String feeling,
+    required List<String> facts,
+    required List<String> preferences,
+  }) async {
+    merges.add((feeling, facts, preferences));
+  }
+}
+
+/// A [FakeLlmService] that also returns a fixed memory extraction.
+class _MemoryLlm extends FakeLlmService {
+  @override
+  Future<MemoryExtraction?> extractMemory({
+    required String question,
+    required String hexagramName,
+    required String explanation,
+    String? comment,
+  }) async {
+    return MemoryExtraction(
+      feeling: comment == null ? 'hopeful' : 'hopeful and reflective',
+      facts: const ['considering a job change'],
+      preferences: const ['values stability'],
+    );
   }
 }

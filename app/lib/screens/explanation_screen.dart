@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../models/consultation.dart';
@@ -104,6 +106,8 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
           _explanation = text;
         });
       }
+      // Build the agent memory from this result (issue #3).
+      unawaited(_updateMemory());
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -130,6 +134,33 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
         _savingFeedback = false;
         _feedbackSaved = true;
       });
+    }
+    // Refine the agent memory with the comment (issue #3).
+    unawaited(_updateMemory(comment: comment.isEmpty ? null : comment));
+  }
+
+  /// Update the agent memory from this consultation (and optionally the user's
+  /// comment). Fire-and-forget: never blocks the UI or throws.
+  Future<void> _updateMemory({String? comment}) async {
+    final llm = widget.llmService;
+    final db = widget.databaseService;
+    if (llm == null || db == null) return;
+    try {
+      final gua = widget.result.gua;
+      final extraction = await llm.extractMemory(
+        question: widget.question,
+        hexagramName: gua.guaName,
+        explanation: _explanation ?? '',
+        comment: comment,
+      );
+      if (extraction == null) return;
+      await db.mergeAgentMemory(
+        feeling: extraction.feeling,
+        facts: extraction.facts,
+        preferences: extraction.preferences,
+      );
+    } catch (_) {
+      // Memory is best-effort; ignore failures.
     }
   }
 
