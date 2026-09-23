@@ -39,6 +39,7 @@ iching/
 │   │   ├── data/                 # Static data (model_catalog.dart, trigram_hexagram_data.dart)
 │   │   ├── l10n/                 # Localization (app_localizations.dart, locale_controller.dart)
 │   │   ├── models/               # Dart data models
+│   │   │   ├── agent_memory.dart
 │   │   │   ├── consultation.dart
 │   │   │   ├── gua.dart
 │   │   │   ├── hexagram_content.dart
@@ -88,6 +89,7 @@ iching/
 │   │   ├── model_catalog_test.dart
 │   │   ├── model_selection_screen_test.dart
 │   │   ├── privacy_test.dart
+│   │   ├── profile_screen_test.dart
 │   │   ├── prompt_editor_screen_test.dart
 │   │   ├── question_form_screen_test.dart
 │   │   ├── settings_screen_test.dart
@@ -189,6 +191,15 @@ directly from JSON assets (`assets/hexagrams/gua_<n>.json`) via `HexagramLoader`
 | comment       | TEXT    | nullable user comment       |
 | created_at    | TEXT    | ISO 8601                    |
 
+### agent_memory
+| Column      | Type    | Notes                       |
+|------------|---------|-----------------------------|
+| id         | INTEGER | PK, AUTOINCREMENT (single row) |
+| feeling    | TEXT    | LLM summary of the user's inferred feelings |
+| facts      | TEXT    | JSON array of extracted facts |
+| preferences| TEXT    | JSON array of derived preferences |
+| updated_at | TEXT    | ISO 8601                    |
+
 ---
 
 ## 7. Key Patterns
@@ -200,7 +211,8 @@ directly from JSON assets (`assets/hexagrams/gua_<n>.json`) via `HexagramLoader`
 - **Hexagram data** is read straight from the bundled JSON assets by `HexagramLoader`. The DB migration to v6 drops any legacy `gua` table.
 - **Model startup**: production auto-selects and downloads `ModelCatalog.defaultModel` (Qwen3-0.6B) on first launch; the model-selection grid is development-only, gated by `AppConfig.allowModelSelection` (`--dart-define=ALLOW_MODEL_SELECTION`, defaults to `kDebugMode`). Internet is used only to download the model; no personal data is uploaded.
 - **`.litertlm` platform support**: the model requires an **arm64-v8a** Android device (or Windows desktop). The x86_64 Android emulator cannot run it.
-- **Mobile shell** (`HomeShell`): a `forui` `FBottomNavigationBar` hosts five tabs — History, Profile, Ask, Browse, Preference — with pure-Flutter animated Material icons (no native animation dependency). The header bar was removed (issue #6). History lists the recorded consultations (issue #8); Profile (issue #3) is a placeholder.
+- **Mobile shell** (`HomeShell`): a `forui` `FBottomNavigationBar` hosts five tabs — History, Profile, Ask, Browse, Preference — with pure-Flutter animated Material icons (no native animation dependency). The header bar was removed (issue #6). History lists the recorded consultations (issue #8); Profile shows the agent memory (issue #3).
+- **Agent memory** (issue #3): after each explanation, and again after feedback, `LlmService.extractMemory` returns a JSON profile (`feeling`, `facts`, `preferences`) that `DatabaseService.mergeAgentMemory` accumulates (facts/preferences de-duplicated, feeling replaced). The Profile tab reads `getAgentMemory()` + the latest consultation. The personalized greeting is a deferred follow-up; the star rating will be replaced by emoji reactions in a separate issue.
 
 ---
 

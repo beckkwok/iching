@@ -44,9 +44,16 @@ class AppLocalizations {
         'No consultations yet. Ask a question to get started.',
         '尚無諮詢紀錄。請提問以開始。',
       );
-  String get profilePlaceholder => _t(
-        'Profile settings are coming soon.',
-        '個人設定即將推出。',
+
+  // --- Profile / agent memory -----------------------------------------
+  String get lastConsultation => _t('Last consultation', '最近諮詢');
+  String get memoryTitle => _t('Agent Memory', '智能記憶');
+  String get memoryFeeling => _t('How you might feel', '你可能的心情');
+  String get memoryFacts => _t('Facts about you', '關於你的事實');
+  String get memoryPreferences => _t('Your preferences', '你的偏好');
+  String get memoryEmpty => _t(
+        'No memory yet. Complete a consultation to build your profile.',
+        '尚無記憶。完成一次諮詢後將建立您的檔案。',
       );
 
   // --- Common -----------------------------------------------------------

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:flutter_gemma_litertlm/flutter_gemma_litertlm.dart';
 import 'package:path/path.dart' as p;
@@ -255,9 +256,103 @@ class LlmService {
   }
 
   // ---------------------------------------------------------------------------
-  // Cleanup
+  // Memory extraction (agent memory, issue #3)
   // ---------------------------------------------------------------------------
-  // Cleanup
+
+  /// Extract a concise user profile (feeling, facts, preferences) from a
+  /// consultation. Reuses the open chat session when one exists.
+  Future<MemoryExtraction?> extractMemory({
+    required String question,
+    required String hexagramName,
+    required String explanation,
+    String? comment,
+  }) async {
+    if (_chat == null) {
+      await openExplanationChat();
+    }
+
+    final prompt = buildMemoryPrompt(
+      question: question,
+      hexagramName: hexagramName,
+      explanation: explanation,
+      comment: comment,
+    );
+
+    await _chat!.addQuery(Message(text: prompt, isUser: true));
+
+    try {
+      final response = await Future(
+        () => _chat!.generateChatResponse(),
+      ).timeout(_responseTimeout);
+      if (response is TextResponse) {
+        return parseMemoryExtraction(cleanResponseText(response.token));
+      }
+    } on TimeoutException {
+      await _chat!.stopGeneration();
+    }
+    return null;
+  }
+
+  /// Build the prompt that asks the model to extract the user's profile as
+  /// JSON. Pure and side-effect free, so it can be unit-tested.
+  static String buildMemoryPrompt({
+    required String question,
+    required String hexagramName,
+    required String explanation,
+    String? comment,
+  }) {
+    final commentLine = (comment != null && comment.isNotEmpty)
+        ? 'User\'s comment: "$comment"\n'
+        : '';
+    return 'A user asked an I-Ching question and received a hexagram and an '
+        'explanation.\n\n'
+        'Question: "$question"\n'
+        'Hexagram: $hexagramName\n'
+        'Explanation: $explanation\n'
+        '$commentLine'
+        '\n'
+        'Extract a concise profile of the user. Respond in JSON only, with '
+        'this exact shape:\n'
+        '{"feeling": "one short sentence about how the user seems to feel '
+        'about this topic", '
+        '"facts": ["a fact about the user"], '
+        '"preferences": ["a preference or value the user expressed"]}\n'
+        'Keep each fact and preference to a few words. Use empty arrays when '
+        'nothing applies.';
+  }
+
+  /// Parse a JSON memory extraction. Returns `null` on malformed or empty
+  /// input. Pure and side-effect free, so it can be unit-tested.
+  static MemoryExtraction? parseMemoryExtraction(String text) {
+    final start = text.indexOf('{');
+    final end = text.lastIndexOf('}');
+    if (start < 0 || end <= start) return null;
+    try {
+      final decoded =
+          jsonDecode(text.substring(start, end + 1)) as Map<String, dynamic>;
+      final feeling = (decoded['feeling'] as String? ?? '').trim();
+      final facts = _stringList(decoded['facts']);
+      final preferences = _stringList(decoded['preferences']);
+      if (feeling.isEmpty && facts.isEmpty && preferences.isEmpty) return null;
+      return MemoryExtraction(
+        feeling: feeling,
+        facts: facts,
+        preferences: preferences,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static List<String> _stringList(dynamic v) {
+    if (v is! List) return const [];
+    return v
+        .whereType<String>()
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+  }
+
   // ---------------------------------------------------------------------------
   // Cleanup
   // ---------------------------------------------------------------------------
@@ -291,4 +386,17 @@ class LlmService {
       '- Be warm, supportive, and encouraging. Keep responses to 3-5 '
       'sentences.\n'
       '- Use gentle, poetic language when referencing I-Ching concepts.';
+}
+
+/// The parsed result of a memory extraction.
+class MemoryExtraction {
+  final String feeling;
+  final List<String> facts;
+  final List<String> preferences;
+
+  const MemoryExtraction({
+    required this.feeling,
+    required this.facts,
+    required this.preferences,
+  });
 }
