@@ -10,18 +10,19 @@ import 'package:app/screens/profile_screen.dart';
 import 'package:app/screens/question_form_screen.dart';
 import 'package:app/services/database_service.dart';
 
-/// A [DatabaseService] with mutable memory, to verify the Profile tab reloads
-/// when re-selected.
+/// A [DatabaseService] with mutable memory/consultations, to verify the
+/// Profile/History tabs reload when re-selected.
 class _FakeDb extends DatabaseService {
   _FakeDb() : super(databasePath: ':memory:');
 
   AgentMemory? memory;
+  List<Consultation> consultations = const [];
 
   @override
   Future<AgentMemory?> getAgentMemory() async => memory;
 
   @override
-  Future<List<Consultation>> getConsultations() async => const [];
+  Future<List<Consultation>> getConsultations() async => consultations;
 }
 
 void main() {
@@ -93,5 +94,35 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('hopeful'), findsOneWidget);
+  });
+
+  testWidgets('History tab reloads when re-selected', (tester) async {
+    final db = _FakeDb();
+    await tester.pumpWidget(app(db: db));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('History'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('No consultations yet'), findsOneWidget);
+
+    // A consultation becomes available.
+    db.consultations = [
+      Consultation(
+        question: 'Should I move?',
+        hexagramCode: 46,
+        hexagramName: '地風升',
+        hexagramContent: '{}',
+        explanation: 'A gentle reflection.',
+        createdAt: DateTime(2026, 9, 23),
+      ),
+    ];
+
+    // Switch away and back — the History tab must reload.
+    await tester.tap(find.text('Ask'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('History'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Should I move?'), findsOneWidget);
   });
 }
