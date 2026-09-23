@@ -3,6 +3,7 @@ import '../data/trigram_hexagram_data.dart';
 import '../l10n/app_localizations.dart';
 import '../models/language_preference.dart';
 import '../models/yao_line_type.dart';
+import '../services/database_service.dart';
 import '../services/gua_generator.dart';
 import '../services/llm_service.dart';
 import '../widgets/hexagram_view.dart';
@@ -26,6 +27,9 @@ class CastResultScreen extends StatelessWidget {
   /// Optional LLM service used to generate the explanation.
   final LlmService? llmService;
 
+  /// Used to persist the consultation when the explanation is generated.
+  final DatabaseService? databaseService;
+
   /// Language preference for the explanation response.
   final LanguagePreference language;
 
@@ -35,6 +39,7 @@ class CastResultScreen extends StatelessWidget {
     this.question,
     this.questionTypeLabel,
     this.llmService,
+    this.databaseService,
     this.language = LanguagePreference.english,
   });
 
@@ -160,6 +165,7 @@ class CastResultScreen extends StatelessWidget {
                         questionTypeLabel: questionTypeLabel,
                         result: result,
                         llmService: llmService,
+                        databaseService: databaseService,
                         language: language,
                       ),
                     ),
