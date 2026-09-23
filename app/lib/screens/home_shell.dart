@@ -45,16 +45,36 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   late int _index = widget.initialIndex;
 
+  /// Incremented when a data-driven tab is re-selected, used to force those
+  /// tabs to rebuild (via their key).
+  int _revision = 0;
+
   /// Lazily-built tabs, kept alive once visited.
   final List<Widget?> _tabs = List<Widget?>.filled(_navIcons.length, null);
 
   void _select(int i) {
-    if (i != _index) setState(() => _index = i);
+    if (i != _index) {
+      setState(() {
+        _index = i;
+        // Data-driven tabs (History/Profile) reload when re-selected so they
+        // reflect the latest consultations / agent memory.
+        if (i == 0 || i == 1) {
+          _revision++;
+          _tabs[i] = null;
+        }
+      });
+    }
   }
 
   Widget _buildTab(int i) => switch (i) {
-        0 => HistoryScreen(databaseService: widget.databaseService),
-        1 => ProfileScreen(databaseService: widget.databaseService),
+        0 => HistoryScreen(
+            key: ValueKey('history-$_revision'),
+            databaseService: widget.databaseService,
+          ),
+        1 => ProfileScreen(
+            key: ValueKey('profile-$_revision'),
+            databaseService: widget.databaseService,
+          ),
         2 => QuestionFormScreen(
             databaseService: widget.databaseService,
             llmService: widget.llmService,

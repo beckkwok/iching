@@ -127,3 +127,10 @@ Build and store an LLM-derived profile of the user, viewable in the Profile tab.
 ### Verification
 - `flutter analyze` — clean
 - `flutter test` — 140 tests pass
+
+### Follow-up: refresh the Profile/History tabs on re-selection
+The Profile (and History) tabs loaded once and never refreshed, so the agent
+memory looked stale after a consultation. `HomeShell` now rebuilds those tabs
+(with a revision-based key) when they're re-selected.
+
+Verification: `flutter analyze` clean, 141 tests pass.
