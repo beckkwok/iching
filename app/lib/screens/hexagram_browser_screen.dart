@@ -1,19 +1,31 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../models/gua.dart';
+import '../services/database_service.dart';
 import '../services/hexagram_loader.dart';
 import 'hexagram_detail_screen.dart';
+
+/// Settings key under which the most recently visited hexagram code is stored.
+const String lastVisitedGuaSettingsKey = 'last_visited_gua';
 
 /// Browse all hexagrams in a 2-column card grid.
 ///
 /// Each card shows the 卦序, 卦象, and 卦名. Tapping a card opens the
-/// [HexagramDetailScreen] for that hexagram. Hexagrams are loaded directly
-/// from the bundled JSON assets.
+/// [HexagramDetailScreen] for that hexagram. The most recently visited
+/// hexagram is shown in a header above the grid (issue #11).
 class HexagramBrowserScreen extends StatefulWidget {
   /// Optional loader for tests. When omitted, the bundled JSON assets are used.
   final HexagramLoader? loader;
 
-  const HexagramBrowserScreen({super.key, this.loader});
+  /// Used to persist the last visited hexagram. When omitted, the last visited
+  /// hexagram is only kept for the current session.
+  final DatabaseService? databaseService;
+
+  const HexagramBrowserScreen({
+    super.key,
+    this.loader,
+    this.databaseService,
+  });
 
   @override
   State<HexagramBrowserScreen> createState() => _HexagramBrowserScreenState();
@@ -21,6 +33,7 @@ class HexagramBrowserScreen extends StatefulWidget {
 
 class _HexagramBrowserScreenState extends State<HexagramBrowserScreen> {
   List<Gua>? _guaList;
+  Gua? _lastVisited;
   String? _error;
 
   @override
@@ -34,10 +47,40 @@ class _HexagramBrowserScreenState extends State<HexagramBrowserScreen> {
       final guaList = await (widget.loader ?? HexagramLoader()).loadAll();
       // Sort by guaCode for a stable 1..64 ordering.
       guaList.sort((a, b) => a.guaCode.compareTo(b.guaCode));
-      if (mounted) setState(() => _guaList = guaList);
+
+      final saved = await widget.databaseService
+          ?.getSetting(lastVisitedGuaSettingsKey);
+      final lastCode = int.tryParse(saved ?? '');
+      Gua? lastVisited;
+      if (lastCode != null) {
+        for (final gua in guaList) {
+          if (gua.guaCode == lastCode) {
+            lastVisited = gua;
+            break;
+          }
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _guaList = guaList;
+          _lastVisited = lastVisited;
+        });
+      }
     } catch (e) {
       if (mounted) setState(() => _error = 'Failed to load hexagrams: $e');
     }
+  }
+
+  Future<void> _openGua(Gua gua) async {
+    // Record it as the last visited hexagram.
+    await widget.databaseService
+        ?.setSetting(lastVisitedGuaSettingsKey, gua.guaCode.toString());
+    if (mounted) setState(() => _lastVisited = gua);
+    if (!mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => HexagramDetailScreen(gua: gua)),
+    );
   }
 
   @override
@@ -60,20 +103,98 @@ class _HexagramBrowserScreenState extends State<HexagramBrowserScreen> {
       );
     }
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(12),
-      // Fill the available width: as many columns as fit each ~180px tile.
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 180,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.1,
+    return Column(
+      children: [
+        if (_lastVisited != null)
+          _LastVisitedHeader(
+            gua: _lastVisited!,
+            onTap: () => _openGua(_lastVisited!),
+          ),
+        Expanded(
+          child: GridView.builder(
+            padding: const EdgeInsets.all(12),
+            // Fill the available width: as many columns as fit each ~180px tile.
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 180,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.1,
+            ),
+            itemCount: _guaList!.length,
+            itemBuilder: (context, index) {
+              final gua = _guaList![index];
+              return _HexagramTile(
+                gua: gua,
+                onTap: () => _openGua(gua),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Header card showing the most recently visited hexagram.
+class _LastVisitedHeader extends StatelessWidget {
+  final Gua gua;
+  final VoidCallback onTap;
+
+  const _LastVisitedHeader({required this.gua, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final symbol = gua.content?.guaSymbol ?? '';
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      elevation: 1,
+      margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
-      itemCount: _guaList!.length,
-      itemBuilder: (context, index) {
-        final gua = _guaList![index];
-        return _HexagramTile(gua: gua);
-      },
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              if (symbol.isNotEmpty)
+                Text(symbol, style: theme.textTheme.titleMedium)
+              else
+                const Icon(Icons.auto_awesome),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.lastVisited,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      gua.guaName,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -81,8 +202,9 @@ class _HexagramBrowserScreenState extends State<HexagramBrowserScreen> {
 /// A single tappable hexagram card in the browse grid.
 class _HexagramTile extends StatelessWidget {
   final Gua gua;
+  final VoidCallback onTap;
 
-  const _HexagramTile({required this.gua});
+  const _HexagramTile({required this.gua, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -98,11 +220,7 @@ class _HexagramTile extends StatelessWidget {
         side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       child: InkWell(
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => HexagramDetailScreen(gua: gua)),
-          );
-        },
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
