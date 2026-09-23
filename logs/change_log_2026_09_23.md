@@ -58,3 +58,16 @@ tapping a history entry opens `HexagramDetailScreen`.
 ### Verification
 - `flutter analyze` — clean
 - `flutter test` — 127 tests pass
+
+### Follow-up: migration for the hexagram_content column
+Databases created at v7 before `hexagram_content` was added would fail with a
+"no such column" SQLite exception when inserting a consultation.
+
+- Bumped the schema to **v8** and added a migration that `ALTER TABLE`s the
+  `consultations` table to add `hexagram_content` when it's missing.
+- Added a migration test (v7 without the column → v8 with it, existing rows
+  preserved).
+
+### Verification
+- `flutter analyze` — clean
+- `flutter test` — 128 tests pass
