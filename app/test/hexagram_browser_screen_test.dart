@@ -147,8 +147,7 @@ void main() {
     expect(find.text('Hexagram 1'), findsOneWidget);
   });
 
-  testWidgets('shows the last visited hexagram in the header', (tester) async {
-    final db = _FakeDb(settings: {lastVisitedGuaSettingsKey: '1'});
+  Future<void> pumpBrowser(WidgetTester tester, DatabaseService db) async {
     await tester.pumpWidget(
       MaterialApp(
         home: HexagramBrowserScreen(loader: loader, databaseService: db),
@@ -159,30 +158,40 @@ void main() {
     });
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
+  }
 
-    expect(find.text('Last visited'), findsOneWidget);
-    // The header shows the name once, plus the grid card.
+  testWidgets('shows recently viewed hexagrams in the header', (tester) async {
+    final db = _FakeDb(settings: {lastVisitedGuasSettingsKey: '1,2,64'});
+    await pumpBrowser(tester, db);
+
+    expect(find.text('Recently viewed'), findsOneWidget);
+    // 乾為天 and 坤為地 appear in both the header and the grid; 未濟 only in
+    // the header (its grid card is off-screen).
     expect(find.text('乾為天'), findsNWidgets(2));
+    expect(find.text('坤為地'), findsNWidgets(2));
+    expect(find.text('未濟'), findsOneWidget);
   });
 
-  testWidgets('tapping a hexagram records it as the last visited',
+  testWidgets('tapping a hexagram records it as recently viewed',
       (tester) async {
     final db = _FakeDb();
-    await tester.pumpWidget(
-      MaterialApp(
-        home: HexagramBrowserScreen(loader: loader, databaseService: db),
-      ),
-    );
-    await tester.runAsync(() async {
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-    });
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    await pumpBrowser(tester, db);
 
     await tester.tap(find.text('乾為天'));
     await tester.pumpAndSettle();
 
-    expect(await db.getSetting(lastVisitedGuaSettingsKey), '1');
+    expect(await db.getSetting(lastVisitedGuasSettingsKey), '1');
+  });
+
+  testWidgets('keeps only the last 3 recently viewed, most recent first',
+      (tester) async {
+    final db = _FakeDb(settings: {lastVisitedGuasSettingsKey: '2,3,4'});
+    await pumpBrowser(tester, db);
+
+    await tester.tap(find.text('乾為天'));
+    await tester.pumpAndSettle();
+
+    expect(await db.getSetting(lastVisitedGuasSettingsKey), '1,2,3');
   });
 
 }

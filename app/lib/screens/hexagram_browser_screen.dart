@@ -5,20 +5,24 @@ import '../services/database_service.dart';
 import '../services/hexagram_loader.dart';
 import 'hexagram_detail_screen.dart';
 
-/// Settings key under which the most recently visited hexagram code is stored.
-const String lastVisitedGuaSettingsKey = 'last_visited_gua';
+/// Settings key under which the recently visited hexagram codes are stored
+/// (comma-separated, most recent first, up to 3).
+const String lastVisitedGuasSettingsKey = 'last_visited_guas';
+
+/// How many recently visited hexagrams to keep and display.
+const int _maxRecent = 3;
 
 /// Browse all hexagrams in a 2-column card grid.
 ///
 /// Each card shows the 卦序, 卦象, and 卦名. Tapping a card opens the
 /// [HexagramDetailScreen] for that hexagram. The most recently visited
-/// hexagram is shown in a header above the grid (issue #11).
+/// hexagrams (up to three) are shown in a header above the grid (issue #11).
 class HexagramBrowserScreen extends StatefulWidget {
   /// Optional loader for tests. When omitted, the bundled JSON assets are used.
   final HexagramLoader? loader;
 
-  /// Used to persist the last visited hexagram. When omitted, the last visited
-  /// hexagram is only kept for the current session.
+  /// Used to persist the recently visited hexagrams. When omitted, they are
+  /// only kept for the current session.
   final DatabaseService? databaseService;
 
   const HexagramBrowserScreen({
@@ -33,7 +37,7 @@ class HexagramBrowserScreen extends StatefulWidget {
 
 class _HexagramBrowserScreenState extends State<HexagramBrowserScreen> {
   List<Gua>? _guaList;
-  Gua? _lastVisited;
+  List<Gua> _recent = const [];
   String? _error;
 
   @override
@@ -49,13 +53,17 @@ class _HexagramBrowserScreenState extends State<HexagramBrowserScreen> {
       guaList.sort((a, b) => a.guaCode.compareTo(b.guaCode));
 
       final saved = await widget.databaseService
-          ?.getSetting(lastVisitedGuaSettingsKey);
-      final lastCode = int.tryParse(saved ?? '');
-      Gua? lastVisited;
-      if (lastCode != null) {
+          ?.getSetting(lastVisitedGuasSettingsKey);
+      final codes = (saved ?? '')
+          .split(',')
+          .map((s) => int.tryParse(s.trim()))
+          .whereType<int>()
+          .toList();
+      final recent = <Gua>[];
+      for (final code in codes) {
         for (final gua in guaList) {
-          if (gua.guaCode == lastCode) {
-            lastVisited = gua;
+          if (gua.guaCode == code) {
+            recent.add(gua);
             break;
           }
         }
@@ -64,7 +72,7 @@ class _HexagramBrowserScreenState extends State<HexagramBrowserScreen> {
       if (mounted) {
         setState(() {
           _guaList = guaList;
-          _lastVisited = lastVisited;
+          _recent = recent;
         });
       }
     } catch (e) {
@@ -73,10 +81,17 @@ class _HexagramBrowserScreenState extends State<HexagramBrowserScreen> {
   }
 
   Future<void> _openGua(Gua gua) async {
-    // Record it as the last visited hexagram.
-    await widget.databaseService
-        ?.setSetting(lastVisitedGuaSettingsKey, gua.guaCode.toString());
-    if (mounted) setState(() => _lastVisited = gua);
+    // Prepend to the recent list, de-duplicating, and keep the last 3.
+    final recent = [
+      gua,
+      ..._recent.where((g) => g.guaCode != gua.guaCode),
+    ].take(_maxRecent).toList();
+
+    await widget.databaseService?.setSetting(
+      lastVisitedGuasSettingsKey,
+      recent.map((g) => g.guaCode).join(','),
+    );
+    if (mounted) setState(() => _recent = recent);
     if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => HexagramDetailScreen(gua: gua)),
@@ -105,11 +120,8 @@ class _HexagramBrowserScreenState extends State<HexagramBrowserScreen> {
 
     return Column(
       children: [
-        if (_lastVisited != null)
-          _LastVisitedHeader(
-            gua: _lastVisited!,
-            onTap: () => _openGua(_lastVisited!),
-          ),
+        if (_recent.isNotEmpty)
+          _RecentHeader(guas: _recent, onTap: _openGua),
         Expanded(
           child: GridView.builder(
             padding: const EdgeInsets.all(12),
@@ -135,18 +147,17 @@ class _HexagramBrowserScreenState extends State<HexagramBrowserScreen> {
   }
 }
 
-/// Header card showing the most recently visited hexagram.
-class _LastVisitedHeader extends StatelessWidget {
-  final Gua gua;
-  final VoidCallback onTap;
+/// Header showing the recently visited hexagrams (up to three).
+class _RecentHeader extends StatelessWidget {
+  final List<Gua> guas;
+  final void Function(Gua) onTap;
 
-  const _LastVisitedHeader({required this.gua, required this.onTap});
+  const _RecentHeader({required this.guas, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final symbol = gua.content?.guaSymbol ?? '';
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -156,43 +167,73 @@ class _LastVisitedHeader extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              if (symbol.isNotEmpty)
-                Text(symbol, style: theme.textTheme.titleMedium)
-              else
-                const Icon(Icons.auto_awesome),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.lastVisited,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      gua.guaName,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.recentlyViewed,
+              style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                for (final gua in guas)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: _RecentChip(gua: gua, onTap: () => onTap(gua)),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A single tappable recently-viewed hexagram chip.
+class _RecentChip extends StatelessWidget {
+  final Gua gua;
+  final VoidCallback onTap;
+
+  const _RecentChip({required this.gua, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final symbol = gua.content?.guaSymbol ?? '';
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          children: [
+            if (symbol.isNotEmpty)
+              Text(symbol, style: theme.textTheme.titleMedium)
+            else
+              const Icon(Icons.auto_awesome, size: 20),
+            const SizedBox(height: 4),
+            Text(
+              gua.guaName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );
