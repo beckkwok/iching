@@ -1,5 +1,5 @@
 /// A single recorded consultation: the user's question, the cast hexagram,
-/// and the LLM explanation.
+/// the LLM explanation, and (optionally) the user's feedback.
 class Consultation {
   final int? id;
   final String question;
@@ -12,6 +12,13 @@ class Consultation {
   final String hexagramContent;
 
   final String explanation;
+
+  /// Feedback rating (1-5, where 5 = very satisfied), set after the response.
+  final int? rating;
+
+  /// Optional user comment.
+  final String? comment;
+
   final DateTime createdAt;
 
   Consultation({
@@ -22,6 +29,8 @@ class Consultation {
     required this.hexagramName,
     required this.hexagramContent,
     required this.explanation,
+    this.rating,
+    this.comment,
     required this.createdAt,
   });
 
@@ -33,6 +42,8 @@ class Consultation {
       'hexagram_name': hexagramName,
       'hexagram_content': hexagramContent,
       'explanation': explanation,
+      'rating': rating,
+      'comment': comment,
       'created_at': createdAt.toIso8601String(),
     };
     if (id != null) map['id'] = id;
@@ -48,6 +59,8 @@ class Consultation {
       hexagramName: map['hexagram_name'] as String,
       hexagramContent: map['hexagram_content'] as String,
       explanation: map['explanation'] as String,
+      rating: map['rating'] as int?,
+      comment: map['comment'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),
     );
   }
@@ -68,9 +81,11 @@ class Consultation {
           hexagramName == other.hexagramName &&
           hexagramContent == other.hexagramContent &&
           explanation == other.explanation &&
+          rating == other.rating &&
+          comment == other.comment &&
           createdAt == other.createdAt;
 
   @override
   int get hashCode => Object.hash(id, question, questionTypeLabel, hexagramCode,
-      hexagramName, hexagramContent, explanation, createdAt);
+      hexagramName, hexagramContent, explanation, rating, comment, createdAt);
 }
