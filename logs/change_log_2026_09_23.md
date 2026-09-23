@@ -46,3 +46,15 @@ explanation is generated.
 ### Verification
 - `flutter analyze` — clean
 - `flutter test` — 126 tests pass
+
+### Follow-up: open the hexagram detail from history
+Each consultation now stores the full hexagram JSON (`hexagram_content`), and
+tapping a history entry opens `HexagramDetailScreen`.
+
+- `Consultation` + `consultations` schema gained `hexagram_content`.
+- `HistoryScreen` cards are tappable (navigate to the hexagram detail).
+- Tests: history tap-to-detail; explanation saves the content; DB round-trip.
+
+### Verification
+- `flutter analyze` — clean
+- `flutter test` — 127 tests pass
