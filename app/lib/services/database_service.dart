@@ -13,7 +13,7 @@ class DatabaseService {
   static const String _consultationsTable = 'consultations';
 
   /// The database version for migration tracking.
-  static const int _databaseVersion = 7;
+  static const int _databaseVersion = 8;
 
   /// Custom database path (used for in-memory testing).
   final String? _customPath;
@@ -125,6 +125,26 @@ class DatabaseService {
     if (oldVersion < 7) {
       // v6 → v7: add the consultations table (issue #8).
       await _createConsultationsTable(db);
+    }
+    if (oldVersion < 8) {
+      // v7 → v8: add the hexagram_content column (it was added to the schema
+      // before v7 shipped, so existing v7 databases may lack it).
+      await _addConsultationHexagramContent(db);
+    }
+  }
+
+  /// Adds the `hexagram_content` column to the consultations table if it is
+  /// missing (for databases created before the column was introduced).
+  Future<void> _addConsultationHexagramContent(Database db) async {
+    final columns =
+        await db.rawQuery('PRAGMA table_info($_consultationsTable)');
+    final hasColumn =
+        columns.any((c) => c['name'] == 'hexagram_content');
+    if (!hasColumn) {
+      await db.execute(
+        "ALTER TABLE $_consultationsTable "
+        "ADD COLUMN hexagram_content TEXT NOT NULL DEFAULT ''",
+      );
     }
   }
 
