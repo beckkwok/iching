@@ -6,6 +6,11 @@ class Consultation {
   final String? questionTypeLabel;
   final int hexagramCode;
   final String hexagramName;
+
+  /// The raw hexagram JSON (see [HexagramContent]), kept so the detail screen
+  /// can be opened from the history.
+  final String hexagramContent;
+
   final String explanation;
   final DateTime createdAt;
 
@@ -15,6 +20,7 @@ class Consultation {
     this.questionTypeLabel,
     required this.hexagramCode,
     required this.hexagramName,
+    required this.hexagramContent,
     required this.explanation,
     required this.createdAt,
   });
@@ -25,6 +31,7 @@ class Consultation {
       'question_type': questionTypeLabel,
       'hexagram_code': hexagramCode,
       'hexagram_name': hexagramName,
+      'hexagram_content': hexagramContent,
       'explanation': explanation,
       'created_at': createdAt.toIso8601String(),
     };
@@ -39,6 +46,7 @@ class Consultation {
       questionTypeLabel: map['question_type'] as String?,
       hexagramCode: map['hexagram_code'] as int,
       hexagramName: map['hexagram_name'] as String,
+      hexagramContent: map['hexagram_content'] as String,
       explanation: map['explanation'] as String,
       createdAt: DateTime.parse(map['created_at'] as String),
     );
@@ -58,10 +66,11 @@ class Consultation {
           questionTypeLabel == other.questionTypeLabel &&
           hexagramCode == other.hexagramCode &&
           hexagramName == other.hexagramName &&
+          hexagramContent == other.hexagramContent &&
           explanation == other.explanation &&
           createdAt == other.createdAt;
 
   @override
   int get hashCode => Object.hash(id, question, questionTypeLabel, hexagramCode,
-      hexagramName, explanation, createdAt);
+      hexagramName, hexagramContent, explanation, createdAt);
 }

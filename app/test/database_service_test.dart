@@ -82,6 +82,7 @@ void main() {
         questionTypeLabel: 'Career Achievement',
         hexagramCode: 46,
         hexagramName: '地風升',
+        hexagramContent: '{"卦名":"地風升","卦序":46}',
         explanation: 'A gentle reflection.',
         createdAt: DateTime(2026, 1, 2, 3, 4),
       ));
@@ -94,6 +95,7 @@ void main() {
       expect(all.first.questionTypeLabel, 'Career Achievement');
       expect(all.first.hexagramCode, 46);
       expect(all.first.hexagramName, '地風升');
+      expect(all.first.hexagramContent, '{"卦名":"地風升","卦序":46}');
       expect(all.first.explanation, 'A gentle reflection.');
       expect(all.first.createdAt, DateTime(2026, 1, 2, 3, 4));
     });
@@ -103,6 +105,7 @@ void main() {
         question: 'first',
         hexagramCode: 1,
         hexagramName: '乾為天',
+        hexagramContent: '{}',
         explanation: 'e',
         createdAt: DateTime(2026, 1, 1),
       ));
@@ -110,6 +113,7 @@ void main() {
         question: 'second',
         hexagramCode: 2,
         hexagramName: '坤為地',
+        hexagramContent: '{}',
         explanation: 'e',
         createdAt: DateTime(2026, 1, 2),
       ));

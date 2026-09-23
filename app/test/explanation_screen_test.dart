@@ -140,6 +140,7 @@ void main() {
     expect(c.questionTypeLabel, 'Career Achievement');
     expect(c.hexagramCode, 46);
     expect(c.hexagramName, '地風升');
+    expect(c.hexagramContent, _guaJson);
     expect(c.explanation, 'A gentle mirror for your question.');
   });
 }

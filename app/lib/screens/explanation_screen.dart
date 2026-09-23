@@ -80,6 +80,7 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
           questionTypeLabel: widget.questionTypeLabel,
           hexagramCode: gua.guaCode,
           hexagramName: gua.guaName,
+          hexagramContent: gua.guaContent,
           explanation: text,
           createdAt: DateTime.now(),
         ));

@@ -106,6 +106,7 @@ class DatabaseService {
         question_type TEXT,
         hexagram_code INTEGER NOT NULL,
         hexagram_name TEXT NOT NULL,
+        hexagram_content TEXT NOT NULL,
         explanation TEXT NOT NULL,
         created_at TEXT NOT NULL
       )
@@ -179,6 +180,7 @@ class DatabaseService {
       questionTypeLabel: consultation.questionTypeLabel,
       hexagramCode: consultation.hexagramCode,
       hexagramName: consultation.hexagramName,
+      hexagramContent: consultation.hexagramContent,
       explanation: consultation.explanation,
       createdAt: consultation.createdAt,
     );
