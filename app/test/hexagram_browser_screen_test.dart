@@ -35,6 +35,28 @@ String fixtureJson(int code) {
   ''';
 }
 
+/// In-memory [DatabaseService] stand-in for the last-visited persistence,
+/// avoiding the real sqflite-ffi DB (which deadlocks in widget-test initState).
+class _FakeDb extends DatabaseService {
+  _FakeDb({Map<String, String>? settings})
+      : _settings = {...?settings},
+        super(databasePath: ':memory:');
+
+  final Map<String, String> _settings;
+
+  @override
+  Future<String?> getSetting(String key) async => _settings[key];
+
+  @override
+  Future<void> setSetting(String key, String? value) async {
+    if (value == null) {
+      _settings.remove(key);
+    } else {
+      _settings[key] = value;
+    }
+  }
+}
+
 void main() {
   setUpAll(() {
     sqfliteFfiInit();
@@ -123,6 +145,44 @@ void main() {
 
     expect(find.byType(HexagramDetailScreen), findsOneWidget);
     expect(find.text('Hexagram 1'), findsOneWidget);
+  });
+
+  testWidgets('shows the last visited hexagram in the header', (tester) async {
+    final db = _FakeDb(settings: {lastVisitedGuaSettingsKey: '1'});
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HexagramBrowserScreen(loader: loader, databaseService: db),
+      ),
+    );
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    });
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Last visited'), findsOneWidget);
+    // The header shows the name once, plus the grid card.
+    expect(find.text('乾為天'), findsNWidgets(2));
+  });
+
+  testWidgets('tapping a hexagram records it as the last visited',
+      (tester) async {
+    final db = _FakeDb();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HexagramBrowserScreen(loader: loader, databaseService: db),
+      ),
+    );
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    });
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(find.text('乾為天'));
+    await tester.pumpAndSettle();
+
+    expect(await db.getSetting(lastVisitedGuaSettingsKey), '1');
   });
 
 }
