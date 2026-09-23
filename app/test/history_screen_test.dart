@@ -44,6 +44,8 @@ Consultation _consultation() => Consultation(
       hexagramName: '地風升',
       hexagramContent: _content46,
       explanation: 'A gentle reflection.',
+      rating: 4,
+      comment: 'I feel hopeful about the move.',
       createdAt: DateTime(2026, 9, 23, 10, 30),
     );
 
@@ -70,6 +72,9 @@ void main() {
     expect(find.text('Hexagram 46'), findsOneWidget);
     expect(find.text('Should I move?'), findsOneWidget);
     expect(find.textContaining('A gentle reflection'), findsOneWidget);
+    // Feedback: 4 filled stars + the user's comment.
+    expect(find.byIcon(Icons.star), findsNWidgets(4));
+    expect(find.text('I feel hopeful about the move.'), findsOneWidget);
   });
 
   testWidgets('tapping a consultation opens the hexagram detail',
