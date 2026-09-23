@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
+import '../models/consultation.dart';
 import '../models/language_preference.dart';
+import '../services/database_service.dart';
 import '../services/gua_generator.dart';
 import '../services/llm_service.dart';
 import 'hexagram_detail_screen.dart';
@@ -17,6 +19,9 @@ class ExplanationScreen extends StatefulWidget {
   final GenerationResult result;
   final LlmService? llmService;
 
+  /// Used to persist the consultation once the explanation is generated.
+  final DatabaseService? databaseService;
+
   /// Language preference for the explanation response.
   final LanguagePreference language;
 
@@ -26,6 +31,7 @@ class ExplanationScreen extends StatefulWidget {
     required this.result,
     this.questionTypeLabel,
     this.llmService,
+    this.databaseService,
     this.language = LanguagePreference.english,
   });
 
@@ -65,6 +71,20 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
         result: widget.result,
         language: widget.language,
       );
+      // Persist the consultation (issue #8).
+      final db = widget.databaseService;
+      if (db != null) {
+        final gua = widget.result.gua;
+        await db.createConsultation(Consultation(
+          question: widget.question,
+          questionTypeLabel: widget.questionTypeLabel,
+          hexagramCode: gua.guaCode,
+          hexagramName: gua.guaName,
+          hexagramContent: gua.guaContent,
+          explanation: text,
+          createdAt: DateTime.now(),
+        ));
+      }
       if (mounted) {
         setState(() {
           _loading = false;

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:app/models/consultation.dart';
 import 'package:app/models/gua.dart';
 import 'package:app/models/yao_line_type.dart';
 import 'package:app/screens/explanation_screen.dart';
 import 'package:app/screens/hexagram_detail_screen.dart';
+import 'package:app/services/database_service.dart';
 import 'package:app/services/fake_llm_service.dart';
 import 'package:app/services/gua_generator.dart';
 
@@ -112,4 +114,46 @@ void main() {
 
     expect(find.textContaining('No model available'), findsOneWidget);
   });
+
+  testWidgets('saves a consultation after generating the explanation',
+      (tester) async {
+    final llm = FakeLlmService();
+    llm.explanationResponse = 'A gentle mirror for your question.';
+    final db = _RecordingDb();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ExplanationScreen(
+          question: 'Should I take the new job?',
+          questionTypeLabel: 'Career Achievement',
+          result: _result(),
+          llmService: llm,
+          databaseService: db,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(db.saved, hasLength(1));
+    final c = db.saved.first;
+    expect(c.question, 'Should I take the new job?');
+    expect(c.questionTypeLabel, 'Career Achievement');
+    expect(c.hexagramCode, 46);
+    expect(c.hexagramName, '地風升');
+    expect(c.hexagramContent, _guaJson);
+    expect(c.explanation, 'A gentle mirror for your question.');
+  });
+}
+
+/// A [DatabaseService] that records consultations instead of touching SQLite.
+class _RecordingDb extends DatabaseService {
+  _RecordingDb() : super(databasePath: ':memory:');
+
+  final List<Consultation> saved = [];
+
+  @override
+  Future<Consultation> createConsultation(Consultation consultation) async {
+    saved.add(consultation);
+    return consultation;
+  }
 }

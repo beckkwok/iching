@@ -21,3 +21,53 @@ header above the grid; tapping a hexagram card records it as the most recent.
 ### Verification
 - `flutter analyze` — clean
 - `flutter test` — 121 tests pass
+
+## Task: Consultation history (issue #8)
+
+The History tab now lists the recorded consultations (question, hexagram, and
+explanation), most recent first. Each consultation is persisted when the
+explanation is generated.
+
+### Changes
+- **`lib/models/consultation.dart`** (new) — the consultation model.
+- **`lib/services/database_service.dart`** — added a `consultations` table
+  (schema v7 migration) and `createConsultation`/`getConsultations`.
+- **`lib/screens/explanation_screen.dart`** — persists a consultation once the
+  LLM explanation is generated (via a now-threaded `databaseService`).
+- **`lib/screens/cast_result_screen.dart`** / **`question_form_screen.dart`** —
+  thread the `databaseService` through to the explanation screen.
+- **`lib/screens/history_screen.dart`** — replaced the placeholder with a list
+  of consultations (empty state when none).
+- **`lib/screens/home_shell.dart`** — passes the DB to the History tab.
+- **`lib/l10n/app_localizations.dart`** — added `historyEmpty`.
+- Tests: DB consultation round-trip/ordering, explanation saves a consultation,
+  history screen list/empty state; updated the migration test.
+
+### Verification
+- `flutter analyze` — clean
+- `flutter test` — 126 tests pass
+
+### Follow-up: open the hexagram detail from history
+Each consultation now stores the full hexagram JSON (`hexagram_content`), and
+tapping a history entry opens `HexagramDetailScreen`.
+
+- `Consultation` + `consultations` schema gained `hexagram_content`.
+- `HistoryScreen` cards are tappable (navigate to the hexagram detail).
+- Tests: history tap-to-detail; explanation saves the content; DB round-trip.
+
+### Verification
+- `flutter analyze` — clean
+- `flutter test` — 127 tests pass
+
+### Follow-up: migration for the hexagram_content column
+Databases created at v7 before `hexagram_content` was added would fail with a
+"no such column" SQLite exception when inserting a consultation.
+
+- Bumped the schema to **v8** and added a migration that `ALTER TABLE`s the
+  `consultations` table to add `hexagram_content` when it's missing.
+- Added a migration test (v7 without the column → v8 with it, existing rows
+  preserved).
+
+### Verification
+- `flutter analyze` — clean
+- `flutter test` — 128 tests pass

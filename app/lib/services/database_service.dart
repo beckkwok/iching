@@ -1,6 +1,8 @@
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' as p;
 
+import '../models/consultation.dart';
+
 /// Service for all SQLite database operations.
 ///
 /// In production, the database is stored at [defaultDatabasePath].
@@ -8,9 +10,10 @@ import 'package:path/path.dart' as p;
 /// (requires `sqflite_common_ffi` initialization).
 class DatabaseService {
   static const String _settingsTable = 'settings';
+  static const String _consultationsTable = 'consultations';
 
   /// The database version for migration tracking.
-  static const int _databaseVersion = 6;
+  static const int _databaseVersion = 8;
 
   /// Custom database path (used for in-memory testing).
   final String? _customPath;
@@ -83,6 +86,7 @@ class DatabaseService {
 
   Future<void> _createTables(Database db, int version) async {
     await _createSettingsTable(db);
+    await _createConsultationsTable(db);
   }
 
   Future<void> _createSettingsTable(Database db) async {
@@ -90,6 +94,21 @@ class DatabaseService {
       CREATE TABLE IF NOT EXISTS $_settingsTable (
         key TEXT PRIMARY KEY,
         value TEXT
+      )
+    ''');
+  }
+
+  Future<void> _createConsultationsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $_consultationsTable (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        question TEXT NOT NULL,
+        question_type TEXT,
+        hexagram_code INTEGER NOT NULL,
+        hexagram_name TEXT NOT NULL,
+        hexagram_content TEXT NOT NULL,
+        explanation TEXT NOT NULL,
+        created_at TEXT NOT NULL
       )
     ''');
   }
@@ -102,6 +121,30 @@ class DatabaseService {
       // v5 → v6: the `gua` table was removed in favour of loading the
       // hexagrams directly from JSON assets. Drop it if it still exists.
       await db.execute('DROP TABLE IF EXISTS gua');
+    }
+    if (oldVersion < 7) {
+      // v6 → v7: add the consultations table (issue #8).
+      await _createConsultationsTable(db);
+    }
+    if (oldVersion < 8) {
+      // v7 → v8: add the hexagram_content column (it was added to the schema
+      // before v7 shipped, so existing v7 databases may lack it).
+      await _addConsultationHexagramContent(db);
+    }
+  }
+
+  /// Adds the `hexagram_content` column to the consultations table if it is
+  /// missing (for databases created before the column was introduced).
+  Future<void> _addConsultationHexagramContent(Database db) async {
+    final columns =
+        await db.rawQuery('PRAGMA table_info($_consultationsTable)');
+    final hasColumn =
+        columns.any((c) => c['name'] == 'hexagram_content');
+    if (!hasColumn) {
+      await db.execute(
+        "ALTER TABLE $_consultationsTable "
+        "ADD COLUMN hexagram_content TEXT NOT NULL DEFAULT ''",
+      );
     }
   }
 
@@ -139,5 +182,34 @@ class DatabaseService {
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Consultation CRUD
+  // ---------------------------------------------------------------------------
+
+  /// Store a new [Consultation] and return it with the generated [id].
+  Future<Consultation> createConsultation(Consultation consultation) async {
+    final db = await database;
+    final map = consultation.toMap();
+    map.remove('id');
+    final id = await db.insert(_consultationsTable, map);
+    return Consultation(
+      id: id,
+      question: consultation.question,
+      questionTypeLabel: consultation.questionTypeLabel,
+      hexagramCode: consultation.hexagramCode,
+      hexagramName: consultation.hexagramName,
+      hexagramContent: consultation.hexagramContent,
+      explanation: consultation.explanation,
+      createdAt: consultation.createdAt,
+    );
+  }
+
+  /// Return all consultations, most recent first.
+  Future<List<Consultation>> getConsultations() async {
+    final db = await database;
+    final rows = await db.query(_consultationsTable, orderBy: 'id DESC');
+    return rows.map(Consultation.fromMap).toList();
   }
 }
