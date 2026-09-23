@@ -35,6 +35,28 @@ String fixtureJson(int code) {
   ''';
 }
 
+/// In-memory [DatabaseService] stand-in for the last-visited persistence,
+/// avoiding the real sqflite-ffi DB (which deadlocks in widget-test initState).
+class _FakeDb extends DatabaseService {
+  _FakeDb({Map<String, String>? settings})
+      : _settings = {...?settings},
+        super(databasePath: ':memory:');
+
+  final Map<String, String> _settings;
+
+  @override
+  Future<String?> getSetting(String key) async => _settings[key];
+
+  @override
+  Future<void> setSetting(String key, String? value) async {
+    if (value == null) {
+      _settings.remove(key);
+    } else {
+      _settings[key] = value;
+    }
+  }
+}
+
 void main() {
   setUpAll(() {
     sqfliteFfiInit();
@@ -123,6 +145,53 @@ void main() {
 
     expect(find.byType(HexagramDetailScreen), findsOneWidget);
     expect(find.text('Hexagram 1'), findsOneWidget);
+  });
+
+  Future<void> pumpBrowser(WidgetTester tester, DatabaseService db) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HexagramBrowserScreen(loader: loader, databaseService: db),
+      ),
+    );
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    });
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+
+  testWidgets('shows recently viewed hexagrams in the header', (tester) async {
+    final db = _FakeDb(settings: {lastVisitedGuasSettingsKey: '1,2,64'});
+    await pumpBrowser(tester, db);
+
+    expect(find.text('Recently viewed'), findsOneWidget);
+    // 乾為天 and 坤為地 appear in both the header and the grid; 未濟 only in
+    // the header (its grid card is off-screen).
+    expect(find.text('乾為天'), findsNWidgets(2));
+    expect(find.text('坤為地'), findsNWidgets(2));
+    expect(find.text('未濟'), findsOneWidget);
+  });
+
+  testWidgets('tapping a hexagram records it as recently viewed',
+      (tester) async {
+    final db = _FakeDb();
+    await pumpBrowser(tester, db);
+
+    await tester.tap(find.text('乾為天'));
+    await tester.pumpAndSettle();
+
+    expect(await db.getSetting(lastVisitedGuasSettingsKey), '1');
+  });
+
+  testWidgets('keeps only the last 3 recently viewed, most recent first',
+      (tester) async {
+    final db = _FakeDb(settings: {lastVisitedGuasSettingsKey: '2,3,4'});
+    await pumpBrowser(tester, db);
+
+    await tester.tap(find.text('乾為天'));
+    await tester.pumpAndSettle();
+
+    expect(await db.getSetting(lastVisitedGuasSettingsKey), '1,2,3');
   });
 
 }

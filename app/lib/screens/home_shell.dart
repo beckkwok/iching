@@ -59,7 +59,7 @@ class _HomeShellState extends State<HomeShell> {
             databaseService: widget.databaseService,
             llmService: widget.llmService,
           ),
-        3 => const HexagramBrowserScreen(),
+        3 => HexagramBrowserScreen(databaseService: widget.databaseService),
         _ => SettingsScreen(
             databaseService: widget.databaseService,
             llmService: widget.llmService,
