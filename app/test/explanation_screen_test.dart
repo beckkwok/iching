@@ -143,17 +143,71 @@ void main() {
     expect(c.hexagramContent, _guaJson);
     expect(c.explanation, 'A gentle mirror for your question.');
   });
+
+  testWidgets('submits feedback on the consultation', (tester) async {
+    final llm = FakeLlmService();
+    llm.explanationResponse = 'A gentle mirror for your question.';
+    final db = _RecordingDb();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ExplanationScreen(
+          question: 'Should I take the new job?',
+          result: _result(),
+          llmService: llm,
+          databaseService: db,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Feedback'), findsOneWidget);
+
+    // Tap the 4th star (rating = 4).
+    await tester.tap(find.byIcon(Icons.star_border).at(3));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), 'Very helpful');
+    await tester.tap(find.text('Submit feedback'));
+    await tester.pumpAndSettle();
+
+    expect(db.feedback, hasLength(1));
+    expect(db.feedback.first.$1, 1);
+    expect(db.feedback.first.$2, 4);
+    expect(db.feedback.first.$3, 'Very helpful');
+    expect(find.text('Thanks for your feedback!'), findsOneWidget);
+  });
 }
 
-/// A [DatabaseService] that records consultations instead of touching SQLite.
+/// A [DatabaseService] that records consultations and feedback instead of
+/// touching SQLite.
 class _RecordingDb extends DatabaseService {
   _RecordingDb() : super(databasePath: ':memory:');
 
   final List<Consultation> saved = [];
+  final List<(int, int, String?)> feedback = [];
 
   @override
   Future<Consultation> createConsultation(Consultation consultation) async {
-    saved.add(consultation);
-    return consultation;
+    final withId = Consultation(
+      id: saved.length + 1,
+      question: consultation.question,
+      questionTypeLabel: consultation.questionTypeLabel,
+      hexagramCode: consultation.hexagramCode,
+      hexagramName: consultation.hexagramName,
+      hexagramContent: consultation.hexagramContent,
+      explanation: consultation.explanation,
+      createdAt: consultation.createdAt,
+    );
+    saved.add(withId);
+    return withId;
+  }
+
+  @override
+  Future<void> updateConsultationFeedback(
+    int id, {
+    required int rating,
+    String? comment,
+  }) async {
+    feedback.add((id, rating, comment));
   }
 }

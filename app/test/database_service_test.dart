@@ -123,5 +123,26 @@ void main() {
       expect(all.first.question, 'second');
       expect(all.last.question, 'first');
     });
+
+    test('updateConsultationFeedback stores rating and comment', () async {
+      final saved = await service.createConsultation(Consultation(
+        question: 'q',
+        hexagramCode: 1,
+        hexagramName: '乾為天',
+        hexagramContent: '{}',
+        explanation: 'e',
+        createdAt: DateTime(2026, 1, 1),
+      ));
+
+      await service.updateConsultationFeedback(
+        saved.id!,
+        rating: 4,
+        comment: 'Helpful',
+      );
+
+      final all = await service.getConsultations();
+      expect(all.first.rating, 4);
+      expect(all.first.comment, 'Helpful');
+    });
   });
 }
