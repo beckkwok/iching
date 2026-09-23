@@ -47,7 +47,7 @@ void main() {
     });
     await legacy.close();
 
-    // Opening via DatabaseService runs the v5 → v6 migration.
+    // Opening via DatabaseService runs the migration (v5 → current).
     final service = DatabaseService(databasePath: path);
     final db = await service.database;
 
@@ -65,7 +65,7 @@ void main() {
     await File(path).delete();
   });
 
-  test('a fresh database has only the settings table', () async {
+  test('a fresh database has settings and consultations tables', () async {
     final path = _tmpPath();
     final service = DatabaseService(databasePath: path);
     final db = await service.database;
@@ -75,6 +75,7 @@ void main() {
     );
     final names = tables.map((t) => t['name']).toSet();
     expect(names, contains('settings'));
+    expect(names, contains('consultations'));
     expect(names, isNot(contains('gua')));
 
     await service.close();

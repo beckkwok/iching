@@ -53,7 +53,7 @@ class _HomeShellState extends State<HomeShell> {
   }
 
   Widget _buildTab(int i) => switch (i) {
-        0 => const HistoryScreen(),
+        0 => HistoryScreen(databaseService: widget.databaseService),
         1 => const ProfileScreen(),
         2 => QuestionFormScreen(
             databaseService: widget.databaseService,

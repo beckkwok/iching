@@ -21,3 +21,28 @@ header above the grid; tapping a hexagram card records it as the most recent.
 ### Verification
 - `flutter analyze` — clean
 - `flutter test` — 121 tests pass
+
+## Task: Consultation history (issue #8)
+
+The History tab now lists the recorded consultations (question, hexagram, and
+explanation), most recent first. Each consultation is persisted when the
+explanation is generated.
+
+### Changes
+- **`lib/models/consultation.dart`** (new) — the consultation model.
+- **`lib/services/database_service.dart`** — added a `consultations` table
+  (schema v7 migration) and `createConsultation`/`getConsultations`.
+- **`lib/screens/explanation_screen.dart`** — persists a consultation once the
+  LLM explanation is generated (via a now-threaded `databaseService`).
+- **`lib/screens/cast_result_screen.dart`** / **`question_form_screen.dart`** —
+  thread the `databaseService` through to the explanation screen.
+- **`lib/screens/history_screen.dart`** — replaced the placeholder with a list
+  of consultations (empty state when none).
+- **`lib/screens/home_shell.dart`** — passes the DB to the History tab.
+- **`lib/l10n/app_localizations.dart`** — added `historyEmpty`.
+- Tests: DB consultation round-trip/ordering, explanation saves a consultation,
+  history screen list/empty state; updated the migration test.
+
+### Verification
+- `flutter analyze` — clean
+- `flutter test` — 126 tests pass
