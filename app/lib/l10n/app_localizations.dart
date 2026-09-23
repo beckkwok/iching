@@ -191,6 +191,7 @@ class AppLocalizations {
   String hexagramNumber(int code) => _t('Hexagram $code', '第$code卦');
   String get hexagrams => _t('Hexagrams', '六十四卦');
   String get noHexagrams => _t('No hexagrams found.', '找不到卦。');
+  String get recentlyViewed => _t('Recently viewed', '最近查看');
   String unableToRead(String name) =>
       _t('Unable to read the hexagram content for $name.', '無法讀取 $name 的卦文。');
 
