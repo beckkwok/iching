@@ -13,7 +13,7 @@ class DatabaseService {
   static const String _consultationsTable = 'consultations';
 
   /// The database version for migration tracking.
-  static const int _databaseVersion = 8;
+  static const int _databaseVersion = 9;
 
   /// Custom database path (used for in-memory testing).
   final String? _customPath;
@@ -108,6 +108,8 @@ class DatabaseService {
         hexagram_name TEXT NOT NULL,
         hexagram_content TEXT NOT NULL,
         explanation TEXT NOT NULL,
+        rating INTEGER,
+        comment TEXT,
         created_at TEXT NOT NULL
       )
     ''');
@@ -131,6 +133,10 @@ class DatabaseService {
       // before v7 shipped, so existing v7 databases may lack it).
       await _addConsultationHexagramContent(db);
     }
+    if (oldVersion < 9) {
+      // v8 → v9: add the feedback columns (rating, comment) — issue #2.
+      await _addConsultationFeedbackColumns(db);
+    }
   }
 
   /// Adds the `hexagram_content` column to the consultations table if it is
@@ -144,6 +150,24 @@ class DatabaseService {
       await db.execute(
         "ALTER TABLE $_consultationsTable "
         "ADD COLUMN hexagram_content TEXT NOT NULL DEFAULT ''",
+      );
+    }
+  }
+
+  /// Adds the feedback columns (`rating`, `comment`) to the consultations
+  /// table if they are missing.
+  Future<void> _addConsultationFeedbackColumns(Database db) async {
+    final columns =
+        await db.rawQuery('PRAGMA table_info($_consultationsTable)');
+    final names = columns.map((c) => c['name']).toSet();
+    if (!names.contains('rating')) {
+      await db.execute(
+        "ALTER TABLE $_consultationsTable ADD COLUMN rating INTEGER",
+      );
+    }
+    if (!names.contains('comment')) {
+      await db.execute(
+        "ALTER TABLE $_consultationsTable ADD COLUMN comment TEXT",
       );
     }
   }
@@ -202,7 +226,24 @@ class DatabaseService {
       hexagramName: consultation.hexagramName,
       hexagramContent: consultation.hexagramContent,
       explanation: consultation.explanation,
+      rating: consultation.rating,
+      comment: consultation.comment,
       createdAt: consultation.createdAt,
+    );
+  }
+
+  /// Store the user's feedback (rating + comment) on an existing consultation.
+  Future<void> updateConsultationFeedback(
+    int id, {
+    required int rating,
+    String? comment,
+  }) async {
+    final db = await database;
+    await db.update(
+      _consultationsTable,
+      {'rating': rating, 'comment': comment},
+      where: 'id = ?',
+      whereArgs: [id],
     );
   }
 

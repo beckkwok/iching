@@ -187,6 +187,16 @@ class AppLocalizations {
   String failedExplanation(String error) =>
       _t('Failed to generate explanation: $error', '產生解讀失敗：$error');
 
+  // --- Feedback ---------------------------------------------------------
+  String get feedbackTitle => _t('Feedback', '意見回饋');
+  String get feedbackPrompt => _t('How did you find the answer?', '您覺得這次解讀如何？');
+  String get feedbackCommentHint => _t(
+        'How do you feel about this, and what\'s your next step? (optional)',
+        '你有何感受，以及下一步有何打算？（選填）',
+      );
+  String get feedbackSubmit => _t('Submit feedback', '送出回饋');
+  String get feedbackThanks => _t('Thanks for your feedback!', '感謝您的回饋！');
+
   // --- Hexagram browser / detail ---------------------------------------
   String hexagramNumber(int code) => _t('Hexagram $code', '第$code卦');
   String get hexagrams => _t('Hexagrams', '六十四卦');

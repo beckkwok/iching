@@ -183,7 +183,10 @@ directly from JSON assets (`assets/hexagrams/gua_<n>.json`) via `HexagramLoader`
 | question_type | TEXT    | nullable category label     |
 | hexagram_code | INTEGER | 1-64 (卦序)                 |
 | hexagram_name | TEXT    | e.g. "乾為天" (卦名)        |
+| hexagram_content | TEXT | full hexagram JSON (for the detail view) |
 | explanation   | TEXT    | the LLM explanation         |
+| rating        | INTEGER | nullable 1-5 feedback rating |
+| comment       | TEXT    | nullable user comment       |
 | created_at    | TEXT    | ISO 8601                    |
 
 ---

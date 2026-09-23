@@ -71,3 +71,29 @@ Databases created at v7 before `hexagram_content` was added would fail with a
 ### Verification
 - `flutter analyze` — clean
 - `flutter test` — 128 tests pass
+
+## Task: User feedback (issue #2)
+
+After the LLM response, the user can rate the answer (1-5 stars) and leave a
+comment; the feedback is stored on the consultation.
+
+### Changes
+- **`lib/models/consultation.dart`** — added nullable `rating` and `comment`.
+- **`lib/services/database_service.dart`** — added `rating`/`comment` columns
+  (schema **v9** migration) and `updateConsultationFeedback`.
+- **`lib/screens/explanation_screen.dart`** — added a feedback card (5-star
+  rating + comment + submit) below the explanation, and persists it via
+  `updateConsultationFeedback`.
+- **`lib/l10n/app_localizations.dart`** — added feedback strings (en/zh).
+- Tests: DB feedback round-trip; explanation feedback submission.
+
+### Verification
+- `flutter analyze` — clean
+- `flutter test` — 130 tests pass
+
+### Follow-up: show feedback in history + reword the comment label
+- The History cards now show the rating (stars) and the user's comment.
+- The comment hint now invites the user to share their feelings and next steps
+  (not just comment on the answer).
+
+Verification: `flutter analyze` clean, 130 tests pass.

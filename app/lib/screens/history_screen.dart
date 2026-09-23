@@ -181,6 +181,32 @@ class _ConsultationCard extends StatelessWidget {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+              if (consultation.rating != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    for (var i = 1; i <= 5; i++)
+                      Icon(
+                        i <= consultation.rating!
+                            ? Icons.star
+                            : Icons.star_border,
+                        size: 16,
+                        color: Colors.amber,
+                      ),
+                  ],
+                ),
+              ],
+              if (consultation.comment != null &&
+                  consultation.comment!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  consultation.comment!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontStyle: FontStyle.italic,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
               const SizedBox(height: 8),
               Row(
                 children: [

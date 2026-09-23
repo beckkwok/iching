@@ -44,7 +44,19 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
   bool _loading = true;
   String? _error;
 
+  int? _consultationId;
+  int _rating = 0;
+  final TextEditingController _commentController = TextEditingController();
+  bool _feedbackSaved = false;
+  bool _savingFeedback = false;
+
   bool _started = false;
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -75,7 +87,7 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
       final db = widget.databaseService;
       if (db != null) {
         final gua = widget.result.gua;
-        await db.createConsultation(Consultation(
+        final saved = await db.createConsultation(Consultation(
           question: widget.question,
           questionTypeLabel: widget.questionTypeLabel,
           hexagramCode: gua.guaCode,
@@ -84,6 +96,7 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
           explanation: text,
           createdAt: DateTime.now(),
         ));
+        _consultationId = saved.id;
       }
       if (mounted) {
         setState(() {
@@ -98,6 +111,25 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
           _error = '$e';
         });
       }
+    }
+  }
+
+  Future<void> _submitFeedback() async {
+    final id = _consultationId;
+    final db = widget.databaseService;
+    if (id == null || db == null || _rating == 0) return;
+    setState(() => _savingFeedback = true);
+    final comment = _commentController.text.trim();
+    await db.updateConsultationFeedback(
+      id,
+      rating: _rating,
+      comment: comment.isEmpty ? null : comment,
+    );
+    if (mounted) {
+      setState(() {
+        _savingFeedback = false;
+        _feedbackSaved = true;
+      });
     }
   }
 
@@ -236,6 +268,82 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
               ),
             ),
           ),
+
+          // Feedback (issue #2)
+          if (_consultationId != null) ...[
+            const SizedBox(height: 12),
+            Card(
+              elevation: 1,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: theme.colorScheme.outlineVariant),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: _feedbackSaved
+                    ? Row(
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(l10n.feedbackThanks)),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.feedbackTitle,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            l10n.feedbackPrompt,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              for (var i = 1; i <= 5; i++)
+                                IconButton(
+                                  onPressed: () =>
+                                      setState(() => _rating = i),
+                                  icon: Icon(
+                                    i <= _rating
+                                        ? Icons.star
+                                        : Icons.star_border,
+                                    color: i <= _rating
+                                        ? Colors.amber
+                                        : theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          TextField(
+                            controller: _commentController,
+                            maxLines: 3,
+                            minLines: 1,
+                            decoration: InputDecoration(
+                              hintText: l10n.feedbackCommentHint,
+                              border: const OutlineInputBorder(),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          FilledButton(
+                            onPressed: _savingFeedback ? null : _submitFeedback,
+                            child: Text(l10n.feedbackSubmit),
+                          ),
+                        ],
+                      ),
+              ),
+            ),
+          ],
         ],
       ),
     );
