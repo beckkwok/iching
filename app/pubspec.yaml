@@ -51,8 +51,10 @@ dependencies:
   http: ^1.2.0
 
   # Local LLM inference (Gemma, Qwen, DeepSeek, Phi-4, etc.)
-  flutter_gemma: ^1.1.2
-  flutter_gemma_litertlm: ^1.0.2
+  # Pinned: newer 1.x releases (1.9.0 / 1.8.0) fail to load the bundled
+  # .litertlm models ("Model may be invalid").
+  flutter_gemma: 1.1.2
+  flutter_gemma_litertlm: 1.0.2
 
   # File picker for model selection
   file_picker: ^13.1.0

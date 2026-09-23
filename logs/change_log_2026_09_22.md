@@ -98,3 +98,19 @@ animated icons.
 - `flutter analyze` — clean
 - `flutter test` — 118 tests pass
 - `flutter build windows --debug` + launch — builds and stays up ✅
+
+## Task: Pin the LLM engine versions (fix "Model may be invalid")
+
+A `flutter pub upgrade` had bumped the LLM runtime
+(`flutter_gemma 1.1.2 → 1.9.0`, `flutter_gemma_litertlm 1.0.2 → 1.8.0`), which
+failed to load the bundled `.litertlm` model
+(`BackendInitException: all FFI backends failed … Model may be invalid`).
+
+### Changes
+- Pinned `flutter_gemma: 1.1.2` and `flutter_gemma_litertlm: 1.0.2` in
+  `pubspec.yaml` (with a comment explaining why).
+
+### Verification
+- `flutter analyze` — clean
+- `flutter test` — 118 tests pass
+- Real model on Windows: loads and generates an explanation ✅
