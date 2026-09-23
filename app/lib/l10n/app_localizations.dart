@@ -190,7 +190,10 @@ class AppLocalizations {
   // --- Feedback ---------------------------------------------------------
   String get feedbackTitle => _t('Feedback', '意見回饋');
   String get feedbackPrompt => _t('How did you find the answer?', '您覺得這次解讀如何？');
-  String get feedbackCommentHint => _t('Any thoughts? (optional)', '有何想法？（選填）');
+  String get feedbackCommentHint => _t(
+        'How do you feel about this, and what\'s your next step? (optional)',
+        '你有何感受，以及下一步有何打算？（選填）',
+      );
   String get feedbackSubmit => _t('Submit feedback', '送出回饋');
   String get feedbackThanks => _t('Thanks for your feedback!', '感謝您的回饋！');
 

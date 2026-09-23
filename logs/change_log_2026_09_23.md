@@ -90,3 +90,10 @@ comment; the feedback is stored on the consultation.
 ### Verification
 - `flutter analyze` — clean
 - `flutter test` — 130 tests pass
+
+### Follow-up: show feedback in history + reword the comment label
+- The History cards now show the rating (stars) and the user's comment.
+- The comment hint now invites the user to share their feelings and next steps
+  (not just comment on the answer).
+
+Verification: `flutter analyze` clean, 130 tests pass.
