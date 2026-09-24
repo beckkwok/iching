@@ -20,7 +20,7 @@ class GradientButton extends StatelessWidget {
   final Widget? icon;
 
   static const Color start = Color(0xFF673AB7);
-  static const Color end = Color(0xFF9C4DCC);
+  static const Color end = Color(0xFFAB47BC);
 
   @override
   Widget build(BuildContext context) {
