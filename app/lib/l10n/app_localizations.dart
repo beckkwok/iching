@@ -112,6 +112,10 @@ class AppLocalizations {
   String get english => _t('English', '英文');
   String get chinese => _t('中文 (Chinese)', '中文');
 
+  String get theme => _t('Theme', '主題');
+  String get dark => _t('Dark', '深色');
+  String get light => _t('Light', '淺色');
+
   String get prompts => _t('Prompts', '提示詞');
   String get systemPrompt => _t('System Prompt', '系統提示詞');
   String get systemPromptSubtitle => _t('Customize the LLM instruction', '自訂 LLM 指令');
