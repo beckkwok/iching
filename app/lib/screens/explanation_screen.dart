@@ -7,6 +7,7 @@ import '../models/language_preference.dart';
 import '../services/database_service.dart';
 import '../services/gua_generator.dart';
 import '../services/llm_service.dart';
+import '../widgets/gradient_button.dart';
 import 'hexagram_detail_screen.dart';
 
 /// Shows the one-shot I-Ching explanation for a cast hexagram in relation to
@@ -366,9 +367,9 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          FilledButton(
+                          GradientButton(
                             onPressed: _savingFeedback ? null : _submitFeedback,
-                            child: Text(l10n.feedbackSubmit),
+                            label: l10n.feedbackSubmit,
                           ),
                         ],
                       ),
