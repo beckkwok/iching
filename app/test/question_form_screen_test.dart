@@ -10,6 +10,7 @@ import 'package:app/screens/question_form_screen.dart';
 import 'package:app/services/database_service.dart';
 import 'package:app/services/gua_generator.dart';
 import 'package:app/services/hexagram_loader.dart';
+import 'package:app/widgets/twinkling_stars.dart';
 
 /// Minimal valid hexagram JSON for [code].
 String fixtureJson(int code) {
@@ -217,5 +218,27 @@ void main() {
 
     final cast = tester.widget<CastResultScreen>(find.byType(CastResultScreen));
     expect(cast.questionTypeLabel, '事業成就');
+  });
+
+  testWidgets('shows twinkling stars background in dark mode', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        themeMode: ThemeMode.dark,
+        darkTheme: ThemeData(brightness: Brightness.dark, useMaterial3: true),
+        home: buildForm(),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(TwinklingStars), findsOneWidget);
+  });
+
+  testWidgets('hides twinkling stars background in light mode', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(home: buildForm()),
+    );
+    await tester.pump();
+
+    expect(find.byType(TwinklingStars), findsNothing);
   });
 }
