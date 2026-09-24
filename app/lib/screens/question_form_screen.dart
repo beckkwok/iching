@@ -5,6 +5,7 @@ import '../models/question_type.dart';
 import '../services/database_service.dart';
 import '../services/gua_generator.dart';
 import '../services/llm_service.dart';
+import '../widgets/gradient_button.dart';
 import 'cast_result_screen.dart';
 
 /// First screen of the consultation flow: asks the user what kind of question
@@ -185,18 +186,19 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                   // Submit button
                   SizedBox(
                     height: 48,
-                    child: FilledButton.icon(
+                    child: GradientButton(
                       onPressed: _isSubmitting ? null : _submit,
                       icon: _isSubmitting
                           ? const SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             )
                           : const Icon(Icons.question_answer),
-                      label: Text(
-                        _isSubmitting ? l10n.casting : l10n.submitQuestion,
-                      ),
+                      label: _isSubmitting ? l10n.casting : l10n.submitQuestion,
                     ),
                   ),
                 ],
