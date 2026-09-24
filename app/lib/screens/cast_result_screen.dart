@@ -6,6 +6,7 @@ import '../models/yao_line_type.dart';
 import '../services/database_service.dart';
 import '../services/gua_generator.dart';
 import '../services/llm_service.dart';
+import '../widgets/gradient_button.dart';
 import '../widgets/hexagram_view.dart';
 import 'explanation_screen.dart';
 import 'hexagram_detail_screen.dart';
@@ -156,7 +157,7 @@ class CastResultScreen extends StatelessWidget {
           if (question != null && question!.isNotEmpty)
             SizedBox(
               height: 48,
-              child: FilledButton.icon(
+              child: GradientButton(
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
@@ -172,7 +173,7 @@ class CastResultScreen extends StatelessWidget {
                   );
                 },
                 icon: const Icon(Icons.auto_awesome),
-                label: Text(l10n.getExplanation),
+                label: l10n.getExplanation,
               ),
             ),
         ],
