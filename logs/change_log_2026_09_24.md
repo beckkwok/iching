@@ -87,3 +87,31 @@ mode, giving the "black sky with stars on/off" immersive effect.
 ### Verification
 - `flutter analyze` — clean
 - `flutter test` — 146 tests pass
+
+## Task: Chinese font (LXGW WenKai Mono TC) (issue #33, part of #28)
+
+Bundle the LXGW WenKai Mono TC (Traditional Chinese kai-style monospace) font
+as a fallback so Chinese text renders in it while Latin text keeps the default.
+
+### Prompt / intent
+- Chinese text should use LXGW WenKai Mono TC.
+- Size-conscious: subset the font to only the characters the app uses (~1,680
+  unique CJK chars) instead of bundling the full ~13 MB font.
+
+### Changes
+- Downloaded `LXGWWenKaiMonoTC-Regular.ttf` and `-Bold.ttf` from the Google Fonts
+  source (`aaronbell/LxgwWenkaiTC`, commit `a5cf76f`), then subset them with
+  `fontTools.subset` to the app's used characters (~1.18 MB each, 1,873 glyphs).
+- `app/assets/fonts/LXGWWenKaiMonoTC-{Regular,Bold}.ttf` (new): subset fonts.
+- `app/pubspec.yaml`: registered the `LXGWWenKaiMonoTC` family (weights 400/700).
+- `lib/theme/app_theme.dart` (new): `chineseFontFallback`, `buildLightTheme()`,
+  `buildDarkTheme()`, and `buildForuiTheme()` (forui typography also carries the
+  fallback).
+- `lib/main.dart`: uses the theme builders; sets `fontFamilyFallback` to
+  `LXGWWenKaiMonoTC` on the Material themes and the forui theme.
+- `test/app_theme_test.dart` (new): verifies the fallback is configured on both
+  themes and the dark/light brightness.
+
+### Verification
+- `flutter analyze` — clean (2 pre-existing info lints unrelated to this change)
+- `flutter test` — 166 tests pass
