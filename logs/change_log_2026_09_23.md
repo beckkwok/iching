@@ -97,3 +97,40 @@ comment; the feedback is stored on the consultation.
   (not just comment on the answer).
 
 Verification: `flutter analyze` clean, 130 tests pass.
+
+## Task: Agent memory (issue #3)
+
+Build and store an LLM-derived profile of the user, viewable in the Profile tab.
+
+### Design (see issue comment)
+- **`AgentMemory`**: `feeling` (summary) + `facts` + `preferences` (JSON lists).
+- Updated after the explanation (light extraction), then refined after feedback
+  (uses the comment). Facts/preferences accumulate with de-duplication; feeling
+  and the last query are replaced. The star rating is not an input (emoji
+  reactions are a separate follow-up). Greeting is deferred.
+
+### Changes
+- **`lib/models/agent_memory.dart`** (new) — the memory model.
+- **`lib/services/database_service.dart`** — `agent_memory` table (schema v10)
+  and `getAgentMemory` / `mergeAgentMemory` (dedupe + replace feeling).
+- **`lib/services/llm_service.dart`** — `extractMemory`, `buildMemoryPrompt`,
+  `parseMemoryExtraction` (JSON → feeling/facts/preferences).
+- **`lib/screens/explanation_screen.dart`** — builds memory after the
+  explanation and refines it after feedback (fire-and-forget).
+- **`lib/screens/profile_screen.dart`** — replaced the placeholder with the
+  memory view (last consultation + feeling + facts + preferences).
+- **`lib/screens/home_shell.dart`** — passes the DB to the Profile tab.
+- **`lib/l10n/app_localizations.dart`** — profile/memory strings.
+- Tests: DB merge/dedupe; prompt build + JSON parse; profile render/empty;
+  explanation triggers the memory update.
+
+### Verification
+- `flutter analyze` — clean
+- `flutter test` — 140 tests pass
+
+### Follow-up: refresh the Profile/History tabs on re-selection
+The Profile (and History) tabs loaded once and never refreshed, so the agent
+memory looked stale after a consultation. `HomeShell` now rebuilds those tabs
+(with a revision-based key) when they're re-selected.
+
+Verification: `flutter analyze` clean, 141 tests pass.

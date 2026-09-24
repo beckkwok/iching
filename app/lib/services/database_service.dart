@@ -1,6 +1,7 @@
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' as p;
 
+import '../models/agent_memory.dart';
 import '../models/consultation.dart';
 
 /// Service for all SQLite database operations.
@@ -11,9 +12,10 @@ import '../models/consultation.dart';
 class DatabaseService {
   static const String _settingsTable = 'settings';
   static const String _consultationsTable = 'consultations';
+  static const String _agentMemoryTable = 'agent_memory';
 
   /// The database version for migration tracking.
-  static const int _databaseVersion = 9;
+  static const int _databaseVersion = 10;
 
   /// Custom database path (used for in-memory testing).
   final String? _customPath;
@@ -87,6 +89,7 @@ class DatabaseService {
   Future<void> _createTables(Database db, int version) async {
     await _createSettingsTable(db);
     await _createConsultationsTable(db);
+    await _createAgentMemoryTable(db);
   }
 
   Future<void> _createSettingsTable(Database db) async {
@@ -94,6 +97,18 @@ class DatabaseService {
       CREATE TABLE IF NOT EXISTS $_settingsTable (
         key TEXT PRIMARY KEY,
         value TEXT
+      )
+    ''');
+  }
+
+  Future<void> _createAgentMemoryTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $_agentMemoryTable (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        feeling TEXT NOT NULL,
+        facts TEXT NOT NULL,
+        preferences TEXT NOT NULL,
+        updated_at TEXT NOT NULL
       )
     ''');
   }
@@ -136,6 +151,10 @@ class DatabaseService {
     if (oldVersion < 9) {
       // v8 → v9: add the feedback columns (rating, comment) — issue #2.
       await _addConsultationFeedbackColumns(db);
+    }
+    if (oldVersion < 10) {
+      // v9 → v10: add the agent memory table — issue #3.
+      await _createAgentMemoryTable(db);
     }
   }
 
@@ -252,5 +271,48 @@ class DatabaseService {
     final db = await database;
     final rows = await db.query(_consultationsTable, orderBy: 'id DESC');
     return rows.map(Consultation.fromMap).toList();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Agent memory CRUD
+  // ---------------------------------------------------------------------------
+
+  /// The current agent memory, or `null` if none has been built yet.
+  Future<AgentMemory?> getAgentMemory() async {
+    final db = await database;
+    final rows =
+        await db.query(_agentMemoryTable, orderBy: 'id DESC', limit: 1);
+    if (rows.isEmpty) return null;
+    return AgentMemory.fromMap(rows.first);
+  }
+
+  /// Merge an extraction into the agent memory: replace the feeling, and
+  /// accumulate facts/preferences (de-duplicated).
+  Future<void> mergeAgentMemory({
+    required String feeling,
+    required List<String> facts,
+    required List<String> preferences,
+  }) async {
+    final db = await database;
+    final existing = await getAgentMemory();
+    final merged = AgentMemory(
+      id: existing?.id,
+      feeling: feeling,
+      facts: <String>{...?existing?.facts, ...facts}.toList(),
+      preferences: <String>{...?existing?.preferences, ...preferences}.toList(),
+      updatedAt: DateTime.now(),
+    );
+    final map = merged.toMap();
+    map.remove('id');
+    if (existing == null) {
+      await db.insert(_agentMemoryTable, map);
+    } else {
+      await db.update(
+        _agentMemoryTable,
+        map,
+        where: 'id = ?',
+        whereArgs: [existing.id],
+      );
+    }
   }
 }

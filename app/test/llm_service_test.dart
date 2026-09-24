@@ -112,4 +112,61 @@ void main() {
       );
     });
   });
+
+  group('LlmService memory extraction', () {
+    test('buildMemoryPrompt includes question, hexagram, explanation, comment',
+        () {
+      final prompt = LlmService.buildMemoryPrompt(
+        question: 'Should I move?',
+        hexagramName: '地風升',
+        explanation: 'A gentle reflection.',
+        comment: 'I feel hopeful.',
+      );
+
+      expect(prompt, contains('Should I move?'));
+      expect(prompt, contains('地風升'));
+      expect(prompt, contains('A gentle reflection.'));
+      expect(prompt, contains('I feel hopeful.'));
+      expect(prompt, contains('JSON'));
+    });
+
+    test('buildMemoryPrompt omits the comment when null', () {
+      final prompt = LlmService.buildMemoryPrompt(
+        question: 'q',
+        hexagramName: 'h',
+        explanation: 'e',
+      );
+      expect(prompt, isNot(contains("User's comment")));
+    });
+
+    test('parseMemoryExtraction parses a JSON response', () {
+      final extraction = LlmService.parseMemoryExtraction(
+        '{"feeling": "hopeful", "facts": ["job change"], '
+        '"preferences": ["stability"]}',
+      );
+      expect(extraction, isNotNull);
+      expect(extraction!.feeling, 'hopeful');
+      expect(extraction.facts, ['job change']);
+      expect(extraction.preferences, ['stability']);
+    });
+
+    test('parseMemoryExtraction handles surrounding text', () {
+      final extraction = LlmService.parseMemoryExtraction(
+        'Here is it: {"feeling":"x","facts":[],"preferences":[]} done',
+      );
+      expect(extraction, isNotNull);
+      expect(extraction!.feeling, 'x');
+    });
+
+    test('parseMemoryExtraction returns null for malformed or empty input',
+        () {
+      expect(LlmService.parseMemoryExtraction('no json here'), isNull);
+      expect(
+        LlmService.parseMemoryExtraction(
+          '{"feeling":"","facts":[],"preferences":[]}',
+        ),
+        isNull,
+      );
+    });
+  });
 }

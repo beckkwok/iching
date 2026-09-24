@@ -145,4 +145,37 @@ void main() {
       expect(all.first.comment, 'Helpful');
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Agent memory tests
+  // ---------------------------------------------------------------------------
+
+  group('AgentMemory', () {
+    test('getAgentMemory returns null before any memory exists', () async {
+      expect(await service.getAgentMemory(), isNull);
+    });
+
+    test('mergeAgentMemory replaces feeling and accumulates facts/preferences',
+        () async {
+      await service.mergeAgentMemory(
+        feeling: 'hopeful',
+        facts: ['considering a job change'],
+        preferences: ['values stability'],
+      );
+      await service.mergeAgentMemory(
+        feeling: 'anxious',
+        facts: ['considering a job change', 'lives in a city'],
+        preferences: ['values growth'],
+      );
+
+      final memory = await service.getAgentMemory();
+      expect(memory, isNotNull);
+      expect(memory!.feeling, 'anxious');
+      expect(
+        memory.facts.toSet(),
+        {'considering a job change', 'lives in a city'},
+      );
+      expect(memory.preferences.toSet(), {'values stability', 'values growth'});
+    });
+  });
 }
