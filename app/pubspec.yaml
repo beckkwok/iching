@@ -91,6 +91,14 @@ flutter:
   assets:
     - assets/hexagrams/
 
+  fonts:
+    - family: LXGWWenKaiMonoTC
+      fonts:
+        - asset: assets/fonts/LXGWWenKaiMonoTC-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/LXGWWenKaiMonoTC-Bold.ttf
+          weight: 700
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
