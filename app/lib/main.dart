@@ -8,6 +8,7 @@ import 'models/language_preference.dart';
 import 'models/theme_preference.dart';
 import 'screens/model_selection_screen.dart';
 import 'services/database_service.dart';
+import 'theme/app_theme.dart';
 import 'theme/theme_controller.dart';
 
 void main() async {
@@ -83,26 +84,12 @@ class MyApp extends StatelessWidget {
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            theme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-              useMaterial3: true,
-            ),
-            darkTheme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFF673AB7),
-                brightness: Brightness.dark,
-              ),
-              useMaterial3: true,
-            ),
+            theme: buildLightTheme(),
+            darkTheme: buildDarkTheme(),
             themeMode: themeController.themeMode,
             // forui theme for the mobile widgets (bottom navigation, etc.).
             builder: (context, child) => FTheme(
-              data: FThemeData(
-                touch: true,
-                colors: Theme.of(context).brightness == Brightness.dark
-                    ? FColors.neutralDark
-                    : FColors.neutralLight,
-              ),
+              data: buildForuiTheme(Theme.of(context).brightness),
               child: child!,
             ),
             home: ModelSelectionScreen(databaseService: databaseService),
