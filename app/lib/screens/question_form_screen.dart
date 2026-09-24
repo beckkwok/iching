@@ -5,6 +5,7 @@ import '../models/question_type.dart';
 import '../services/database_service.dart';
 import '../services/gua_generator.dart';
 import '../services/llm_service.dart';
+import '../widgets/gradient_button.dart';
 import '../widgets/twinkling_stars.dart';
 import 'cast_result_screen.dart';
 
@@ -198,7 +199,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                       // Submit button
                       SizedBox(
                         height: 48,
-                        child: FilledButton.icon(
+                        child: GradientButton(
                           onPressed: _isSubmitting ? null : _submit,
                           icon: _isSubmitting
                               ? const SizedBox(
@@ -206,12 +207,13 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                                   height: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
+                                    color: Colors.white,
                                   ),
                                 )
                               : const Icon(Icons.question_answer),
-                          label: Text(
-                            _isSubmitting ? l10n.casting : l10n.submitQuestion,
-                          ),
+                          label: _isSubmitting
+                              ? l10n.casting
+                              : l10n.submitQuestion,
                         ),
                       ),
                     ],
