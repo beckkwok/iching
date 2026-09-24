@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../l10n/locale_controller.dart';
 import '../models/language_preference.dart';
+import '../models/theme_preference.dart';
 import '../services/database_service.dart';
 import '../services/llm_service.dart';
+import '../theme/theme_controller.dart';
 import 'model_selection_screen.dart';
 import 'prompt_editor_screen.dart';
 
@@ -29,6 +31,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _modelDisplayName = '';
   bool _loading = true;
   LanguagePreference _language = LanguagePreference.english;
+  ThemePreference _theme = ThemePreference.dark;
 
   bool _modelInfoLoaded = false;
 
@@ -36,6 +39,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _loadLanguage();
+    _loadTheme();
   }
 
   @override
@@ -63,6 +67,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final db = widget.databaseService;
     if (db != null) {
       await db.setSetting(LanguagePreference.settingsKey, value.code);
+    }
+  }
+
+  Future<void> _loadTheme() async {
+    final db = widget.databaseService;
+    if (db == null) return;
+    final code = await db.getSetting(ThemePreference.settingsKey);
+    if (mounted) {
+      setState(() => _theme = ThemePreference.fromCode(code));
+    }
+  }
+
+  Future<void> _setTheme(ThemePreference value) async {
+    setState(() => _theme = value);
+    // Update the app-wide theme immediately.
+    ThemeScope.maybeOf(context)?.setPreference(value);
+    final db = widget.databaseService;
+    if (db != null) {
+      await db.setSetting(ThemePreference.settingsKey, value.code);
     }
   }
 
@@ -233,6 +256,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       RadioListTile<LanguagePreference>(
                         value: LanguagePreference.chinese,
                         title: Text(l10n.chinese),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(),
+
+                // --- Theme ---
+                _buildSectionHeader(context, l10n.theme),
+                RadioGroup<ThemePreference>(
+                  groupValue: _theme,
+                  onChanged: (value) {
+                    if (value != null) _setTheme(value);
+                  },
+                  child: Column(
+                    children: [
+                      RadioListTile<ThemePreference>(
+                        value: ThemePreference.dark,
+                        title: Text(l10n.dark),
+                      ),
+                      RadioListTile<ThemePreference>(
+                        value: ThemePreference.light,
+                        title: Text(l10n.light),
                       ),
                     ],
                   ),

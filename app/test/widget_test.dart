@@ -5,7 +5,9 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:app/l10n/locale_controller.dart';
 import 'package:app/main.dart';
 import 'package:app/models/language_preference.dart';
+import 'package:app/models/theme_preference.dart';
 import 'package:app/services/database_service.dart';
+import 'package:app/theme/theme_controller.dart';
 
 /// Shared app used for all UI-only widget tests.
 MyApp? _sharedApp;
@@ -19,6 +21,7 @@ void main() {
     _sharedApp = MyApp(
       databaseService: db,
       localeController: LocaleController(LanguagePreference.english),
+      themeController: ThemeController(ThemePreference.dark),
     );
   });
 
