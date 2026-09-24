@@ -10,7 +10,7 @@ Style the primary call-to-action buttons with a deep-purple gradient fill.
 
 ### Changes
 - `lib/widgets/gradient_button.dart` (new): a reusable `GradientButton`
-  (label + optional icon, gradient `#673AB7` → `#9C4DCC`, ripple, disabled
+  (label + optional icon, gradient `#673AB7` → `#AB47BC`, ripple, disabled
   opacity) replacing `FilledButton`/`FilledButton.icon` for primary CTAs.
 - Replaced primary CTAs with `GradientButton`:
   - `question_form_screen.dart` (Submit Question)
