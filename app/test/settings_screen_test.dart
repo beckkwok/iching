@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:app/models/language_preference.dart';
+import 'package:app/models/theme_preference.dart';
 import 'package:app/screens/settings_screen.dart';
 import 'package:app/services/database_service.dart';
 
@@ -86,5 +87,53 @@ void main() {
       ),
     );
     expect(radio.value, LanguagePreference.chinese);
+  });
+
+  testWidgets('theme selector shows both options', (tester) async {
+    await _pumpSettings(tester);
+
+    expect(find.text('Theme'), findsOneWidget);
+    expect(find.text('Dark'), findsOneWidget);
+    expect(find.text('Light'), findsOneWidget);
+  });
+
+  testWidgets('selecting Light persists the theme setting', (tester) async {
+    await _pumpSettings(tester);
+
+    await tester.ensureVisible(find.text('Light'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Light'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    // Let the async DB write complete before verifying.
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    });
+
+    final saved = await tester.runAsync(
+      () => db.getSetting(ThemePreference.settingsKey),
+    );
+    expect(saved, 'light');
+  });
+
+  testWidgets('theme selector defaults to dark', (tester) async {
+    await _pumpSettings(tester);
+
+    final group = tester.widget<RadioGroup<ThemePreference>>(
+      find.byType(RadioGroup<ThemePreference>),
+    );
+    expect(group.groupValue, ThemePreference.dark);
+  });
+
+  testWidgets('theme selector reflects a saved preference', (tester) async {
+    await tester.runAsync(
+      () => db.setSetting(ThemePreference.settingsKey, 'light'),
+    );
+    await _pumpSettings(tester);
+
+    final group = tester.widget<RadioGroup<ThemePreference>>(
+      find.byType(RadioGroup<ThemePreference>),
+    );
+    expect(group.groupValue, ThemePreference.light);
   });
 }
