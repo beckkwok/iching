@@ -9,6 +9,7 @@ import '../models/model_info.dart';
 import '../services/llm_service.dart';
 import '../services/database_service.dart';
 import '../services/gua_generator.dart';
+import '../widgets/gradient_button.dart';
 import 'home_shell.dart';
 
 /// Startup screen that loads the model and proceeds to the consultation.
@@ -372,12 +373,12 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
             onPressed: () => Navigator.of(ctx).pop(),
             child: Text(l10n.cancel),
           ),
-          FilledButton(
+          GradientButton(
             onPressed: () {
               Navigator.of(ctx).pop();
               _selectModel(model);
             },
-            child: Text(l10n.confirmDownload),
+            label: l10n.confirmDownload,
           ),
         ],
       ),
@@ -449,10 +450,10 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
               ),
             ],
             const SizedBox(height: 16),
-            FilledButton.icon(
+            GradientButton(
               onPressed: _skipDownload,
               icon: const Icon(Icons.chat),
-              label: Text(AppLocalizations.of(context).continueAnyway),
+              label: AppLocalizations.of(context).continueAnyway,
             ),
           ],
         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../services/database_service.dart';
 import '../services/llm_service.dart';
+import '../widgets/gradient_button.dart';
 
 /// Allows the user to view and edit the LLM system prompt.
 ///
@@ -147,7 +148,7 @@ class _PromptEditorScreenState extends State<PromptEditorScreen> {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: FilledButton.icon(
+                        child: GradientButton(
                           onPressed: _saving ? null : _save,
                           icon: _saving
                               ? const SizedBox(
@@ -155,10 +156,11 @@ class _PromptEditorScreenState extends State<PromptEditorScreen> {
                                   height: 18,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
+                                    color: Colors.white,
                                   ),
                                 )
                               : const Icon(Icons.save),
-                          label: Text(l10n.save),
+                          label: l10n.save,
                         ),
                       ),
                     ],
