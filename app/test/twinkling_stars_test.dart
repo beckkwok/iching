@@ -37,7 +37,11 @@ void main() {
     expect(after.shouldRepaint(before), isTrue);
   });
 
-  test('sky background is the dark indigo #12101E', () {
-    expect(TwinklingStars.background, const Color(0xFF12101E));
+  test('sky uses a layered gradient anchored on #12101E', () {
+    expect(
+      TwinklingStars.skyGradient.colors,
+      contains(const Color(0xFF12101E)),
+    );
+    expect(TwinklingStars.skyGradient.colors.length, greaterThan(1));
   });
 }
