@@ -133,7 +133,7 @@ vertical linear gradient (deepest `#0B0914` at the top → `#12101E` → lifted
 
 ## Task: Ancient-gold text in the dark theme
 
-Use a soft antique gold (`#C8A44D`) for text across the dark theme.
+Use a soft antique gold (`#E6D5B8`) for text across the dark theme.
 
 ### Changes
 - `lib/theme/app_theme.dart`: added the `ancientGold` constant. `buildDarkTheme()`

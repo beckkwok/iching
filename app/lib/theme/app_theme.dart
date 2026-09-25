@@ -8,7 +8,7 @@ import 'package:forui/forui.dart';
 const List<String> chineseFontFallback = ['LXGWWenKaiMonoTC'];
 
 /// Ancient gold used for text in the dark theme.
-const Color ancientGold = Color(0xFFC8A44D);
+const Color ancientGold = Color(0xFFE6D5B8);
 
 /// The light [ThemeData] for the app.
 ThemeData buildLightTheme() => ThemeData(
