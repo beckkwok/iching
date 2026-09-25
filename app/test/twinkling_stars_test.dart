@@ -36,4 +36,8 @@ void main() {
     final after = tester.widget<CustomPaint>(finder).painter!;
     expect(after.shouldRepaint(before), isTrue);
   });
+
+  test('sky background is the dark indigo #0B0914', () {
+    expect(TwinklingStars.background, const Color(0xFF0B0914));
+  });
 }
