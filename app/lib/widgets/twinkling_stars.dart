@@ -8,8 +8,18 @@ import 'package:flutter/material.dart';
 class TwinklingStars extends StatefulWidget {
   const TwinklingStars({super.key, this.starCount = 60});
 
-  /// The sky's background color.
-  static const Color background = Color(0xFF12101E);
+  /// The sky's background gradient — deepest at the top, lifted toward the
+  /// bottom, giving the night sky some depth.
+  static const LinearGradient skyGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xFF0B0914),
+      Color(0xFF12101E),
+      Color(0xFF1D1A33),
+    ],
+    stops: [0.0, 0.5, 1.0],
+  );
 
   /// Number of stars to render.
   final int starCount;
@@ -88,7 +98,11 @@ class _StarPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = TwinklingStars.background);
+    final rect = Offset.zero & size;
+    canvas.drawRect(
+      rect,
+      Paint()..shader = TwinklingStars.skyGradient.createShader(rect),
+    );
 
     final paint = Paint();
     for (final star in stars) {

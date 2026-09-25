@@ -116,15 +116,16 @@ as a fallback so Chinese text renders in it while Latin text keeps the default.
 - `flutter analyze` — clean (2 pre-existing info lints unrelated to this change)
 - `flutter test` — 166 tests pass
 
-## Task: Dark sky background color (#12101E)
+## Task: Layered sky background gradient
 
-Change the twinkling-star background from pure black `#000000` to the dark
-indigo `#12101E`.
+Change the twinkling-star background from pure black `#000000` to a layered
+vertical linear gradient (deepest `#0B0914` at the top → `#12101E` → lifted
+`#1D1A33` at the bottom), giving the night sky more depth.
 
 ### Changes
-- `lib/widgets/twinkling_stars.dart`: sky background now `TwinklingStars.background`
-  (`#12101E`) instead of `Colors.black`.
-- `test/twinkling_stars_test.dart`: assert the background constant.
+- `lib/widgets/twinkling_stars.dart`: sky now painted with
+  `TwinklingStars.skyGradient` (a `LinearGradient`) instead of a flat color.
+- `test/twinkling_stars_test.dart`: assert the gradient includes `#12101E`.
 
 ### Verification
 - `flutter analyze` — clean
