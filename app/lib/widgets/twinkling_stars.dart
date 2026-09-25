@@ -9,7 +9,7 @@ class TwinklingStars extends StatefulWidget {
   const TwinklingStars({super.key, this.starCount = 60});
 
   /// The sky's background color.
-  static const Color background = Color(0xFF0B0914);
+  static const Color background = Color(0xFF12101E);
 
   /// Number of stars to render.
   final int starCount;
