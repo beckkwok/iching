@@ -145,3 +145,17 @@ Use a soft antique gold (`#D4AF37`) for text across the dark theme.
 ### Verification
 - `flutter analyze` — clean
 - `flutter test` — 170 tests pass
+
+## Task: Gold glow on the gradient button
+
+Give the primary gradient button an outer gold glow.
+
+### Changes
+- `lib/widgets/gradient_button.dart`: added a `boxShadow` to the button's
+  `BoxDecoration` — gold `#D4AF37` at 50% opacity, `blurRadius` 24,
+  `spreadRadius` 2 (exposed as `glow`, `glowBlurRadius`, `glowSpreadRadius`).
+- `test/gradient_button_test.dart`: assert the glow shadow colour/radii.
+
+### Verification
+- `flutter analyze` — clean
+- `flutter test` — 171 tests pass

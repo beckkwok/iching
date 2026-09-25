@@ -64,4 +64,21 @@ void main() {
 
     expect(gradient.colors, [GradientButton.start, GradientButton.end]);
   });
+
+  testWidgets('has a gold glow box shadow', (tester) async {
+    await pumpButton(tester, onPressed: () {});
+
+    final ink = tester.widget<Ink>(
+      find.descendant(
+        of: find.byType(GradientButton),
+        matching: find.byType(Ink),
+      ),
+    );
+    final decoration = ink.decoration! as BoxDecoration;
+    final shadow = decoration.boxShadow!.single;
+
+    expect(shadow.color, GradientButton.glow.withValues(alpha: 0.5));
+    expect(shadow.blurRadius, GradientButton.glowBlurRadius);
+    expect(shadow.spreadRadius, GradientButton.glowSpreadRadius);
+  });
 }
