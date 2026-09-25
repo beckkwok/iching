@@ -37,7 +37,7 @@ void main() {
     expect(after.shouldRepaint(before), isTrue);
   });
 
-  test('sky background is the dark indigo #0B0914', () {
-    expect(TwinklingStars.background, const Color(0xFF0B0914));
+  test('sky background is the dark indigo #12101E', () {
+    expect(TwinklingStars.background, const Color(0xFF12101E));
   });
 }

@@ -116,14 +116,14 @@ as a fallback so Chinese text renders in it while Latin text keeps the default.
 - `flutter analyze` — clean (2 pre-existing info lints unrelated to this change)
 - `flutter test` — 166 tests pass
 
-## Task: Dark sky background color (#0B0914)
+## Task: Dark sky background color (#12101E)
 
 Change the twinkling-star background from pure black `#000000` to the dark
-indigo `#0B0914`.
+indigo `#12101E`.
 
 ### Changes
 - `lib/widgets/twinkling_stars.dart`: sky background now `TwinklingStars.background`
-  (`#0B0914`) instead of `Colors.black`.
+  (`#12101E`) instead of `Colors.black`.
 - `test/twinkling_stars_test.dart`: assert the background constant.
 
 ### Verification
