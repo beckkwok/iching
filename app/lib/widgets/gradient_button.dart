@@ -22,6 +22,13 @@ class GradientButton extends StatelessWidget {
   static const Color start = Color(0xFF673AB7);
   static const Color end = Color(0xFFAB47BC);
 
+  /// Gold glow colour for the button's outer shadow.
+  static const Color glow = Color(0xFFD4AF37);
+
+  /// The glow's blur and spread radii.
+  static const double glowBlurRadius = 24;
+  static const double glowSpreadRadius = 2;
+
   @override
   Widget build(BuildContext context) {
     final enabled = onPressed != null;
@@ -58,6 +65,13 @@ class GradientButton extends StatelessWidget {
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: glow.withValues(alpha: 0.5),
+                blurRadius: glowBlurRadius,
+                spreadRadius: glowSpreadRadius,
+              ),
+            ],
           ),
           child: InkWell(
             onTap: onPressed,
