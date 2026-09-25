@@ -2,11 +2,14 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-/// An animated field of twinkling stars on a black sky.
+/// An animated field of twinkling stars on a dark sky.
 ///
 /// Used as the immersive background of the first (Ask) screen in dark mode.
 class TwinklingStars extends StatefulWidget {
   const TwinklingStars({super.key, this.starCount = 60});
+
+  /// The sky's background color.
+  static const Color background = Color(0xFF0B0914);
 
   /// Number of stars to render.
   final int starCount;
@@ -85,7 +88,7 @@ class _StarPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = Colors.black);
+    canvas.drawRect(Offset.zero & size, Paint()..color = TwinklingStars.background);
 
     final paint = Paint();
     for (final star in stars) {
