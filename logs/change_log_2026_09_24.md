@@ -130,3 +130,18 @@ vertical linear gradient (deepest `#0B0914` at the top → `#12101E` → lifted
 ### Verification
 - `flutter analyze` — clean
 - `flutter test` — 167 tests pass
+
+## Task: Ancient-gold text in the dark theme
+
+Use a soft antique gold (`#C8A44D`) for text across the dark theme.
+
+### Changes
+- `lib/theme/app_theme.dart`: added the `ancientGold` constant. `buildDarkTheme()`
+  now overrides `onSurface`/`onSurfaceVariant` and applies gold to the text
+  theme; `buildForuiTheme()` sets the gold `foreground` in dark mode.
+- `test/app_theme_test.dart`: dark text is gold; light stays default; dark forui
+  foreground is gold.
+
+### Verification
+- `flutter analyze` — clean
+- `flutter test` — 170 tests pass
