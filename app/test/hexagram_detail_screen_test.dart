@@ -51,72 +51,93 @@ Gua _gua46() {
   );
 }
 
+Future<void> _pump(WidgetTester tester) async {
+  await tester.pumpWidget(
+    MaterialApp(home: HexagramDetailScreen(gua: _gua46())),
+  );
+  await tester.pumpAndSettle();
+}
+
+/// Scrolls [finder] into view.
+Future<void> _scrollTo(WidgetTester tester, Finder finder) async {
+  await tester.scrollUntilVisible(
+    finder,
+    250,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.pumpAndSettle();
+}
+
+/// Scrolls [finder] into view, then taps it and settles the expansion.
+Future<void> _expand(WidgetTester tester, Finder finder) async {
+  await _scrollTo(tester, finder);
+  await tester.tap(finder);
+  await tester.pumpAndSettle();
+}
+
 void main() {
-  testWidgets('detail screen renders header card with name and sequence',
-      (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(home: HexagramDetailScreen(gua: _gua46())),
-    );
+  testWidgets('卦象 section is expanded by default', (tester) async {
+    await _pump(tester);
 
     expect(find.text('Hexagram 46'), findsOneWidget);
     expect(find.text('地風升'), findsWidgets);
     expect(find.text('䷭（下巽上坤）'), findsOneWidget);
   });
 
-  testWidgets('detail screen renders all section cards', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(home: HexagramDetailScreen(gua: _gua46())),
-    );
-    await tester.pumpAndSettle();
+  testWidgets('shows the top-level tree sections', (tester) async {
+    await _pump(tester);
 
-    expect(find.text('Judgment'), findsOneWidget);
-    expect(find.text('Tuan Commentary'), findsOneWidget);
-    expect(find.text('Great Image'), findsOneWidget);
-    expect(find.text('Line Texts'), findsOneWidget);
-
-    // Scroll to reveal the lower sections.
-    await tester.scrollUntilVisible(
-      find.text('Remarks'),
-      300,
-      scrollable: find.byType(Scrollable),
-    );
-    expect(find.text('Symbolic Meaning'), findsOneWidget);
-    expect(find.text('Interpretations'), findsOneWidget);
-    expect(find.text('Remarks'), findsOneWidget);
+    for (final title in [
+      'Hexagram',
+      'Symbolic Meaning',
+      'Interpretation',
+      'Original Text',
+      'Remarks',
+    ]) {
+      await _scrollTo(tester, find.text(title));
+      expect(find.text(title), findsOneWidget);
+    }
   });
 
-  testWidgets('detail screen shows line details', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(home: HexagramDetailScreen(gua: _gua46())),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('初六'), findsOneWidget);
-    expect(find.text('允升，大吉。'), findsOneWidget);
-    expect(find.text('九二'), findsOneWidget);
-    expect(find.textContaining('Small Image'), findsNWidgets(2));
-  });
-
-  testWidgets('detail screen shows symbolic meaning and interpretations',
-      (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(home: HexagramDetailScreen(gua: _gua46())),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.scrollUntilVisible(
-      find.text('Remarks'),
-      300,
-      scrollable: find.byType(Scrollable),
-    );
+  testWidgets('象徵意義 is expanded by default', (tester) async {
+    await _pump(tester);
 
     expect(find.text('Basic Symbol'), findsOneWidget);
     expect(find.text('Main Symbols'), findsOneWidget);
     expect(find.text('Life & Divination Symbols'), findsOneWidget);
     expect(find.text('Summary'), findsOneWidget);
     expect(find.textContaining('地風升象徵樹木'), findsOneWidget);
+  });
+
+  testWidgets('其他的解釋 is collapsed until tapped', (tester) async {
+    await _pump(tester);
+
+    await _scrollTo(tester, find.text('Other Interpretations'));
+    expect(find.text('Other Interpretations'), findsOneWidget);
+    expect(find.text('程頤（伊川易傳）'), findsNothing);
+
+    await _expand(tester, find.text('Other Interpretations'));
     expect(find.text('程頤（伊川易傳）'), findsOneWidget);
+
+    await _expand(tester, find.text('程頤（伊川易傳）'));
     expect(find.textContaining('Judgment interpretation'), findsOneWidget);
+  });
+
+  testWidgets('原文 is collapsed and reveals 爻辭 when expanded',
+      (tester) async {
+    await _pump(tester);
+
+    expect(find.text('初六'), findsNothing);
+
+    await _expand(tester, find.text('Original Text'));
+    expect(find.text('Line Texts'), findsOneWidget);
+    // The 爻辭 tile itself is still collapsed.
+    expect(find.text('初六'), findsNothing);
+
+    await _expand(tester, find.text('Line Texts'));
+    expect(find.text('初六'), findsOneWidget);
+    expect(find.text('允升，大吉。'), findsOneWidget);
+    expect(find.textContaining('Small Image'), findsNWidgets(2));
   });
 
   testWidgets('detail screen handles unparseable gua content gracefully',
