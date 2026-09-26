@@ -222,8 +222,12 @@ class AppLocalizations {
   String get lineTexts => _t('Line Texts', '爻辭');
   String get smallImage => _t('Small Image', '小象傳');
   String get resultSection => _t('Result', '結果');
+  String get hexagramSymbolSection => _t('Hexagram', '卦象');
   String get symbolicMeaning => _t('Symbolic Meaning', '象徵意義');
-  String get interpretations => _t('Interpretations', '不同人解讀');
+  String get interpretations => _t('Interpretation', '解釋');
+  String get modernInterpretation => _t('Modern & General', '現代白話／通解');
+  String get otherInterpretations => _t('Other Interpretations', '其他的解釋');
+  String get originalText => _t('Original Text', '原文');
   String get remarks => _t('Remarks', '備註');
   String get basicSymbol => _t('Basic Symbol', '基本卦象');
   String get structure => _t('Structure', '卦體');
