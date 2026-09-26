@@ -168,3 +168,27 @@ glow, and a press-down animation with haptic feedback.
 ### Verification
 - `flutter analyze` — clean
 - `flutter test` — 173 tests pass
+
+## Task: 結果 section on the cast result page
+
+Add a quick, non-LLM reading to the cast result page.
+
+### Prompt / intent
+- A 結果 section containing 象徵意義 and 爻辭 (the 現代白話／通解 interpretation).
+- Highlight the 生活與占事常見象徵 entry matching the question type.
+- Highlight the changing (老陰/老陽) lines.
+
+### Changes
+- `lib/services/hexagram_reading.dart` (new): `HexagramReading` helpers —
+  `isModern`/`modern`, `lifeKeyForQuestionType`, `linePositionLabel`,
+  `changingPositions`.
+- `lib/screens/cast_result_screen.dart`: added a `questionType` param and the
+  `_ResultSection` (象徵意義 + 爻辭), with `_Highlighted` for the question-type
+  life-symbol entry and the changing lines' 爻辭解讀.
+- `lib/screens/question_form_screen.dart`: pass the selected `QuestionType`.
+- `lib/l10n/app_localizations.dart`: added `resultSection` (結果 / Result).
+- Tests: `test/hexagram_reading_test.dart` (new); cast result section test.
+
+### Verification
+- `flutter analyze` — clean
+- `flutter test` — 180 tests pass
