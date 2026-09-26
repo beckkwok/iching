@@ -146,16 +146,20 @@ Use a soft antique gold (`#D4AF37`) for text across the dark theme.
 - `flutter analyze` — clean
 - `flutter test` — 170 tests pass
 
-## Task: Gold glow on the gradient button
+## Task: Immersive "glowing jade" gradient button
 
-Give the primary gradient button an outer gold glow.
+Redesign the primary button per the immersive-UI guideline: a translucent
+deep-purple fill so the starfield shows through, a fine gold border, a soft gold
+glow, and a press-down animation with haptic feedback.
 
 ### Changes
-- `lib/widgets/gradient_button.dart`: added a `boxShadow` to the button's
-  `BoxDecoration` — gold `#D4AF37` at 50% opacity, `blurRadius` 24,
-  `spreadRadius` 2 (exposed as `glow`, `glowBlurRadius`, `glowSpreadRadius`).
-- `test/gradient_button_test.dart`: assert the glow shadow colour/radii.
+- `lib/widgets/gradient_button.dart`: now a `StatefulWidget`.
+  - Dark mode: translucent purple-gradient fill (35% → 22% opacity), 1px gold
+    border (`#D4AF37` @ 55%), gold glow (`BoxShadow`, blur 24 / spread 2).
+  - Light mode: keeps the solid purple gradient for contrast.
+  - Press: `AnimatedScale` to 0.95 + `HapticFeedback.lightImpact()`.
+- `test/gradient_button_test.dart`: light/dark decoration, glow, and press scale.
 
 ### Verification
 - `flutter analyze` — clean
-- `flutter test` — 171 tests pass
+- `flutter test` — 172 tests pass
