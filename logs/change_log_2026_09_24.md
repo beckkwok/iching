@@ -115,3 +115,56 @@ as a fallback so Chinese text renders in it while Latin text keeps the default.
 ### Verification
 - `flutter analyze` — clean (2 pre-existing info lints unrelated to this change)
 - `flutter test` — 166 tests pass
+
+## Task: Layered sky background gradient
+
+Change the twinkling-star background from pure black `#000000` to a layered
+vertical linear gradient (deepest `#0B0914` at the top → `#12101E` → lifted
+`#1D1A33` at the bottom), giving the night sky more depth.
+
+### Changes
+- `lib/widgets/twinkling_stars.dart`: sky now painted with
+  `TwinklingStars.skyGradient` (a `LinearGradient`) instead of a flat color.
+- `test/twinkling_stars_test.dart`: assert the gradient includes `#12101E`.
+
+### Verification
+- `flutter analyze` — clean
+- `flutter test` — 167 tests pass
+
+## Task: Ancient-gold text in the dark theme
+
+Use a soft antique gold (`#D4AF37`) for text across the dark theme.
+
+### Changes
+- `lib/theme/app_theme.dart`: added the `ancientGold` constant. `buildDarkTheme()`
+  now overrides `onSurface`/`onSurfaceVariant` and applies gold to the text
+  theme; `buildForuiTheme()` sets the gold `foreground` in dark mode.
+- `test/app_theme_test.dart`: dark text is gold; light stays default; dark forui
+  foreground is gold.
+
+### Verification
+- `flutter analyze` — clean
+- `flutter test` — 170 tests pass
+
+## Task: Immersive "glowing jade" gradient button
+
+Redesign the primary button per the immersive-UI guideline: a translucent
+deep-purple fill so the starfield shows through, a fine gold border, a soft gold
+glow, and a press-down animation with haptic feedback.
+
+### Changes
+- `lib/widgets/gradient_button.dart`: now a `StatefulWidget`.
+  - Dark mode: translucent purple-gradient fill (35% → 22% opacity), 1px gold
+    border (`#D4AF37` @ 55%), gold glow (`BoxShadow`, blur 24 / spread 2).
+  - Light mode: keeps the solid purple gradient for contrast.
+  - Press: `AnimatedScale` to 0.95 + `HapticFeedback.lightImpact()`.
+  - Fix: the content used a stray `Center` that made the button expand to fill
+    its parent, so the glow looked like a big rectangle. Replaced with
+    `Align(widthFactor: 1, heightFactor: 1)` so the button hugs its content
+    (like Material buttons) and the glow follows the rounded shape.
+- `test/gradient_button_test.dart`: light/dark decoration, glow, press scale,
+  and content sizing.
+
+### Verification
+- `flutter analyze` — clean
+- `flutter test` — 173 tests pass

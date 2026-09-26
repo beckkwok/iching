@@ -36,4 +36,12 @@ void main() {
     final after = tester.widget<CustomPaint>(finder).painter!;
     expect(after.shouldRepaint(before), isTrue);
   });
+
+  test('sky uses a layered gradient anchored on #12101E', () {
+    expect(
+      TwinklingStars.skyGradient.colors,
+      contains(const Color(0xFF12101E)),
+    );
+    expect(TwinklingStars.skyGradient.colors.length, greaterThan(1));
+  });
 }
