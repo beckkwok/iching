@@ -99,4 +99,27 @@ void main() {
     await gesture.up();
     await tester.pump();
   });
+
+  testWidgets('sizes to its content when loosely constrained', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(brightness: Brightness.dark),
+        home: const Scaffold(
+          body: SizedBox(
+            width: 300,
+            height: 200,
+            child: Center(
+              child: GradientButton(onPressed: _noop, label: 'Go'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final size = tester.getSize(find.byType(GradientButton));
+    expect(size.width, lessThan(200));
+    expect(size.height, lessThan(60));
+  });
 }
+
+void _noop() {}

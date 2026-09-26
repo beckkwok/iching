@@ -158,8 +158,13 @@ glow, and a press-down animation with haptic feedback.
     border (`#D4AF37` @ 55%), gold glow (`BoxShadow`, blur 24 / spread 2).
   - Light mode: keeps the solid purple gradient for contrast.
   - Press: `AnimatedScale` to 0.95 + `HapticFeedback.lightImpact()`.
-- `test/gradient_button_test.dart`: light/dark decoration, glow, and press scale.
+  - Fix: the content used a stray `Center` that made the button expand to fill
+    its parent, so the glow looked like a big rectangle. Replaced with
+    `Align(widthFactor: 1, heightFactor: 1)` so the button hugs its content
+    (like Material buttons) and the glow follows the rounded shape.
+- `test/gradient_button_test.dart`: light/dark decoration, glow, press scale,
+  and content sizing.
 
 ### Verification
 - `flutter analyze` — clean
-- `flutter test` — 172 tests pass
+- `flutter test` — 173 tests pass

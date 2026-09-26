@@ -138,7 +138,12 @@ class _GradientButtonState extends State<GradientButton> {
                       horizontal: 24,
                       vertical: 10,
                     ),
-                    child: Center(child: content),
+                    child: Align(
+                      alignment: Alignment.center,
+                      widthFactor: 1,
+                      heightFactor: 1,
+                      child: content,
+                    ),
                   ),
                 ),
               ),
