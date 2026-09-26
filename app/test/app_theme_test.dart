@@ -24,4 +24,22 @@ void main() {
     expect(buildLightTheme().brightness, Brightness.light);
     expect(buildDarkTheme().brightness, Brightness.dark);
   });
+
+  test('dark theme text is ancient gold', () {
+    final dark = buildDarkTheme();
+    expect(dark.colorScheme.onSurface, ancientGold);
+    expect(dark.textTheme.bodyMedium?.color, ancientGold);
+  });
+
+  test('light theme text is not gold', () {
+    expect(buildLightTheme().textTheme.bodyMedium?.color, isNot(ancientGold));
+  });
+
+  test('dark forui theme uses the gold foreground', () {
+    expect(buildForuiTheme(Brightness.dark).colors.foreground, ancientGold);
+    expect(
+      buildForuiTheme(Brightness.light).colors.foreground,
+      isNot(ancientGold),
+    );
+  });
 }
