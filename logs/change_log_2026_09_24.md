@@ -168,3 +168,29 @@ glow, and a press-down animation with haptic feedback.
 ### Verification
 - `flutter analyze` — clean
 - `flutter test` — 173 tests pass
+
+## Task: Hexagram detail as a collapsible tree (issue #38)
+
+Rework the hexagram detail screen into a collapsible tree (ExpansionTiles).
+
+### Prompt / intent
+- 卦象 -> expanded; 象徵意義 -> expanded.
+- 不同人解讀 -> renamed to 解釋 -> expanded.
+  - 現代白話／通解 -> expanded; 其他的解釋 -> collapsed.
+- 原文 (卦辭/彖傳/大象傳/爻辭) -> collapsed.
+- 備註 -> collapsed.
+
+### Changes
+- `lib/l10n/app_localizations.dart`: renamed `interpretations` to `解釋` /
+  `Interpretation`; added `hexagramSymbolSection`, `modernInterpretation`,
+  `otherInterpretations`, `originalText`.
+- `lib/screens/hexagram_detail_screen.dart`: rewritten as a recursive
+  `_TreeTile` (card-styled top-level sections, plain nested tiles) with the
+  default expansion above. "Modern" interpretation detected by commentator name
+  (白話／通解).
+- `test/hexagram_detail_screen_test.dart`: updated for the tree (expand/collapse
+  behaviour).
+
+### Verification
+- `flutter analyze` — clean
+- `flutter test` — 174 tests pass
