@@ -192,6 +192,12 @@ void main() {
       expect(find.byType(CastResultScreen), findsOneWidget);
 
       // Generate the one-shot explanation.
+      await tester.scrollUntilVisible(
+        find.text('Get Explanation'),
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Get Explanation'));
       await tester.pumpAndSettle();
       expect(find.byType(ExplanationScreen), findsOneWidget);

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import '../data/trigram_hexagram_data.dart';
 import '../l10n/app_localizations.dart';
+import '../models/hexagram_content.dart';
 import '../models/language_preference.dart';
+import '../models/question_type.dart';
 import '../models/yao_line_type.dart';
 import '../services/database_service.dart';
 import '../services/gua_generator.dart';
+import '../services/hexagram_reading.dart';
 import '../services/llm_service.dart';
 import '../widgets/gradient_button.dart';
 import '../widgets/hexagram_view.dart';
@@ -25,6 +28,10 @@ class CastResultScreen extends StatelessWidget {
   /// Human-readable category label (e.g. "Career Achievement").
   final String? questionTypeLabel;
 
+  /// The selected question category, used to highlight the matching entry in
+  /// 生活與占事常見象徵.
+  final QuestionType? questionType;
+
   /// Optional LLM service used to generate the explanation.
   final LlmService? llmService;
 
@@ -39,6 +46,7 @@ class CastResultScreen extends StatelessWidget {
     required this.result,
     this.question,
     this.questionTypeLabel,
+    this.questionType,
     this.llmService,
     this.databaseService,
     this.language = LanguagePreference.english,
@@ -152,6 +160,16 @@ class CastResultScreen extends StatelessWidget {
               ),
             ),
           const SizedBox(height: 16),
+
+          // 結果 — a quick, non-LLM reading: 象徵意義 + 爻辭 (modern 通解).
+          if (content != null) ...[
+            _ResultSection(
+              content: content,
+              questionType: questionType,
+              lineTypes: lineTypes,
+            ),
+            const SizedBox(height: 16),
+          ],
 
           // Get explanation
           if (question != null && question!.isNotEmpty)
@@ -289,3 +307,225 @@ class _YaoLineRow extends StatelessWidget {
     );
   }
 }
+
+/// The 結果 section: a quick, non-LLM reading of the cast.
+///
+/// Shows 象徵意義 (with the entry matching the question type highlighted) and
+/// 爻辭 — the "modern vernacular / general" interpretation, with the changing
+/// (老陰/老陽) lines highlighted.
+class _ResultSection extends StatelessWidget {
+  final HexagramContent content;
+  final QuestionType? questionType;
+  final List<YaoLineType> lineTypes;
+
+  const _ResultSection({
+    required this.content,
+    required this.questionType,
+    required this.lineTypes,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+
+    final modern = HexagramReading.modern(content.interpretations);
+
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.resultSection,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              l10n.symbolicMeaning,
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _SymbolicMeaningView(
+              meaning: content.symbolicMeaning,
+              highlightKey: HexagramReading.lifeKeyForQuestionType(questionType),
+            ),
+            if (modern != null) ...[
+              const SizedBox(height: 20),
+              Text(
+                l10n.lineTexts,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _ModernInterpretationView(
+                interpretation: modern,
+                highlightPositions: HexagramReading.changingPositions(lineTypes),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Renders a [SymbolicMeaning], highlighting the [highlightKey] life-symbol.
+class _SymbolicMeaningView extends StatelessWidget {
+  final SymbolicMeaning meaning;
+  final String? highlightKey;
+
+  const _SymbolicMeaningView({required this.meaning, this.highlightKey});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final basic = meaning.basicSymbol;
+    final hasBasic =
+        basic.composition.isNotEmpty ||
+        basic.naturalImage.isNotEmpty ||
+        basic.explanation.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (hasBasic) ...[
+          if (basic.composition.isNotEmpty)
+            Text('${l10n.structure}：${basic.composition}'),
+          if (basic.naturalImage.isNotEmpty)
+            Text('${l10n.naturalImage}：${basic.naturalImage}'),
+          if (basic.explanation.isNotEmpty)
+            Text('${l10n.explanationLabel}：${basic.explanation}'),
+          const SizedBox(height: 12),
+        ],
+        if (meaning.mainSymbols.isNotEmpty) ...[
+          for (final symbol in meaning.mainSymbols)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '• ${symbol.title}',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  if (symbol.content.isNotEmpty) Text(symbol.content),
+                ],
+              ),
+            ),
+          const SizedBox(height: 4),
+        ],
+        if (meaning.lifeSymbols.isNotEmpty) ...[
+          Text(
+            l10n.lifeSymbols,
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 6),
+          for (final entry in meaning.lifeSymbols.entries)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: _Highlighted(
+                highlighted: highlightKey != null && entry.key == highlightKey,
+                child: Text('${entry.key}：${entry.value}'),
+              ),
+            ),
+        ],
+        if (meaning.summary.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(
+            meaning.summary,
+            style: const TextStyle(fontStyle: FontStyle.italic),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Renders the "modern vernacular / general" interpretation, highlighting the
+/// line interpretations whose 爻位 is in [highlightPositions].
+class _ModernInterpretationView extends StatelessWidget {
+  final Interpretation interpretation;
+  final Set<String> highlightPositions;
+
+  const _ModernInterpretationView({
+    required this.interpretation,
+    required this.highlightPositions,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (interpretation.judgmentInterpretation.isNotEmpty)
+          Text(
+            '${l10n.judgmentInterpretation}：'
+            '${interpretation.judgmentInterpretation}',
+          ),
+        if (interpretation.lineInterpretations.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          for (final entry in interpretation.lineInterpretations.entries)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: _Highlighted(
+                highlighted: highlightPositions.contains(entry.key),
+                child: Text(
+                  '${entry.key}：${entry.value}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Wraps [child] in a tinted, bordered highlight when [highlighted].
+class _Highlighted extends StatelessWidget {
+  final Widget child;
+  final bool highlighted;
+
+  const _Highlighted({required this.child, required this.highlighted});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!highlighted) return child;
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.5),
+        ),
+      ),
+      child: child,
+    );
+  }
+}
+
