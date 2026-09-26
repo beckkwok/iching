@@ -221,6 +221,7 @@ class AppLocalizations {
   String get greatImage => _t('Great Image', '大象傳');
   String get lineTexts => _t('Line Texts', '爻辭');
   String get smallImage => _t('Small Image', '小象傳');
+  String get resultSection => _t('Result', '結果');
   String get symbolicMeaning => _t('Symbolic Meaning', '象徵意義');
   String get interpretations => _t('Interpretations', '不同人解讀');
   String get remarks => _t('Remarks', '備註');
