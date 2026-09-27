@@ -244,6 +244,10 @@ class AppLocalizations {
         '編輯每次諮詢前傳送給模型的指令。',
       );
   String get promptHint => _t('Enter your system prompt...', '輸入您的系統提示詞…');
+  String get promptReadOnly => _t(
+        'The system prompt is read-only in this version.',
+        '此版本的系統提示詞為唯讀。',
+      );
   String get promptSaved => _t('Prompt saved.', '提示詞已儲存。');
   String failedToSavePrompt(String error) =>
       _t('Failed to save prompt: $error', '儲存提示詞失敗：$error');
