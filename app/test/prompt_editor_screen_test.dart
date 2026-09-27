@@ -87,4 +87,32 @@ void main() {
     expect(saved, 'You are a warm I-Ching guide.');
     expect(llm.systemPrompt, 'You are a warm I-Ching guide.');
   });
+
+  testWidgets('read-only mode hides save/reset and locks the field',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PromptEditorScreen(
+          llmService: FakeForTestLlm(),
+          databaseService: db,
+          readOnly: true,
+        ),
+      ),
+    );
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    });
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('System Prompt'), findsOneWidget);
+    expect(find.text('Save'), findsNothing);
+    expect(find.text('Reset'), findsNothing);
+    expect(
+      find.text('The system prompt is read-only in this version.'),
+      findsOneWidget,
+    );
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.readOnly, isTrue);
+  });
 }
