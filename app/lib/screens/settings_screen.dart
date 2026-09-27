@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import '../config/app_config.dart';
 import '../l10n/app_localizations.dart';
 import '../l10n/locale_controller.dart';
 import '../models/language_preference.dart';
@@ -15,10 +16,15 @@ class SettingsScreen extends StatefulWidget {
   final LlmService? llmService;
   final DatabaseService? databaseService;
 
+  /// When true, hide the model path / remove-file action and make the system
+  /// prompt read-only (issue #17). Defaults to [AppConfig.isProduction].
+  final bool isProduction;
+
   const SettingsScreen({
     super.key,
     this.llmService,
     required this.databaseService,
+    this.isProduction = AppConfig.isProduction,
   });
 
   @override
@@ -212,32 +218,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ),
-                ListTile(
-                  leading: const Icon(Icons.folder_open),
-                  title: Text(l10n.fullPath),
-                  subtitle: Text(
-                    _modelFullPath,
-                    style: const TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 11,
+                if (!widget.isProduction)
+                  ListTile(
+                    leading: const Icon(Icons.folder_open),
+                    title: Text(l10n.fullPath),
+                    subtitle: Text(
+                      _modelFullPath,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 11,
+                      ),
                     ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: OutlinedButton.icon(
-                    onPressed: _removeModelFile,
-                    icon: const Icon(Icons.delete_outline),
-                    label: Text(l10n.removeModelFile),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red),
+                if (!widget.isProduction)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: OutlinedButton.icon(
+                      onPressed: _removeModelFile,
+                      icon: const Icon(Icons.delete_outline),
+                      label: Text(l10n.removeModelFile),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(color: Colors.red),
+                      ),
                     ),
                   ),
-                ),
                 const Divider(),
 
                 // --- Language ---
@@ -297,6 +305,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         builder: (_) => PromptEditorScreen(
                           llmService: widget.llmService,
                           databaseService: widget.databaseService,
+                          readOnly: widget.isProduction,
                         ),
                       ),
                     );
