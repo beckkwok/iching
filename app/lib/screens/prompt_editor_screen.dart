@@ -13,10 +13,15 @@ class PromptEditorScreen extends StatefulWidget {
   final LlmService? llmService;
   final DatabaseService? databaseService;
 
+  /// When true, the prompt is shown read-only and cannot be edited or saved
+  /// (issue #17).
+  final bool readOnly;
+
   const PromptEditorScreen({
     super.key,
     this.llmService,
     required this.databaseService,
+    this.readOnly = false,
   });
 
   @override
@@ -112,7 +117,9 @@ class _PromptEditorScreenState extends State<PromptEditorScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          l10n.editInstruction,
+                          widget.readOnly
+                              ? l10n.promptReadOnly
+                              : l10n.editInstruction,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -121,6 +128,7 @@ class _PromptEditorScreenState extends State<PromptEditorScreen> {
                         Expanded(
                           child: TextField(
                             controller: _controller,
+                            readOnly: widget.readOnly,
                             maxLines: null,
                             expands: true,
                             textAlignVertical: TextAlignVertical.top,
@@ -135,37 +143,38 @@ class _PromptEditorScreenState extends State<PromptEditorScreen> {
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _saving ? null : _reset,
-                          icon: const Icon(Icons.restart_alt),
-                          label: Text(l10n.reset),
+                if (!widget.readOnly)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _saving ? null : _reset,
+                            icon: const Icon(Icons.restart_alt),
+                            label: Text(l10n.reset),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: GradientButton(
-                          onPressed: _saving ? null : _save,
-                          icon: _saving
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Icon(Icons.save),
-                          label: l10n.save,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: GradientButton(
+                            onPressed: _saving ? null : _save,
+                            icon: _saving
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.save),
+                            label: l10n.save,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
               ],
             ),
     );

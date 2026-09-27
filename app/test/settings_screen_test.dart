@@ -30,9 +30,14 @@ void main() {
     } catch (_) {}
   });
 
-  Future<void> _pumpSettings(WidgetTester tester) async {
+  Future<void> _pumpSettings(
+    WidgetTester tester, {
+    bool isProduction = false,
+  }) async {
     await tester.pumpWidget(
-      MaterialApp(home: SettingsScreen(databaseService: db)),
+      MaterialApp(
+        home: SettingsScreen(databaseService: db, isProduction: isProduction),
+      ),
     );
     // Let the async DB reads (model info + language) complete.
     await tester.runAsync(() async {
@@ -135,5 +140,24 @@ void main() {
       find.byType(RadioGroup<ThemePreference>),
     );
     expect(group.groupValue, ThemePreference.light);
+  });
+
+  testWidgets('development shows model path and remove-file action',
+      (tester) async {
+    await _pumpSettings(tester, isProduction: false);
+
+    expect(find.text('Full Path'), findsOneWidget);
+    expect(find.text('Remove Model File'), findsOneWidget);
+  });
+
+  testWidgets('production hides model path and remove-file action',
+      (tester) async {
+    await _pumpSettings(tester, isProduction: true);
+
+    expect(find.text('Full Path'), findsNothing);
+    expect(find.text('Remove Model File'), findsNothing);
+    // Non-sensitive settings remain available.
+    expect(find.text('Language'), findsOneWidget);
+    expect(find.text('System Prompt'), findsOneWidget);
   });
 }

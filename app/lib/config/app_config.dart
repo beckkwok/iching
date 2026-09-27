@@ -12,4 +12,11 @@ class AppConfig {
   /// Override with `--dart-define=ALLOW_MODEL_SELECTION=true|false`.
   static const bool allowModelSelection =
       bool.fromEnvironment('ALLOW_MODEL_SELECTION', defaultValue: kDebugMode);
+
+  /// Whether the app is running in production mode (release build without
+  /// `--dart-define=ALLOW_MODEL_SELECTION=true`).
+  ///
+  /// In production the model path and the "remove model file" action are
+  /// hidden and the system prompt is read-only (issue #17).
+  static const bool isProduction = !allowModelSelection;
 }
