@@ -142,15 +142,28 @@ class LlmService {
   /// Function calling is disabled and no tools are registered, so the model
   /// answers directly instead of trying to call `generate_gua` (the hexagram
   /// is already cast in the form-based flow).
+  ///
+  /// The loaded [InferenceModel] is **reused** across calls: only the
+  /// conversation is recreated. Reloading the native engine per explanation
+  /// allocates a second copy of the model and gets the app killed by the OS
+  /// lowmemorykiller on memory-constrained devices. The model is created with
+  /// the CPU backend because the default GPU/WebGPU path allocates several
+  /// gigabytes for `.litertlm` models.
   Future<void> openExplanationChat() async {
-    await closeChat();
-    await _registerAndLoad();
+    if (_model == null) {
+      await _registerAndLoad();
 
-    _model = await FlutterGemmaPlugin.instance.createModel(
-      modelType: modelInfo.modelType,
-      fileType: _fileType,
-      maxTokens: 4096,
-    );
+      _model = await FlutterGemmaPlugin.instance.createModel(
+        modelType: modelInfo.modelType,
+        fileType: _fileType,
+        maxTokens: 4096,
+        preferredBackend: PreferredBackend.cpu,
+      );
+    } else if (_chat != null) {
+      // Reuse the model; only start a fresh conversation.
+      await _chat!.close();
+      _chat = null;
+    }
 
     _chat = await _model!.createChat(
       temperature: 0.7,
@@ -158,7 +171,12 @@ class LlmService {
       topP: 0.95,
       tokenBuffer: 100,
       modelType: modelInfo.modelType,
-      isThinking: modelInfo.isThinking,
+      // The explanation is a short 3-5 sentence answer, so a reasoning pass is
+      // unnecessary and makes CPU inference exceed the response timeout.
+      // For Qwen3 this also appends `/no_think` to suppress reasoning.
+      isThinking: false,
+      // Cap the generated response so CPU inference stays responsive.
+      maxOutputTokens: _maxOutputTokens,
       supportsFunctionCalls: false,
       tools: const [],
       systemInstruction: systemPrompt,
@@ -169,7 +187,11 @@ class LlmService {
   // One-shot explanation (form-based flow)
   // ---------------------------------------------------------------------------
 
-  static const Duration _responseTimeout = Duration(seconds: 60);
+  static const Duration _responseTimeout = Duration(seconds: 120);
+
+  /// Upper bound on tokens generated per response. CPU inference is used to
+  /// keep memory low, so the output is capped to keep latency reasonable.
+  static const int _maxOutputTokens = 512;
 
   /// Generate a single explanation that connects a cast [result] to the
   /// user's [question]. This is a one-shot call (no multi-turn history, no
