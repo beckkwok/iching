@@ -171,7 +171,12 @@ class LlmService {
       topP: 0.95,
       tokenBuffer: 100,
       modelType: modelInfo.modelType,
-      isThinking: modelInfo.isThinking,
+      // The explanation is a short 3-5 sentence answer, so a reasoning pass is
+      // unnecessary and makes CPU inference exceed the response timeout.
+      // For Qwen3 this also appends `/no_think` to suppress reasoning.
+      isThinking: false,
+      // Cap the generated response so CPU inference stays responsive.
+      maxOutputTokens: _maxOutputTokens,
       supportsFunctionCalls: false,
       tools: const [],
       systemInstruction: systemPrompt,
@@ -182,7 +187,11 @@ class LlmService {
   // One-shot explanation (form-based flow)
   // ---------------------------------------------------------------------------
 
-  static const Duration _responseTimeout = Duration(seconds: 60);
+  static const Duration _responseTimeout = Duration(seconds: 120);
+
+  /// Upper bound on tokens generated per response. CPU inference is used to
+  /// keep memory low, so the output is capped to keep latency reasonable.
+  static const int _maxOutputTokens = 512;
 
   /// Generate a single explanation that connects a cast [result] to the
   /// user's [question]. This is a one-shot call (no multi-turn history, no
