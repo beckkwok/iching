@@ -142,15 +142,28 @@ class LlmService {
   /// Function calling is disabled and no tools are registered, so the model
   /// answers directly instead of trying to call `generate_gua` (the hexagram
   /// is already cast in the form-based flow).
+  ///
+  /// The loaded [InferenceModel] is **reused** across calls: only the
+  /// conversation is recreated. Reloading the native engine per explanation
+  /// allocates a second copy of the model and gets the app killed by the OS
+  /// lowmemorykiller on memory-constrained devices. The model is created with
+  /// the CPU backend because the default GPU/WebGPU path allocates several
+  /// gigabytes for `.litertlm` models.
   Future<void> openExplanationChat() async {
-    await closeChat();
-    await _registerAndLoad();
+    if (_model == null) {
+      await _registerAndLoad();
 
-    _model = await FlutterGemmaPlugin.instance.createModel(
-      modelType: modelInfo.modelType,
-      fileType: _fileType,
-      maxTokens: 4096,
-    );
+      _model = await FlutterGemmaPlugin.instance.createModel(
+        modelType: modelInfo.modelType,
+        fileType: _fileType,
+        maxTokens: 4096,
+        preferredBackend: PreferredBackend.cpu,
+      );
+    } else if (_chat != null) {
+      // Reuse the model; only start a fresh conversation.
+      await _chat!.close();
+      _chat = null;
+    }
 
     _chat = await _model!.createChat(
       temperature: 0.7,
