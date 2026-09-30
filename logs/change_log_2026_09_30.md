@@ -14,10 +14,11 @@ Per the issue comment:
 - The tab screens' `Scaffold`s are made transparent so the sky shows through
   (`QuestionFormScreen`, `HexagramBrowserScreen`, `SettingsScreen`); History and
   Profile already render without a `Scaffold`.
-- `TwinklingStars` gained shooting stars: `meteorCount` (default 6) meteors
-  travel down-left on a fading gradient trail. Each meteor cycles through 8
-  pre-generated trajectories (start point, direction, trail length), so it does
-  not reappear in the same place.
+- `TwinklingStars` gained shooting stars: `meteorCount` (default 10) meteors
+  travel down-left on a fading gradient trail, with a wide speed range (0.2–1.5)
+  so some are slow drifters and some are fast streaks. Each meteor cycles
+  through 8 pre-generated trajectories (start point, direction, trail length),
+  so it does not reappear in the same place.
 - The dark theme's cards are now translucent
   (`cardTheme.color = surface @ 55%`) with no surface tint, so the sky is
   visible behind the cards on the History, Profile, Browse, and Cast-result
