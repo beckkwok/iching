@@ -9,6 +9,7 @@ import 'package:app/screens/history_screen.dart';
 import 'package:app/screens/profile_screen.dart';
 import 'package:app/screens/question_form_screen.dart';
 import 'package:app/services/database_service.dart';
+import 'package:app/widgets/twinkling_stars.dart';
 
 /// A [DatabaseService] with mutable memory/consultations, to verify the
 /// Profile/History tabs reload when re-selected.
@@ -26,9 +27,15 @@ class _FakeDb extends DatabaseService {
 }
 
 void main() {
-  Widget app({DatabaseService? db}) => MaterialApp(
+  Widget app({DatabaseService? db, bool dark = false}) => MaterialApp(
+        themeMode: dark ? ThemeMode.dark : ThemeMode.light,
+        theme: ThemeData(brightness: Brightness.light, useMaterial3: true),
+        darkTheme: ThemeData(brightness: Brightness.dark, useMaterial3: true),
         builder: (context, child) => FTheme(
-          data: FThemeData(touch: true, colors: FColors.neutralLight),
+          data: FThemeData(
+            touch: true,
+            colors: dark ? FColors.neutralDark : FColors.neutralLight,
+          ),
           child: child!,
         ),
         home: HomeShell(databaseService: db),
@@ -48,6 +55,24 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(QuestionFormScreen), findsOneWidget);
+  });
+
+  testWidgets('shows the starfield behind the tabs in dark mode',
+      (tester) async {
+    await tester.pumpWidget(app(dark: true));
+    // The starfield animates forever, so pump a couple of frames instead of
+    // waiting for settle.
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(TwinklingStars), findsOneWidget);
+  });
+
+  testWidgets('hides the starfield in light mode', (tester) async {
+    await tester.pumpWidget(app());
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TwinklingStars), findsNothing);
   });
 
   testWidgets('switching to History shows the History screen', (tester) async {
