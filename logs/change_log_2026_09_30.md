@@ -67,7 +67,10 @@ The reactions are fed to the agent-memory extraction.
   `updateConsultationFeedback` use `reaction`.
 - `lib/services/llm_service.dart`: `extractMemory` / `buildMemoryPrompt` accept
   an optional `reaction`.
-- `lib/l10n/app_localizations.dart`: reaction tooltips (`reactionHappy`, …).
+- `lib/l10n/app_localizations.dart`: reaction tooltips (`reactionHappy`, …);
+  the feedback section is renamed in Chinese — title 意見回饋 → 意見 and thanks
+  感謝您的回饋！ → 感謝您的意見！ (it is the user's own thinking about the
+  hexagram, kept for reference).
 - `lib/screens/explanation_screen.dart`: the star row is replaced by tappable
   emoji reaction buttons with tooltips; feedback + memory pass the reaction.
 - `lib/screens/history_screen.dart`: shows the reaction emoji instead of stars.
