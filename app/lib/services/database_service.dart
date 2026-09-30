@@ -15,7 +15,7 @@ class DatabaseService {
   static const String _agentMemoryTable = 'agent_memory';
 
   /// The database version for migration tracking.
-  static const int _databaseVersion = 10;
+  static const int _databaseVersion = 11;
 
   /// Custom database path (used for in-memory testing).
   final String? _customPath;
@@ -125,6 +125,7 @@ class DatabaseService {
         explanation TEXT NOT NULL,
         rating INTEGER,
         comment TEXT,
+        reaction TEXT,
         created_at TEXT NOT NULL
       )
     ''');
@@ -155,6 +156,10 @@ class DatabaseService {
     if (oldVersion < 10) {
       // v9 → v10: add the agent memory table — issue #3.
       await _createAgentMemoryTable(db);
+    }
+    if (oldVersion < 11) {
+      // v10 → v11: add the `reaction` column (emoji reactions) — issue #27.
+      await _addConsultationReactionColumn(db);
     }
   }
 
@@ -187,6 +192,19 @@ class DatabaseService {
     if (!names.contains('comment')) {
       await db.execute(
         "ALTER TABLE $_consultationsTable ADD COLUMN comment TEXT",
+      );
+    }
+  }
+
+  /// Adds the `reaction` column to the consultations table if it is missing
+  /// (emoji reactions, issue #27).
+  Future<void> _addConsultationReactionColumn(Database db) async {
+    final columns =
+        await db.rawQuery('PRAGMA table_info($_consultationsTable)');
+    final names = columns.map((c) => c['name']).toSet();
+    if (!names.contains('reaction')) {
+      await db.execute(
+        "ALTER TABLE $_consultationsTable ADD COLUMN reaction TEXT",
       );
     }
   }
@@ -245,22 +263,23 @@ class DatabaseService {
       hexagramName: consultation.hexagramName,
       hexagramContent: consultation.hexagramContent,
       explanation: consultation.explanation,
-      rating: consultation.rating,
+      reaction: consultation.reaction,
       comment: consultation.comment,
       createdAt: consultation.createdAt,
     );
   }
 
-  /// Store the user's feedback (rating + comment) on an existing consultation.
+  /// Store the user's feedback (emoji reaction + comment) on an existing
+  /// consultation.
   Future<void> updateConsultationFeedback(
     int id, {
-    required int rating,
+    required String reaction,
     String? comment,
   }) async {
     final db = await database;
     await db.update(
       _consultationsTable,
-      {'rating': rating, 'comment': comment},
+      {'reaction': reaction, 'comment': comment},
       where: 'id = ?',
       whereArgs: [id],
     );

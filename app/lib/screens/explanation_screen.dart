@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../models/consultation.dart';
 import '../models/language_preference.dart';
+import '../models/reaction.dart';
 import '../services/database_service.dart';
 import '../services/gua_generator.dart';
 import '../services/llm_service.dart';
@@ -49,7 +50,7 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
   String? _error;
 
   int? _consultationId;
-  int _rating = 0;
+  Reaction? _reaction;
   final TextEditingController _commentController = TextEditingController();
   bool _feedbackSaved = false;
   bool _savingFeedback = false;
@@ -123,12 +124,13 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
   Future<void> _submitFeedback() async {
     final id = _consultationId;
     final db = widget.databaseService;
-    if (id == null || db == null || _rating == 0) return;
+    final reaction = _reaction;
+    if (id == null || db == null || reaction == null) return;
     setState(() => _savingFeedback = true);
     final comment = _commentController.text.trim();
     await db.updateConsultationFeedback(
       id,
-      rating: _rating,
+      reaction: reaction.key,
       comment: comment.isEmpty ? null : comment,
     );
     if (mounted) {
@@ -137,13 +139,16 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
         _feedbackSaved = true;
       });
     }
-    // Refine the agent memory with the comment (issue #3).
-    unawaited(_updateMemory(comment: comment.isEmpty ? null : comment));
+    // Refine the agent memory with the reaction and comment (issue #3 / #27).
+    unawaited(_updateMemory(
+      comment: comment.isEmpty ? null : comment,
+      reaction: reaction,
+    ));
   }
 
   /// Update the agent memory from this consultation (and optionally the user's
-  /// comment). Fire-and-forget: never blocks the UI or throws.
-  Future<void> _updateMemory({String? comment}) async {
+  /// reaction/comment). Fire-and-forget: never blocks the UI or throws.
+  Future<void> _updateMemory({String? comment, Reaction? reaction}) async {
     final llm = widget.llmService;
     final db = widget.databaseService;
     if (llm == null || db == null) return;
@@ -154,6 +159,7 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
         hexagramName: gua.guaName,
         explanation: _explanation ?? '',
         comment: comment,
+        reaction: reaction?.emoji,
       );
       if (extraction == null) return;
       await db.mergeAgentMemory(
@@ -165,6 +171,16 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
       // Memory is best-effort; ignore failures.
     }
   }
+
+  String _reactionLabel(AppLocalizations l10n, Reaction reaction) =>
+      switch (reaction) {
+        Reaction.happy => l10n.reactionHappy,
+        Reaction.love => l10n.reactionLove,
+        Reaction.sad => l10n.reactionSad,
+        Reaction.angry => l10n.reactionAngry,
+        Reaction.surprised => l10n.reactionSurprised,
+        Reaction.healing => l10n.reactionHealing,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -345,23 +361,21 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Row(
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
                             children: [
-                              for (var i = 1; i <= 5; i++)
-                                IconButton(
-                                  onPressed: () =>
-                                      setState(() => _rating = i),
-                                  icon: Icon(
-                                    i <= _rating
-                                        ? Icons.star
-                                        : Icons.star_border,
-                                    color: i <= _rating
-                                        ? Colors.amber
-                                        : theme.colorScheme.onSurfaceVariant,
-                                  ),
+                              for (final reaction in Reaction.values)
+                                _ReactionButton(
+                                  reaction: reaction,
+                                  label: _reactionLabel(l10n, reaction),
+                                  selected: _reaction == reaction,
+                                  onTap: () =>
+                                      setState(() => _reaction = reaction),
                                 ),
                             ],
                           ),
+                          const SizedBox(height: 8),
                           TextField(
                             controller: _commentController,
                             maxLines: 3,
@@ -382,6 +396,50 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// A selectable emoji reaction with a tooltip describing its meaning.
+class _ReactionButton extends StatelessWidget {
+  final Reaction reaction;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ReactionButton({
+    required this.reaction,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Tooltip(
+      message: label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: selected
+                ? theme.colorScheme.primary.withValues(alpha: 0.18)
+                : Colors.transparent,
+            border: Border.all(
+              color: selected
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.outlineVariant,
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: Text(reaction.emoji, style: const TextStyle(fontSize: 24)),
+        ),
       ),
     );
   }

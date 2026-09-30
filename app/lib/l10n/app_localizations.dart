@@ -212,6 +212,14 @@ class AppLocalizations {
   String get feedbackSubmit => _t('Submit feedback', '送出回饋');
   String get feedbackThanks => _t('Thanks for your feedback!', '感謝您的回饋！');
 
+  // Reaction tooltips (issue #27).
+  String get reactionHappy => _t('Happy', '開心');
+  String get reactionLove => _t('Love', '喜愛');
+  String get reactionSad => _t('Sad', '難過');
+  String get reactionAngry => _t('Angry', '生氣');
+  String get reactionSurprised => _t('Surprised', '驚訝');
+  String get reactionHealing => _t('Healing', '療癒');
+
   // --- Hexagram browser / detail ---------------------------------------
   String hexagramNumber(int code) => _t('Hexagram $code', '第$code卦');
   String get hexagrams => _t('Hexagrams', '六十四卦');

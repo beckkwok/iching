@@ -124,7 +124,7 @@ void main() {
       expect(all.last.question, 'first');
     });
 
-    test('updateConsultationFeedback stores rating and comment', () async {
+    test('updateConsultationFeedback stores reaction and comment', () async {
       final saved = await service.createConsultation(Consultation(
         question: 'q',
         hexagramCode: 1,
@@ -136,12 +136,12 @@ void main() {
 
       await service.updateConsultationFeedback(
         saved.id!,
-        rating: 4,
+        reaction: 'love',
         comment: 'Helpful',
       );
 
       final all = await service.getConsultations();
-      expect(all.first.rating, 4);
+      expect(all.first.reaction, 'love');
       expect(all.first.comment, 'Helpful');
     });
   });

@@ -187,7 +187,7 @@ directly from JSON assets (`assets/hexagrams/gua_<n>.json`) via `HexagramLoader`
 | hexagram_name | TEXT    | e.g. "乾為天" (卦名)        |
 | hexagram_content | TEXT | full hexagram JSON (for the detail view) |
 | explanation   | TEXT    | the LLM explanation         |
-| rating        | INTEGER | nullable 1-5 feedback rating |
+| reaction      | TEXT    | nullable emoji reaction key (see `Reaction`) |
 | comment       | TEXT    | nullable user comment       |
 | created_at    | TEXT    | ISO 8601                    |
 
