@@ -10,6 +10,7 @@ import 'package:app/services/database_service.dart';
 import 'package:app/services/fake_llm_service.dart';
 import 'package:app/services/gua_generator.dart';
 import 'package:app/services/llm_service.dart';
+import 'package:app/widgets/yao_loading_animation.dart';
 
 const _guaJson = '''
 {
@@ -77,6 +78,30 @@ void main() {
     expect(find.textContaining('Hexagram 46'), findsOneWidget);
     expect(find.text('Interpretation'), findsOneWidget);
     expect(find.text('A gentle mirror for your question.'), findsOneWidget);
+  });
+
+  testWidgets('shows the yao loading animation while generating',
+      (tester) async {
+    final llm = FakeLlmService();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ExplanationScreen(
+          question: 'Should I take the new job?',
+          result: _result(),
+          llmService: llm,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(YaoLoadingAnimation), findsOneWidget);
+    expect(find.text('Consulting the hexagram...'), findsOneWidget);
+
+    // Let the (delayed) explanation resolve so no animation is left running.
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle();
+    expect(find.byType(YaoLoadingAnimation), findsNothing);
   });
 
   testWidgets('tapping the hexagram card opens the detail screen',
