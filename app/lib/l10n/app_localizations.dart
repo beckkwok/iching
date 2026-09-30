@@ -188,6 +188,10 @@ class AppLocalizations {
   // --- Explanation ------------------------------------------------------
   String get explanation => _t('Explanation', '解讀');
   String get interpretation => _t('Interpretation', '解讀');
+  String get generatingExplanation => _t(
+        'Consulting the hexagram...',
+        '正在為您解讀…',
+      );
   String get noModelExplanation => _t(
         'No model available to provide an explanation. '
             'Here is the hexagram that was cast — reflect on its imagery '

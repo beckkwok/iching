@@ -10,6 +10,7 @@ import '../services/llm_service.dart';
 import '../services/database_service.dart';
 import '../services/gua_generator.dart';
 import '../widgets/gradient_button.dart';
+import '../widgets/yao_loading_animation.dart';
 import 'home_shell.dart';
 
 /// Startup screen that loads the model and proceeds to the consultation.
@@ -284,16 +285,7 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
     final l10n = AppLocalizations.of(context);
     switch (_phase) {
       case _ScreenPhase.initialising:
-        return Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-              Text(l10n.checkingSetup),
-            ],
-          ),
-        );
+        return Center(child: YaoLoadingAnimation(message: l10n.checkingSetup));
 
       case _ScreenPhase.selecting:
         return _buildSelectionGrid(context);
@@ -302,16 +294,7 @@ class _ModelSelectionScreenState extends State<ModelSelectionScreen> {
         return _buildDownloadProgress(context);
 
       case _ScreenPhase.loading:
-        return Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-              Text(l10n.loadingModel),
-            ],
-          ),
-        );
+        return Center(child: YaoLoadingAnimation(message: l10n.loadingModel));
 
       case _ScreenPhase.error:
         return _buildErrorView(context);
