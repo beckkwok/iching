@@ -41,3 +41,40 @@ Per the issue comment:
 ### Verification
 - `flutter analyze` — 3 pre-existing info lints (unrelated)
 - `flutter test` — 192 tests pass
+
+## Task: Replace star rating with emoji reactions (issue #27)
+
+Per the issue comment:
+1. #23 is closed as a duplicate of #27.
+2. No data migration needed — just store the reaction.
+3. Emoji set: 😄 (happy), ❤️ (love), 😔 (sad), 😡 (angry), 😲 (surprised),
+   ❤️‍🩹 (healing), with tooltips explaining each.
+The reactions are fed to the agent-memory extraction.
+
+### Design
+- Feedback is stored as a stable reaction **key** (`reaction TEXT`), replacing the
+  old 1-5 `rating`. The `rating` column is left in place but unused.
+- `extractMemory` receives the reaction's **emoji** so the LLM can read the
+  feeling directly.
+
+### Changes
+- `lib/models/reaction.dart` (new): `Reaction` enum (`key`, `emoji`,
+  `fromKey`).
+- `lib/models/consultation.dart`: `rating` → `reaction` (`String?`), incl.
+  `toMap`/`fromMap`/`==`/`hashCode`.
+- `lib/services/database_service.dart`: DB version 11; `reaction TEXT` column +
+  `_addConsultationReactionColumn` migration; `createConsultation` /
+  `updateConsultationFeedback` use `reaction`.
+- `lib/services/llm_service.dart`: `extractMemory` / `buildMemoryPrompt` accept
+  an optional `reaction`.
+- `lib/l10n/app_localizations.dart`: reaction tooltips (`reactionHappy`, …).
+- `lib/screens/explanation_screen.dart`: the star row is replaced by tappable
+  emoji reaction buttons with tooltips; feedback + memory pass the reaction.
+- `lib/screens/history_screen.dart`: shows the reaction emoji instead of stars.
+- `AGENTS.md`: schema doc updated (`reaction` replaces `rating`).
+- Tests: `test/reaction_test.dart` (new); updated `database_service_test`,
+  `explanation_screen_test`, `history_screen_test`, `llm_service_test`.
+
+### Verification
+- `flutter analyze` — 3 pre-existing info lints (unrelated)
+- `flutter test` — 196 tests pass

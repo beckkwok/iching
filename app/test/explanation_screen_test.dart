@@ -189,8 +189,8 @@ void main() {
 
     expect(find.text('Feedback'), findsOneWidget);
 
-    // Tap the 4th star (rating = 4).
-    await tester.tap(find.byIcon(Icons.star_border).at(3));
+    // Tap the "love" reaction (❤️).
+    await tester.tap(find.text('❤️'));
     await tester.pump();
     await tester.enterText(find.byType(TextField), 'Very helpful');
     await tester.tap(find.text('Submit feedback'));
@@ -198,7 +198,7 @@ void main() {
 
     expect(db.feedback, hasLength(1));
     expect(db.feedback.first.$1, 1);
-    expect(db.feedback.first.$2, 4);
+    expect(db.feedback.first.$2, 'love');
     expect(db.feedback.first.$3, 'Very helpful');
     expect(find.text('Thanks for your feedback!'), findsOneWidget);
   });
@@ -232,7 +232,7 @@ class _RecordingDb extends DatabaseService {
   _RecordingDb() : super(databasePath: ':memory:');
 
   final List<Consultation> saved = [];
-  final List<(int, int, String?)> feedback = [];
+  final List<(int, String, String?)> feedback = [];
 
   @override
   Future<Consultation> createConsultation(Consultation consultation) async {
@@ -253,10 +253,10 @@ class _RecordingDb extends DatabaseService {
   @override
   Future<void> updateConsultationFeedback(
     int id, {
-    required int rating,
+    required String reaction,
     String? comment,
   }) async {
-    feedback.add((id, rating, comment));
+    feedback.add((id, reaction, comment));
   }
 
   final List<(String, List<String>, List<String>)> merges = [];
@@ -279,6 +279,7 @@ class _MemoryLlm extends FakeLlmService {
     required String hexagramName,
     required String explanation,
     String? comment,
+    String? reaction,
   }) async {
     return MemoryExtraction(
       feeling: comment == null ? 'hopeful' : 'hopeful and reflective',

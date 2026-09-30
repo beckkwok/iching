@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../models/consultation.dart';
 import '../models/gua.dart';
+import '../models/reaction.dart';
 import '../services/database_service.dart';
 import 'hexagram_detail_screen.dart';
 
@@ -181,19 +182,11 @@ class _ConsultationCard extends StatelessWidget {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-              if (consultation.rating != null) ...[
+              if (Reaction.fromKey(consultation.reaction) != null) ...[
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    for (var i = 1; i <= 5; i++)
-                      Icon(
-                        i <= consultation.rating!
-                            ? Icons.star
-                            : Icons.star_border,
-                        size: 16,
-                        color: Colors.amber,
-                      ),
-                  ],
+                Text(
+                  Reaction.fromKey(consultation.reaction)!.emoji,
+                  style: const TextStyle(fontSize: 20),
                 ),
               ],
               if (consultation.comment != null &&

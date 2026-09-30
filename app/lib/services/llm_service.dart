@@ -288,6 +288,7 @@ class LlmService {
     required String hexagramName,
     required String explanation,
     String? comment,
+    String? reaction,
   }) async {
     if (_chat == null) {
       await openExplanationChat();
@@ -298,6 +299,7 @@ class LlmService {
       hexagramName: hexagramName,
       explanation: explanation,
       comment: comment,
+      reaction: reaction,
     );
 
     await _chat!.addQuery(Message(text: prompt, isUser: true));
@@ -322,9 +324,13 @@ class LlmService {
     required String hexagramName,
     required String explanation,
     String? comment,
+    String? reaction,
   }) {
     final commentLine = (comment != null && comment.isNotEmpty)
         ? 'User\'s comment: "$comment"\n'
+        : '';
+    final reactionLine = (reaction != null && reaction.isNotEmpty)
+        ? 'User\'s reaction to the answer: $reaction\n'
         : '';
     return 'A user asked an I-Ching question and received a hexagram and an '
         'explanation.\n\n'
@@ -332,6 +338,7 @@ class LlmService {
         'Hexagram: $hexagramName\n'
         'Explanation: $explanation\n'
         '$commentLine'
+        '$reactionLine'
         '\n'
         'Extract a concise profile of the user. Respond in JSON only, with '
         'this exact shape:\n'
