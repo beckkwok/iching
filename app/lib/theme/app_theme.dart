@@ -38,6 +38,11 @@ ThemeData buildDarkTheme() {
       bodyColor: ancientGold,
       displayColor: ancientGold,
     ),
+    // Translucent cards so the starfield shows through (issue #28).
+    cardTheme: CardThemeData(
+      color: scheme.surface.withValues(alpha: 0.55),
+      surfaceTintColor: Colors.transparent,
+    ),
   );
 }
 

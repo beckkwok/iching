@@ -101,6 +101,7 @@ class _HexagramBrowserScreenState extends State<HexagramBrowserScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: _buildBody(context),
     );
   }

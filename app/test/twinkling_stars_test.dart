@@ -37,6 +37,19 @@ void main() {
     expect(after.shouldRepaint(before), isTrue);
   });
 
+  testWidgets('renders with meteors configured', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: TwinklingStars(meteorCount: 4))),
+    );
+    await tester.pump();
+
+    expect(find.byType(TwinklingStars), findsOneWidget);
+  });
+
+  test('enables meteors by default', () {
+    expect(const TwinklingStars().meteorCount, greaterThan(0));
+  });
+
   test('sky uses a layered gradient anchored on #12101E', () {
     expect(
       TwinklingStars.skyGradient.colors,

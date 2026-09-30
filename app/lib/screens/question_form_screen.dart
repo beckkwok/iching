@@ -6,7 +6,6 @@ import '../services/database_service.dart';
 import '../services/gua_generator.dart';
 import '../services/llm_service.dart';
 import '../widgets/gradient_button.dart';
-import '../widgets/twinkling_stars.dart';
 import 'cast_result_screen.dart';
 
 /// First screen of the consultation flow: asks the user what kind of question
@@ -102,13 +101,9 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (isDark) const TwinklingStars(),
-          SafeArea(
+      backgroundColor: Colors.transparent,
+      body: SafeArea(
             child: Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
@@ -223,8 +218,6 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
               ),
             ),
           ),
-        ],
-      ),
     );
   }
 }
