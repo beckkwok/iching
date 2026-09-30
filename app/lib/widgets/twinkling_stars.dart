@@ -10,7 +10,7 @@ class TwinklingStars extends StatefulWidget {
   const TwinklingStars({
     super.key,
     this.starCount = 60,
-    this.meteorCount = 3,
+    this.meteorCount = 6,
   });
 
   /// The sky's background gradient — deepest at the top, lifted toward the
@@ -42,6 +42,10 @@ class _TwinklingStarsState extends State<TwinklingStars>
   late final List<_Star> _stars;
   late final List<_Meteor> _meteors;
 
+  /// Number of pre-generated trajectories per meteor, cycled through so each
+  /// pass starts from a different place.
+  static const int _spawnVariants = 8;
+
   @override
   void initState() {
     super.initState();
@@ -68,19 +72,24 @@ class _TwinklingStarsState extends State<TwinklingStars>
   List<_Meteor> _generateMeteors(int count) {
     final random = math.Random();
     return List.generate(count, (_) {
-      // Travel down and to the left, mostly starting in the upper-right.
-      final dx = -(0.8 + random.nextDouble() * 0.2);
-      final dy = 0.4 + random.nextDouble() * 0.2;
-      final length = math.sqrt(dx * dx + dy * dy);
+      final spawns = List.generate(_spawnVariants, (_) {
+        // Travel down and to the left, from random points across the sky.
+        final dx = -(0.75 + random.nextDouble() * 0.25);
+        final dy = 0.35 + random.nextDouble() * 0.3;
+        final length = math.sqrt(dx * dx + dy * dy);
+        return _MeteorSpawn(
+          start: Offset(
+            0.2 + random.nextDouble() * 1.0,
+            random.nextDouble() * 0.45,
+          ),
+          direction: Offset(dx / length, dy / length),
+          length: 0.10 + random.nextDouble() * 0.10,
+        );
+      });
       return _Meteor(
-        start: Offset(
-          0.3 + random.nextDouble() * 0.9,
-          random.nextDouble() * 0.45,
-        ),
-        direction: Offset(dx / length, dy / length),
-        length: 0.12 + random.nextDouble() * 0.08,
+        spawns: spawns,
         phase: random.nextDouble(),
-        speed: 0.25 + random.nextDouble() * 0.35,
+        speed: 0.3 + random.nextDouble() * 0.4,
       );
     });
   }
@@ -122,24 +131,29 @@ class _Star {
   final double speed;
 }
 
-class _Meteor {
-  const _Meteor({
+/// One possible meteor trajectory (start point, direction, trail length).
+class _MeteorSpawn {
+  const _MeteorSpawn({
     required this.start,
     required this.direction,
     required this.length,
+  });
+
+  final Offset start;
+  final Offset direction;
+  final double length;
+}
+
+class _Meteor {
+  const _Meteor({
+    required this.spawns,
     required this.phase,
     required this.speed,
   });
 
-  /// Start position as a fraction of the canvas.
-  final Offset start;
-
-  /// Unit direction of travel.
-  final Offset direction;
-
-  /// Trail length as a fraction of the canvas width.
-  final double length;
-
+  /// Trajectories cycled through, one per pass, so meteors do not always
+  /// appear in the same place.
+  final List<_MeteorSpawn> spawns;
   final double phase;
   final double speed;
 }
@@ -159,7 +173,7 @@ class _StarPainter extends CustomPainter {
   final double progress;
 
   /// Fraction of the loop during which a meteor is visible.
-  static const double _meteorVisible = 0.06;
+  static const double _meteorVisible = 0.05;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -182,16 +196,19 @@ class _StarPainter extends CustomPainter {
     }
 
     for (final meteor in meteors) {
-      final t = (progress * meteor.speed + meteor.phase) % 1.0;
+      final raw = progress * meteor.speed + meteor.phase;
+      final cycle = raw.floor();
+      final t = raw - cycle;
       if (t > _meteorVisible) continue;
+      final spawn = meteor.spawns[cycle % meteor.spawns.length];
       final k = t / _meteorVisible;
       final start = Offset(
-        meteor.start.dx * size.width,
-        meteor.start.dy * size.height,
+        spawn.start.dx * size.width,
+        spawn.start.dy * size.height,
       );
       final travel = 0.35 * size.width * k;
-      final head = start + meteor.direction * travel;
-      final tail = head - meteor.direction * (meteor.length * size.width);
+      final head = start + spawn.direction * travel;
+      final tail = head - spawn.direction * (spawn.length * size.width);
       final alpha = math.sin(math.pi * k).clamp(0.0, 1.0);
       final meteorPaint = Paint()
         ..shader = ui.Gradient.linear(
