@@ -4,6 +4,7 @@ import 'package:forui/forui.dart';
 import '../l10n/app_localizations.dart';
 import '../services/database_service.dart';
 import '../services/llm_service.dart';
+import '../widgets/twinkling_stars.dart';
 import 'hexagram_browser_screen.dart';
 import 'history_screen.dart';
 import 'profile_screen.dart';
@@ -104,8 +105,16 @@ class _HomeShellState extends State<HomeShell> {
         _tabs[i] ?? const SizedBox.shrink(),
     ];
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      body: IndexedStack(index: _index, children: tabs),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Immersive night sky behind every tab (issue #28).
+          if (isDark) const TwinklingStars(),
+          IndexedStack(index: _index, children: tabs),
+        ],
+      ),
       bottomNavigationBar: FBottomNavigationBar(
         index: _index,
         onChange: _select,
