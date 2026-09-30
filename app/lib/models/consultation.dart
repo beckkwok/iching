@@ -13,8 +13,8 @@ class Consultation {
 
   final String explanation;
 
-  /// Feedback rating (1-5, where 5 = very satisfied), set after the response.
-  final int? rating;
+  /// Feedback reaction key (see `Reaction`), set after the response.
+  final String? reaction;
 
   /// Optional user comment.
   final String? comment;
@@ -29,7 +29,7 @@ class Consultation {
     required this.hexagramName,
     required this.hexagramContent,
     required this.explanation,
-    this.rating,
+    this.reaction,
     this.comment,
     required this.createdAt,
   });
@@ -42,7 +42,7 @@ class Consultation {
       'hexagram_name': hexagramName,
       'hexagram_content': hexagramContent,
       'explanation': explanation,
-      'rating': rating,
+      'reaction': reaction,
       'comment': comment,
       'created_at': createdAt.toIso8601String(),
     };
@@ -59,7 +59,7 @@ class Consultation {
       hexagramName: map['hexagram_name'] as String,
       hexagramContent: map['hexagram_content'] as String,
       explanation: map['explanation'] as String,
-      rating: map['rating'] as int?,
+      reaction: map['reaction'] as String?,
       comment: map['comment'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),
     );
@@ -81,11 +81,11 @@ class Consultation {
           hexagramName == other.hexagramName &&
           hexagramContent == other.hexagramContent &&
           explanation == other.explanation &&
-          rating == other.rating &&
+          reaction == other.reaction &&
           comment == other.comment &&
           createdAt == other.createdAt;
 
   @override
   int get hashCode => Object.hash(id, question, questionTypeLabel, hexagramCode,
-      hexagramName, hexagramContent, explanation, rating, comment, createdAt);
+      hexagramName, hexagramContent, explanation, reaction, comment, createdAt);
 }

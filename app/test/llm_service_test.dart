@@ -137,6 +137,18 @@ void main() {
         explanation: 'e',
       );
       expect(prompt, isNot(contains("User's comment")));
+      expect(prompt, isNot(contains("User's reaction")));
+    });
+
+    test('buildMemoryPrompt includes the reaction when provided', () {
+      final prompt = LlmService.buildMemoryPrompt(
+        question: 'q',
+        hexagramName: 'h',
+        explanation: 'e',
+        reaction: '❤️',
+      );
+      expect(prompt, contains("User's reaction"));
+      expect(prompt, contains('❤️'));
     });
 
     test('parseMemoryExtraction parses a JSON response', () {
