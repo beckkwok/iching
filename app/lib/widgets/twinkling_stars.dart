@@ -10,7 +10,7 @@ class TwinklingStars extends StatefulWidget {
   const TwinklingStars({
     super.key,
     this.starCount = 60,
-    this.meteorCount = 6,
+    this.meteorCount = 10,
   });
 
   /// The sky's background gradient — deepest at the top, lifted toward the
@@ -89,7 +89,8 @@ class _TwinklingStarsState extends State<TwinklingStars>
       return _Meteor(
         spawns: spawns,
         phase: random.nextDouble(),
-        speed: 0.3 + random.nextDouble() * 0.4,
+        // A wide range gives a mix of slow drifters and fast streaks.
+        speed: 0.2 + random.nextDouble() * 1.3,
       );
     });
   }
