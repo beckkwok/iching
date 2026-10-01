@@ -201,6 +201,8 @@ class AppLocalizations {
   String get tapForDetails => _t('Tap for details', '點擊查看詳情');
   String get linePattern => _t('Line pattern', '爻象');
   String get noCastDetails => _t('No cast details available.', '無起卦詳情。');
+  String get changedHexagram =>
+      _t('Changed hexagram (future state)', '變卦（未來之象）');
   String get getExplanation => _t('Get Explanation', '取得解讀');
 
   // --- Explanation ------------------------------------------------------
