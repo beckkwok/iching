@@ -12,9 +12,16 @@ class _FakeDb extends DatabaseService {
   _FakeDb(this._items) : super(databasePath: ':memory:');
 
   final List<Consultation> _items;
+  final List<int> deletedIds = [];
 
   @override
   Future<List<Consultation>> getConsultations() async => _items;
+
+  @override
+  Future<void> deleteConsultation(int id) async {
+    deletedIds.add(id);
+    _items.removeWhere((c) => c.id == id);
+  }
 }
 
 const _content46 = '''
@@ -38,6 +45,7 @@ const _content46 = '''
 ''';
 
 Consultation _consultation() => Consultation(
+      id: 1,
       question: 'Should I move?',
       questionTypeLabel: 'Timing',
       hexagramCode: 46,
@@ -75,6 +83,26 @@ void main() {
     // Feedback: the love reaction + the user's comment.
     expect(find.text('❤️'), findsOneWidget);
     expect(find.text('I feel hopeful about the move.'), findsOneWidget);
+  });
+
+  testWidgets('deleting a consultation removes it after confirmation',
+      (tester) async {
+    final db = _FakeDb([_consultation()]);
+
+    await tester.pumpWidget(
+      MaterialApp(home: HistoryScreen(databaseService: db)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.delete_outline));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete this entry?'), findsOneWidget);
+
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+
+    expect(db.deletedIds, [1]);
+    expect(find.textContaining('No consultations yet'), findsOneWidget);
   });
 
   testWidgets('tapping a consultation opens the hexagram detail',

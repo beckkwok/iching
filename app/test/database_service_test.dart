@@ -144,6 +144,46 @@ void main() {
       expect(all.first.reaction, 'love');
       expect(all.first.comment, 'Helpful');
     });
+
+    test('deleteConsultation removes a single consultation', () async {
+      final first = await service.createConsultation(Consultation(
+        question: 'first',
+        hexagramCode: 1,
+        hexagramName: '乾為天',
+        hexagramContent: '{}',
+        explanation: 'e',
+        createdAt: DateTime(2026, 1, 1),
+      ));
+      await service.createConsultation(Consultation(
+        question: 'second',
+        hexagramCode: 2,
+        hexagramName: '坤為地',
+        hexagramContent: '{}',
+        explanation: 'e',
+        createdAt: DateTime(2026, 1, 2),
+      ));
+
+      await service.deleteConsultation(first.id!);
+
+      final all = await service.getConsultations();
+      expect(all, hasLength(1));
+      expect(all.first.question, 'second');
+    });
+
+    test('deleteAllConsultations removes everything', () async {
+      await service.createConsultation(Consultation(
+        question: 'q',
+        hexagramCode: 1,
+        hexagramName: '乾為天',
+        hexagramContent: '{}',
+        explanation: 'e',
+        createdAt: DateTime(2026, 1, 1),
+      ));
+
+      await service.deleteAllConsultations();
+
+      expect(await service.getConsultations(), isEmpty);
+    });
   });
 
   // ---------------------------------------------------------------------------
