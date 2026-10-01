@@ -154,7 +154,7 @@ class _ManualCastScreenState extends State<ManualCastScreen> {
                     ),
                   ),
                 ),
-                HexagramView(lines: _lines, width: 96),
+                HexagramView(lines: _lines),
                 const SizedBox(height: 8),
                 Text(
                   _resolving
