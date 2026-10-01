@@ -101,6 +101,7 @@ class GuaGenerator {
   Future<GenerationResult> resolveCast(
     List<bool> lines, {
     List<YaoLineType> lineTypes = const [],
+    GeneratorMethod method = GeneratorMethod.systemGenerated,
   }) async {
     if (lines.length != 6) {
       throw ArgumentError.value(
@@ -109,7 +110,7 @@ class GuaGenerator {
     final list = await _guaList;
     return GenerationResult(
       gua: _resolveGua(list, lines),
-      method: GeneratorMethod.systemGenerated,
+      method: method,
       lines: lines,
       lineTypes: lineTypes,
     );

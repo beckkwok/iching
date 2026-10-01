@@ -6,6 +6,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:app/l10n/app_localizations.dart';
 import 'package:app/models/question_type.dart';
 import 'package:app/screens/cast_result_screen.dart';
+import 'package:app/screens/manual_cast_screen.dart';
 import 'package:app/screens/question_form_screen.dart';
 import 'package:app/services/database_service.dart';
 import 'package:app/services/gua_generator.dart';
@@ -74,21 +75,23 @@ void main() {
     expect(find.text('Question type'), findsOneWidget);
     expect(find.text('Your question'), findsOneWidget);
     expect(find.text('Submit Question'), findsOneWidget);
-    expect(find.text('Help me to generate hexagram'), findsOneWidget);
+    expect(find.text('Casting method'), findsOneWidget);
+    expect(find.text('Quick Generate'), findsOneWidget);
+    expect(find.text('Manual'), findsOneWidget);
     expect(find.byType(TextFormField), findsOneWidget);
     expect(find.byType(DropdownButtonFormField<QuestionType>), findsOneWidget);
-    expect(find.byType(CheckboxListTile), findsOneWidget);
+    expect(find.byType(SegmentedButton<CastMethod>), findsOneWidget);
   });
 
-  testWidgets('hexagram checkbox defaults to checked', (tester) async {
+  testWidgets('casting method defaults to quick generate', (tester) async {
     await tester.pumpWidget(
       MaterialApp(home: buildForm()),
     );
 
-    final checkbox = tester.widget<CheckboxListTile>(
-      find.byType(CheckboxListTile),
+    final segmented = tester.widget<SegmentedButton<CastMethod>>(
+      find.byType(SegmentedButton<CastMethod>),
     );
-    expect(checkbox.value, isTrue);
+    expect(segmented.selected, {CastMethod.quick});
   });
 
   testWidgets('submit without input shows validation errors', (tester) async {
@@ -132,7 +135,8 @@ void main() {
     expect(find.textContaining('卦'), findsWidgets);
   });
 
-  testWidgets('submitting with hexagram disabled shows a hint', (tester) async {
+  testWidgets('submitting with manual method opens the manual cast screen',
+      (tester) async {
     await tester.pumpWidget(
       MaterialApp(home: buildForm()),
     );
@@ -146,17 +150,20 @@ void main() {
       find.byType(TextFormField),
       'Should I take the new job?',
     );
-    await tester.tap(find.byType(CheckboxListTile));
+    await tester.tap(find.text('Manual'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Submit Question'));
+    for (var i = 0; i < 5; i++) {
+      await tester.runAsync(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+      await tester.pump();
+    }
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('Enable hexagram generation to begin your reading.'),
-      findsOneWidget,
-    );
-    expect(find.byType(CastResultScreen), findsNothing);
+    expect(find.byType(ManualCastScreen), findsOneWidget);
+    expect(find.text('Choose the six lines'), findsOneWidget);
   });
 
   testWidgets('first page renders Chinese when the locale is zh',
