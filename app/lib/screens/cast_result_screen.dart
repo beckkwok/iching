@@ -161,6 +161,60 @@ class CastResultScreen extends StatelessWidget {
             ),
           const SizedBox(height: 16),
 
+          // Changed hexagram (issue #42): the flipped future state. Tapping
+          // opens its full detail screen.
+          if (result.changedGua != null) ...[
+            Card(
+              clipBehavior: Clip.antiAlias,
+              elevation: 1,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: theme.colorScheme.outlineVariant),
+              ),
+              child: InkWell(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          HexagramDetailScreen(gua: result.changedGua!),
+                    ),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Text(
+                        l10n.changedHexagram,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        result.changedGua!.guaName,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      HexagramView(lines: result.changedLines),
+                      const SizedBox(height: 8),
+                      Text(
+                        l10n.tapForDetails,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
           // 結果 — a quick, non-LLM reading: 象徵意義 + 爻辭 (modern 通解).
           if (content != null) ...[
             _ResultSection(
