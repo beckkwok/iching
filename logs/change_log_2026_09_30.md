@@ -81,3 +81,43 @@ The reactions are fed to the agent-memory extraction.
 ### Verification
 - `flutter analyze` — 3 pre-existing info lints (unrelated)
 - `flutter test` — 196 tests pass
+
+## Task: Per-topic feelings in agent memory (issue #26)
+
+Per the issue comment:
+1. Storage: a JSON map (no normalization); the Profile screen should reflect the
+   changes.
+2. Topics: reuse `QuestionType`, but the design must tolerate question types
+   being added/renamed later.
+3. Keep a global feeling summary in addition to the per-topic ones.
+
+### Design
+- `AgentMemory.feelings` is a `Map<String, String>` (topic key → feeling),
+  JSON-encoded in a new `feelings TEXT` column (DB v12). Keys are
+  `QuestionType.name`, so an unknown/renamed key still decodes and is shown
+  verbatim (the Profile screen localizes a key only when it matches a known
+  `QuestionType`).
+- The global `feeling` is kept and updated as before.
+- The extraction prompt now asks for `topic_feeling` (this consultation's topic)
+  alongside the overall `feeling`.
+
+### Changes
+- `lib/models/agent_memory.dart`: added `feelings` (map) + `feelingFor`, JSON
+  encode/decode, equality.
+- `lib/services/database_service.dart`: DB v12; `feelings TEXT` column +
+  `_addAgentMemoryFeelingsColumn` migration; `mergeAgentMemory` takes optional
+  `topicKey`/`topicFeeling` and merges them into the map.
+- `lib/services/llm_service.dart`: `MemoryExtraction.topicFeeling`;
+  `extractMemory`/`buildMemoryPrompt` take an optional `topicLabel` and request
+  `topic_feeling`; `parseMemoryExtraction` parses it.
+- `lib/screens/explanation_screen.dart`: carries the `QuestionType` and passes
+  the topic label to `extractMemory` and the topic key to `mergeAgentMemory`.
+- `lib/screens/cast_result_screen.dart`: forwards `questionType`.
+- `lib/screens/profile_screen.dart` + `lib/l10n/app_localizations.dart`: a new
+  "How you feel by topic" section mapping keys to localized labels.
+- Tests: `database_service_test` (per-topic merge), `profile_screen_test`
+  (topic display), `explanation_screen_test`, `llm_service_test`.
+
+### Verification
+- `flutter analyze` — 3 pre-existing info lints (unrelated)
+- `flutter test` — 199 tests pass

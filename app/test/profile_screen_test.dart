@@ -36,6 +36,7 @@ void main() {
     final db = _FakeDb(
       memory: AgentMemory(
         feeling: 'hopeful about a change',
+        feelings: const {'careerAchievement': 'excited but nervous'},
         facts: ['considering a job change'],
         preferences: ['values stability'],
         updatedAt: DateTime(2026, 9, 23),
@@ -63,6 +64,11 @@ void main() {
     expect(find.text('Agent Memory'), findsOneWidget);
     expect(find.text('How you might feel'), findsOneWidget);
     expect(find.text('hopeful about a change'), findsOneWidget);
+    expect(find.text('How you feel by topic'), findsOneWidget);
+    expect(
+      find.text('Career Achievement: excited but nervous'),
+      findsOneWidget,
+    );
     expect(find.text('Facts about you'), findsOneWidget);
     expect(find.text('considering a job change'), findsOneWidget);
     expect(find.text('Your preferences'), findsOneWidget);

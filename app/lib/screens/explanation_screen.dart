@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../models/consultation.dart';
 import '../models/language_preference.dart';
+import '../models/question_type.dart';
 import '../models/reaction.dart';
 import '../services/database_service.dart';
 import '../services/gua_generator.dart';
@@ -21,6 +22,10 @@ import 'hexagram_detail_screen.dart';
 class ExplanationScreen extends StatefulWidget {
   final String question;
   final String? questionTypeLabel;
+
+  /// The category of the question, used to key per-topic agent memory (#26).
+  final QuestionType? questionType;
+
   final GenerationResult result;
   final LlmService? llmService;
 
@@ -35,6 +40,7 @@ class ExplanationScreen extends StatefulWidget {
     required this.question,
     required this.result,
     this.questionTypeLabel,
+    this.questionType,
     this.llmService,
     this.databaseService,
     this.language = LanguagePreference.english,
@@ -160,10 +166,13 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
         explanation: _explanation ?? '',
         comment: comment,
         reaction: reaction?.emoji,
+        topicLabel: widget.questionTypeLabel,
       );
       if (extraction == null) return;
       await db.mergeAgentMemory(
         feeling: extraction.feeling,
+        topicKey: widget.questionType?.name,
+        topicFeeling: extraction.topicFeeling,
         facts: extraction.facts,
         preferences: extraction.preferences,
       );

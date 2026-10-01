@@ -177,5 +177,28 @@ void main() {
       );
       expect(memory.preferences.toSet(), {'values stability', 'values growth'});
     });
+
+    test('mergeAgentMemory records per-topic feelings alongside the global one',
+        () async {
+      await service.mergeAgentMemory(
+        feeling: 'hopeful overall',
+        topicKey: 'careerAchievement',
+        topicFeeling: 'eager but cautious',
+        facts: const [],
+        preferences: const [],
+      );
+      await service.mergeAgentMemory(
+        feeling: 'reflective',
+        topicKey: 'timing',
+        topicFeeling: 'waiting patiently',
+        facts: const [],
+        preferences: const [],
+      );
+
+      final memory = await service.getAgentMemory();
+      expect(memory!.feeling, 'reflective');
+      expect(memory.feelingFor('careerAchievement'), 'eager but cautious');
+      expect(memory.feelingFor('timing'), 'waiting patiently');
+    });
   });
 }
