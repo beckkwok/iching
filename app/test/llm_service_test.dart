@@ -151,6 +151,26 @@ void main() {
       expect(prompt, contains('❤️'));
     });
 
+    test('buildMemoryPrompt includes the topic label when provided', () {
+      final prompt = LlmService.buildMemoryPrompt(
+        question: 'q',
+        hexagramName: 'h',
+        explanation: 'e',
+        topicLabel: 'Career Achievement',
+      );
+      expect(prompt, contains('Question topic: Career Achievement'));
+    });
+
+    test('parseMemoryExtraction parses topic_feeling', () {
+      final extraction = LlmService.parseMemoryExtraction(
+        '{"feeling": "overall", "topic_feeling": "career nerves", '
+        '"facts": [], "preferences": []}',
+      );
+      expect(extraction, isNotNull);
+      expect(extraction!.feeling, 'overall');
+      expect(extraction.topicFeeling, 'career nerves');
+    });
+
     test('parseMemoryExtraction parses a JSON response', () {
       final extraction = LlmService.parseMemoryExtraction(
         '{"feeling": "hopeful", "facts": ["job change"], '

@@ -15,7 +15,7 @@ class DatabaseService {
   static const String _agentMemoryTable = 'agent_memory';
 
   /// The database version for migration tracking.
-  static const int _databaseVersion = 11;
+  static const int _databaseVersion = 12;
 
   /// Custom database path (used for in-memory testing).
   final String? _customPath;
@@ -106,6 +106,7 @@ class DatabaseService {
       CREATE TABLE IF NOT EXISTS $_agentMemoryTable (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         feeling TEXT NOT NULL,
+        feelings TEXT NOT NULL DEFAULT '{}',
         facts TEXT NOT NULL,
         preferences TEXT NOT NULL,
         updated_at TEXT NOT NULL
@@ -161,6 +162,10 @@ class DatabaseService {
       // v10 → v11: add the `reaction` column (emoji reactions) — issue #27.
       await _addConsultationReactionColumn(db);
     }
+    if (oldVersion < 12) {
+      // v11 → v12: add the `feelings` map (per-topic feelings) — issue #26.
+      await _addAgentMemoryFeelingsColumn(db);
+    }
   }
 
   /// Adds the `hexagram_content` column to the consultations table if it is
@@ -205,6 +210,19 @@ class DatabaseService {
     if (!names.contains('reaction')) {
       await db.execute(
         "ALTER TABLE $_consultationsTable ADD COLUMN reaction TEXT",
+      );
+    }
+  }
+
+  /// Adds the `feelings` column to the agent memory table if it is missing
+  /// (per-topic feelings, issue #26).
+  Future<void> _addAgentMemoryFeelingsColumn(Database db) async {
+    final columns = await db.rawQuery('PRAGMA table_info($_agentMemoryTable)');
+    final names = columns.map((c) => c['name']).toSet();
+    if (!names.contains('feelings')) {
+      await db.execute(
+        "ALTER TABLE $_agentMemoryTable "
+        "ADD COLUMN feelings TEXT NOT NULL DEFAULT '{}'",
       );
     }
   }
@@ -305,18 +323,28 @@ class DatabaseService {
     return AgentMemory.fromMap(rows.first);
   }
 
-  /// Merge an extraction into the agent memory: replace the feeling, and
-  /// accumulate facts/preferences (de-duplicated).
+  /// Merge an extraction into the agent memory: replace the overall [feeling],
+  /// record the [topicFeeling] under [topicKey], and accumulate
+  /// facts/preferences (de-duplicated).
   Future<void> mergeAgentMemory({
     required String feeling,
+    String? topicKey,
+    String? topicFeeling,
     required List<String> facts,
     required List<String> preferences,
   }) async {
     final db = await database;
     final existing = await getAgentMemory();
+    final mergedFeelings = <String, String>{...?existing?.feelings};
+    if (topicKey != null &&
+        topicFeeling != null &&
+        topicFeeling.isNotEmpty) {
+      mergedFeelings[topicKey] = topicFeeling;
+    }
     final merged = AgentMemory(
       id: existing?.id,
       feeling: feeling,
+      feelings: mergedFeelings,
       facts: <String>{...?existing?.facts, ...facts}.toList(),
       preferences: <String>{...?existing?.preferences, ...preferences}.toList(),
       updatedAt: DateTime.now(),

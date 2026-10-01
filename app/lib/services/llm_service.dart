@@ -289,6 +289,7 @@ class LlmService {
     required String explanation,
     String? comment,
     String? reaction,
+    String? topicLabel,
   }) async {
     if (_chat == null) {
       await openExplanationChat();
@@ -300,6 +301,7 @@ class LlmService {
       explanation: explanation,
       comment: comment,
       reaction: reaction,
+      topicLabel: topicLabel,
     );
 
     await _chat!.addQuery(Message(text: prompt, isUser: true));
@@ -325,6 +327,7 @@ class LlmService {
     required String explanation,
     String? comment,
     String? reaction,
+    String? topicLabel,
   }) {
     final commentLine = (comment != null && comment.isNotEmpty)
         ? 'User\'s comment: "$comment"\n'
@@ -332,9 +335,13 @@ class LlmService {
     final reactionLine = (reaction != null && reaction.isNotEmpty)
         ? 'User\'s reaction to the answer: $reaction\n'
         : '';
+    final topicLine = (topicLabel != null && topicLabel.isNotEmpty)
+        ? 'Question topic: $topicLabel\n'
+        : '';
     return 'A user asked an I-Ching question and received a hexagram and an '
         'explanation.\n\n'
         'Question: "$question"\n'
+        '$topicLine'
         'Hexagram: $hexagramName\n'
         'Explanation: $explanation\n'
         '$commentLine'
@@ -343,7 +350,9 @@ class LlmService {
         'Extract a concise profile of the user. Respond in JSON only, with '
         'this exact shape:\n'
         '{"feeling": "one short sentence about how the user seems to feel '
-        'about this topic", '
+        'overall", '
+        '"topic_feeling": "one short sentence about how the user seems to feel '
+        'about this specific topic", '
         '"facts": ["a fact about the user"], '
         '"preferences": ["a preference or value the user expressed"]}\n'
         'Keep each fact and preference to a few words. Use empty arrays when '
@@ -360,11 +369,18 @@ class LlmService {
       final decoded =
           jsonDecode(text.substring(start, end + 1)) as Map<String, dynamic>;
       final feeling = (decoded['feeling'] as String? ?? '').trim();
+      final topicFeeling = (decoded['topic_feeling'] as String? ?? '').trim();
       final facts = _stringList(decoded['facts']);
       final preferences = _stringList(decoded['preferences']);
-      if (feeling.isEmpty && facts.isEmpty && preferences.isEmpty) return null;
+      if (feeling.isEmpty &&
+          topicFeeling.isEmpty &&
+          facts.isEmpty &&
+          preferences.isEmpty) {
+        return null;
+      }
       return MemoryExtraction(
         feeling: feeling,
+        topicFeeling: topicFeeling,
         facts: facts,
         preferences: preferences,
       );
@@ -419,12 +435,18 @@ class LlmService {
 
 /// The parsed result of a memory extraction.
 class MemoryExtraction {
+  /// Overall summary of how the user seems to feel.
   final String feeling;
+
+  /// How the user seems to feel about the current consultation's topic.
+  final String topicFeeling;
+
   final List<String> facts;
   final List<String> preferences;
 
   const MemoryExtraction({
     required this.feeling,
+    this.topicFeeling = '',
     required this.facts,
     required this.preferences,
   });

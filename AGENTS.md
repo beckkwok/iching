@@ -195,7 +195,8 @@ directly from JSON assets (`assets/hexagrams/gua_<n>.json`) via `HexagramLoader`
 | Column      | Type    | Notes                       |
 |------------|---------|-----------------------------|
 | id         | INTEGER | PK, AUTOINCREMENT (single row) |
-| feeling    | TEXT    | LLM summary of the user's inferred feelings |
+| feeling    | TEXT    | overall LLM summary of the user's inferred feelings |
+| feelings   | TEXT    | JSON map of per-topic feelings, keyed by `QuestionType` name (issue #26) |
 | facts      | TEXT    | JSON array of extracted facts |
 | preferences| TEXT    | JSON array of derived preferences |
 | updated_at | TEXT    | ISO 8601                    |
@@ -212,7 +213,7 @@ directly from JSON assets (`assets/hexagrams/gua_<n>.json`) via `HexagramLoader`
 - **Model startup**: production auto-selects and downloads `ModelCatalog.defaultModel` (Qwen3-0.6B) on first launch; the model-selection grid is development-only, gated by `AppConfig.allowModelSelection` (`--dart-define=ALLOW_MODEL_SELECTION`, defaults to `kDebugMode`). Internet is used only to download the model; no personal data is uploaded.
 - **`.litertlm` platform support**: the model requires an **arm64-v8a** Android device (or Windows desktop). The x86_64 Android emulator cannot run it.
 - **Mobile shell** (`HomeShell`): a `forui` `FBottomNavigationBar` hosts five tabs — History, Profile, Ask, Browse, Preference — with pure-Flutter animated Material icons (no native animation dependency). The header bar was removed (issue #6). History lists the recorded consultations (issue #8); Profile shows the agent memory (issue #3).
-- **Agent memory** (issue #3): after each explanation, and again after feedback, `LlmService.extractMemory` returns a JSON profile (`feeling`, `facts`, `preferences`) that `DatabaseService.mergeAgentMemory` accumulates (facts/preferences de-duplicated, feeling replaced). The Profile tab reads `getAgentMemory()` + the latest consultation. The personalized greeting is a deferred follow-up; the star rating will be replaced by emoji reactions in a separate issue.
+- **Agent memory** (issues #3, #26, #27): after each explanation, and again after feedback, `LlmService.extractMemory` returns a JSON profile (`feeling` overall, `topic_feeling` for the current question type, `facts`, `preferences`) that `DatabaseService.mergeAgentMemory` accumulates (facts/preferences de-duplicated, the overall feeling replaced, per-topic feelings keyed by `QuestionType` name). Feedback is an emoji reaction (issue #27). The Profile tab reads `getAgentMemory()` + the latest consultation and shows the per-topic feelings. The personalized greeting is a deferred follow-up.
 
 ---
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../models/agent_memory.dart';
 import '../models/consultation.dart';
+import '../models/question_type.dart';
 import '../services/database_service.dart';
 
 /// Shows the agent memory: the last consultation and the LLM-derived profile
@@ -115,6 +116,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(_memory!.feeling, style: theme.textTheme.bodyMedium),
                     const SizedBox(height: 12),
                   ],
+                  if (_memory!.feelings.isNotEmpty) ...[
+                    _sectionTitle(theme, l10n.memoryTopics),
+                    for (final entry in _memory!.feelings.entries)
+                      _bullet(
+                        theme,
+                        '${_topicLabel(l10n, entry.key)}: ${entry.value}',
+                      ),
+                    const SizedBox(height: 12),
+                  ],
                   if (_memory!.facts.isNotEmpty) ...[
                     _sectionTitle(theme, l10n.memoryFacts),
                     ..._memory!.facts.map((f) => _bullet(theme, f)),
@@ -131,6 +141,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
+  }
+
+  /// Localized label for a stored topic key. Falls back to the raw key when the
+  /// key is unknown (e.g. a question type that was later renamed/removed).
+  String _topicLabel(AppLocalizations l10n, String key) {
+    for (final type in QuestionType.values) {
+      if (type.name == key) return l10n.questionTypeLabel(type);
+    }
+    return key;
   }
 
   Widget _card(ThemeData theme, {required String title, required Widget child}) {
