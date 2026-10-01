@@ -49,6 +49,7 @@ class AppLocalizations {
   String get lastConsultation => _t('Last consultation', '最近諮詢');
   String get memoryTitle => _t('Agent Memory', '智能記憶');
   String get memoryFeeling => _t('How you might feel', '你可能的心情');
+  String get memoryTopics => _t('How you feel by topic', '各類主題的心情');
   String get memoryFacts => _t('Facts about you', '關於你的事實');
   String get memoryPreferences => _t('Your preferences', '你的偏好');
   String get memoryEmpty => _t(
