@@ -7,6 +7,11 @@ import '../services/gua_generator.dart';
 import '../services/llm_service.dart';
 import '../widgets/gradient_button.dart';
 import 'cast_result_screen.dart';
+import 'manual_cast_screen.dart';
+
+/// How the hexagram is produced (issue #20). "Full Generate" is tracked
+/// separately in issue #51.
+enum CastMethod { quick, manual }
 
 /// First screen of the consultation flow: asks the user what kind of question
 /// they want to ask, captures the exact question text, and submits it.
@@ -36,7 +41,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _questionController = TextEditingController();
   QuestionType? _selectedType;
-  bool _generateHexagram = true;
+  CastMethod _method = CastMethod.quick;
   bool _isSubmitting = false;
 
   @override
@@ -55,41 +60,54 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
     // Send the category in the active language (shown on the explanation page).
     final typeLabel = l10n.questionTypeLabel(type);
 
+    final db = widget.databaseService;
+    if (db == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.enableGenerationHint)),
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
     try {
-      if (_generateHexagram) {
-        // Cast a hexagram and show the result with its yao line types.
-        final db = widget.databaseService;
-        if (db != null) {
-          // Load the user's language preference for the explanation prompt.
-          final langCode = await db.getSetting(LanguagePreference.settingsKey);
-          final language = LanguagePreference.fromCode(langCode);
+      // Load the user's language preference for the explanation prompt.
+      final langCode = await db.getSetting(LanguagePreference.settingsKey);
+      final language = LanguagePreference.fromCode(langCode);
+      final generator = widget.guaGenerator ?? GuaGenerator();
+      if (!mounted) return;
 
-          final generator = widget.guaGenerator ?? GuaGenerator();
-          final result = await generator.generateRandom();
-          if (!mounted) return;
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => CastResultScreen(
-                result: result,
-                question: question,
-                questionTypeLabel: typeLabel,
-                questionType: type,
-                llmService: widget.llmService,
-                databaseService: widget.databaseService,
-                language: language,
-              ),
+      if (_method == CastMethod.manual) {
+        // Build the hexagram line by line (issue #20).
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ManualCastScreen(
+              question: question,
+              questionTypeLabel: typeLabel,
+              questionType: type,
+              generator: generator,
+              llmService: widget.llmService,
+              databaseService: widget.databaseService,
+              language: language,
             ),
-          );
-          return;
-        }
+          ),
+        );
+        return;
       }
 
-      // No DB or generation disabled — nothing to show yet.
+      // Quick generate: cast a random hexagram and show the result.
+      final result = await generator.generateRandom();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).enableGenerationHint),
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => CastResultScreen(
+            result: result,
+            question: question,
+            questionTypeLabel: typeLabel,
+            questionType: type,
+            llmService: widget.llmService,
+            databaseService: widget.databaseService,
+            language: language,
+          ),
         ),
       );
     } finally {
@@ -180,15 +198,28 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                       ),
                       const SizedBox(height: 8),
 
-                      // Generate hexagram toggle
-                      CheckboxListTile(
-                        value: _generateHexagram,
-                        onChanged: (value) =>
-                            setState(() => _generateHexagram = value ?? true),
-                        title: Text(l10n.generateHexagram),
-                        controlAffinity: ListTileControlAffinity.leading,
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
+                      // Casting method
+                      Text(
+                        l10n.castingMethod,
+                        style: theme.textTheme.labelLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      SegmentedButton<CastMethod>(
+                        segments: [
+                          ButtonSegment(
+                            value: CastMethod.quick,
+                            icon: const Icon(Icons.casino_outlined),
+                            label: Text(l10n.quickGenerate),
+                          ),
+                          ButtonSegment(
+                            value: CastMethod.manual,
+                            icon: const Icon(Icons.tune),
+                            label: Text(l10n.manualGenerate),
+                          ),
+                        ],
+                        selected: {_method},
+                        onSelectionChanged: (selection) =>
+                            setState(() => _method = selection.first),
                       ),
                       const SizedBox(height: 24),
 
