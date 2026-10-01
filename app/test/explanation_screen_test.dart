@@ -264,6 +264,8 @@ class _RecordingDb extends DatabaseService {
   @override
   Future<void> mergeAgentMemory({
     required String feeling,
+    String? topicKey,
+    String? topicFeeling,
     required List<String> facts,
     required List<String> preferences,
   }) async {
@@ -280,9 +282,11 @@ class _MemoryLlm extends FakeLlmService {
     required String explanation,
     String? comment,
     String? reaction,
+    String? topicLabel,
   }) async {
     return MemoryExtraction(
       feeling: comment == null ? 'hopeful' : 'hopeful and reflective',
+      topicFeeling: 'both eager and cautious',
       facts: const ['considering a job change'],
       preferences: const ['values stability'],
     );

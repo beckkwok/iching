@@ -182,6 +182,7 @@ class CastResultScreen extends StatelessWidget {
                       builder: (_) => ExplanationScreen(
                         question: question!,
                         questionTypeLabel: questionTypeLabel,
+                        questionType: questionType,
                         result: result,
                         llmService: llmService,
                         databaseService: databaseService,
