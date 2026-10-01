@@ -59,6 +59,15 @@ void main() {
     expect(find.text('Use this hexagram'), findsOneWidget);
   });
 
+  testWidgets('hexagram figure is taller than it is wide', (tester) async {
+    await pumpManual(tester);
+
+    final figure = find.byType(HexagramView);
+    expect(figure, findsOneWidget);
+    final size = tester.getSize(figure);
+    expect(size.height, greaterThan(size.width));
+  });
+
   testWidgets('tapping a line lets the user change its type', (tester) async {
     await pumpManual(tester);
 
