@@ -208,4 +208,44 @@ void main() {
       expect(systemGenerated, contains('at the user\'s request'));
     });
   });
+
+  group('changed hexagram', () {
+    test('resolveCast has no changed hexagram when nothing changes',
+        () async {
+      const lines = [true, true, true, true, true, true];
+      final result = await generator.resolveCast(
+        lines,
+        lineTypes: const [
+          YaoLineType.youngYang,
+          YaoLineType.youngYang,
+          YaoLineType.youngYang,
+          YaoLineType.youngYang,
+          YaoLineType.youngYang,
+          YaoLineType.youngYang,
+        ],
+      );
+
+      expect(result.changedGua, isNull);
+      expect(result.changedLines, lines);
+    });
+
+    test('resolveCast flips changing lines into a changed hexagram',
+        () async {
+      final result = await generator.resolveCast(
+        const [false, false, false, false, false, false],
+        lineTypes: const [
+          YaoLineType.oldYin,
+          YaoLineType.youngYin,
+          YaoLineType.youngYin,
+          YaoLineType.youngYin,
+          YaoLineType.youngYin,
+          YaoLineType.youngYin,
+        ],
+      );
+
+      expect(result.changedLines, [true, false, false, false, false, false]);
+      expect(result.changedGua, isNotNull);
+      expect(result.changedGua!.guaCode, isNot(result.gua.guaCode));
+    });
+  });
 }
