@@ -310,6 +310,18 @@ class DatabaseService {
     return rows.map(Consultation.fromMap).toList();
   }
 
+  /// Delete a single consultation by [id] (issue #45).
+  Future<void> deleteConsultation(int id) async {
+    final db = await database;
+    await db.delete(_consultationsTable, where: 'id = ?', whereArgs: [id]);
+  }
+
+  /// Delete all consultations (issue #45).
+  Future<void> deleteAllConsultations() async {
+    final db = await database;
+    await db.delete(_consultationsTable);
+  }
+
   // ---------------------------------------------------------------------------
   // Agent memory CRUD
   // ---------------------------------------------------------------------------

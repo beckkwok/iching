@@ -54,6 +54,43 @@ class _HistoryScreenState extends State<HistoryScreen> {
         '${two(dt.hour)}:${two(dt.minute)}';
   }
 
+  /// Ask for confirmation, then delete [consultation] from the database and the
+  /// list (issue #45).
+  Future<void> _delete(Consultation consultation) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.deleteConsultationTitle),
+        content: Text(l10n.deleteConsultationBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final db = widget.databaseService;
+    final id = consultation.id;
+    if (db != null && id != null) {
+      await db.deleteConsultation(id);
+    }
+    if (mounted) {
+      setState(() {
+        _consultations = _consultations
+            ?.where((c) => c.id != consultation.id)
+            .toList();
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -98,6 +135,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           return _ConsultationCard(
             consultation: c,
             dateLabel: _formatDate(c.createdAt),
+            onDelete: () => _delete(c),
           );
         },
       ),
@@ -109,10 +147,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
 class _ConsultationCard extends StatelessWidget {
   final Consultation consultation;
   final String dateLabel;
+  final VoidCallback onDelete;
 
   const _ConsultationCard({
     required this.consultation,
     required this.dateLabel,
+    required this.onDelete,
   });
 
   @override
@@ -210,6 +250,14 @@ class _ConsultationCard extends StatelessWidget {
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
+                  ),
+                  IconButton(
+                    onPressed: onDelete,
+                    icon: const Icon(Icons.delete_outline),
+                    iconSize: 18,
+                    color: theme.colorScheme.onSurfaceVariant,
+                    tooltip: l10n.delete,
+                    visualDensity: VisualDensity.compact,
                   ),
                   Icon(
                     Icons.chevron_right,

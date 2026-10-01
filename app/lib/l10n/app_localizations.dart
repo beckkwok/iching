@@ -44,6 +44,13 @@ class AppLocalizations {
         'No consultations yet. Ask a question to get started.',
         '尚無諮詢紀錄。請提問以開始。',
       );
+  String get delete => _t('Delete', '刪除');
+  String get deleteConsultationTitle =>
+      _t('Delete this entry?', '刪除此紀錄？');
+  String get deleteConsultationBody => _t(
+        'It will be removed from your history.',
+        '這將從您的歷史紀錄中移除。',
+      );
 
   // --- Profile / agent memory -----------------------------------------
   String get lastConsultation => _t('Last consultation', '最近諮詢');
