@@ -25,3 +25,34 @@
 ### Verification
 - `flutter analyze` — 3 pre-existing info lints (unrelated)
 - `flutter test` — 202 tests pass
+
+## Task: Manual hexagram input (issue #20)
+
+Per the issue comment, "Full Generate" is tracked separately in #51, so this adds
+**Manual** alongside the existing random **Quick Generate**.
+
+### Design
+- The "generate hexagram" checkbox becomes a `SegmentedButton` with two options:
+  Quick Generate (default, current behaviour) and Manual.
+- Choosing Manual opens `ManualCastScreen`: six yao lines (default 少陽). Tapping
+  a line offers 少陰/少陽/老陰/老陽; the resulting hexagram name is resolved live.
+  A "Use this hexagram" button proceeds to `CastResultScreen`.
+- Manual casts reuse `GenerationResult` and `resolveCast`, with a new optional
+  `method` so the prompt is framed as `GeneratorMethod.manual`.
+
+### Changes
+- `lib/services/gua_generator.dart`: `resolveCast` takes an optional
+  `GeneratorMethod method`.
+- `lib/screens/manual_cast_screen.dart` (new): the line-by-line picker.
+- `lib/screens/question_form_screen.dart`: `CastMethod` segmented control; Manual
+  opens `ManualCastScreen`, Quick keeps `generateRandom()`.
+- `lib/l10n/app_localizations.dart`: `castingMethod`, `quickGenerate`,
+  `manualGenerate`, `manualCastTitle`, `manualCastHint`, `manualCastLine`,
+  `manualCastProceed` (en/zh).
+- `AGENTS.md`: consultation-flow pattern updated.
+- Tests: `test/manual_cast_screen_test.dart` (new); `question_form_screen_test`
+  updated for the segmented control and the Manual path.
+
+### Verification
+- `flutter analyze` — 3 pre-existing info lints (unrelated)
+- `flutter test` — 205 tests pass

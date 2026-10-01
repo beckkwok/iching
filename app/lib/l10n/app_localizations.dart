@@ -86,10 +86,20 @@ class AppLocalizations {
   String get selectTypeError => _t('Please select a question type', '請選擇問題類型');
   String get enterQuestionError => _t('Please enter your question', '請輸入您的問題');
   String get generateHexagram => _t('Help me to generate hexagram', '幫我起卦');
+  String get castingMethod => _t('Casting method', '起卦方式');
+  String get quickGenerate => _t('Quick Generate', '快速起卦');
+  String get manualGenerate => _t('Manual', '手動起卦');
   String get submitQuestion => _t('Submit Question', '提交問題');
   String get casting => _t('Casting...', '起卦中…');
   String get enableGenerationHint =>
       _t('Enable hexagram generation to begin your reading.', '請啟用起卦以開始您的解讀。');
+
+  // --- Manual cast (issue #20) -----------------------------------------
+  String get manualCastTitle => _t('Choose the six lines', '選擇六爻');
+  String get manualCastHint =>
+      _t('Tap a line to change it.', '點按爻線以更改。');
+  String manualCastLine(int n) => _t('Line $n', '第$n爻');
+  String get manualCastProceed => _t('Use this hexagram', '使用此卦');
 
   /// Localized label for a consultation [QuestionType].
   String questionTypeLabel(QuestionType type) {

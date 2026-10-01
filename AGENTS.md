@@ -205,8 +205,8 @@ directly from JSON assets (`assets/hexagrams/gua_<n>.json`) via `HexagramLoader`
 
 ## 7. Key Patterns
 
-- **GuaGenerator** uses `GeneratorMethod` enum (`manual`, `systemGenerated`) with different context prompt headers per method. Casts 6 yao lines via the three-coin method (`YaoLineType`: 老陰/少陽/少陰/老陽), resolves the hexagram via `TrigramHexagramData`. Hexagrams are loaded from JSON assets through `HexagramLoader` (no DB table).
-- **Consultation flow** (form-based, low token usage): QuestionFormScreen → submit → `GuaGenerator.generateRandom()` → CastResultScreen (卦象 + per-line types) → "Get Explanation" → `LlmService.generateExplanation()` (one-shot, no multi-turn history, tool-free) → ExplanationScreen.
+- **GuaGenerator** uses `GeneratorMethod` enum (`manual`, `systemGenerated`) with different context prompt headers per method. Casts 6 yao lines via the three-coin method (`YaoLineType`: 老陰/少陽/少陰/老陽), resolves the hexagram via `TrigramHexagramData`. Hexagrams are loaded from JSON assets through `HexagramLoader` (no DB table). `resolveCast()` takes an optional `method` so manual casts are framed as `manual`.
+- **Consultation flow** (form-based, low token usage): QuestionFormScreen (choose Quick Generate or Manual) → CastResultScreen (卦象 + per-line types) → "Get Explanation" → `LlmService.generateExplanation()` (one-shot, no multi-turn history, tool-free) → ExplanationScreen. Quick Generate casts randomly via `GuaGenerator.generateRandom()`; Manual opens `ManualCastScreen` (issue #20) to pick the six lines, which resolves via `resolveCast(..., method: manual)`.
 - **LlmService** wraps flutter_gemma. `generateExplanation()` opens its own tool-free session (`openExplanationChat()`), sends one prompt combining hexagram context + question + language preference, and returns the response.
 - **Language & prompts**: `LanguagePreference` (en/cn) and a custom system prompt are stored in the `settings` table and injected into the explanation prompt.
 - **Hexagram data** is read straight from the bundled JSON assets by `HexagramLoader`. The DB migration to v6 drops any legacy `gua` table.
