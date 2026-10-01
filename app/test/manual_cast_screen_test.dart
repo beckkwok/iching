@@ -5,7 +5,6 @@ import 'package:app/screens/cast_result_screen.dart';
 import 'package:app/screens/manual_cast_screen.dart';
 import 'package:app/services/gua_generator.dart';
 import 'package:app/services/hexagram_loader.dart';
-import 'package:app/widgets/hexagram_view.dart';
 
 String _fixtureJson(int code) => '''
 {
@@ -48,21 +47,23 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('shows six lines and resolves a hexagram', (tester) async {
+  testWidgets('shows six editable lines and resolves a hexagram',
+      (tester) async {
     await pumpManual(tester);
 
     expect(find.text('Choose the six lines'), findsOneWidget);
-    expect(find.byType(HexagramView), findsOneWidget);
-    expect(find.byType(ListTile), findsNWidgets(6));
+    for (var i = 0; i < 6; i++) {
+      expect(find.byKey(ValueKey('edit-yao-$i')), findsOneWidget);
+    }
     // All six lines default to 少陽.
-    expect(find.text('少陽'), findsNWidgets(6));
+    expect(find.textContaining('少陽'), findsNWidgets(6));
     expect(find.text('Use this hexagram'), findsOneWidget);
   });
 
-  testWidgets('hexagram figure is taller than it is wide', (tester) async {
+  testWidgets('editable figure is taller than it is wide', (tester) async {
     await pumpManual(tester);
 
-    final figure = find.byType(HexagramView);
+    final figure = find.byKey(const ValueKey('edit-figure'));
     expect(figure, findsOneWidget);
     final size = tester.getSize(figure);
     expect(size.height, greaterThan(size.width));
@@ -71,7 +72,7 @@ void main() {
   testWidgets('tapping a line lets the user change its type', (tester) async {
     await pumpManual(tester);
 
-    await tester.tap(find.byType(ListTile).first);
+    await tester.tap(find.byKey(const ValueKey('edit-yao-5')));
     await tester.pumpAndSettle();
 
     // The four line types are offered.
@@ -82,8 +83,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // The chosen type is now shown on the row.
-    expect(find.text('老陰'), findsOneWidget);
-    expect(find.text('少陽'), findsNWidgets(5));
+    expect(find.textContaining('老陰'), findsOneWidget);
+    expect(find.textContaining('少陽'), findsNWidgets(5));
   });
 
   testWidgets('proceeding opens the cast result screen', (tester) async {
