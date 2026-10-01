@@ -113,6 +113,26 @@ void main() {
     expect(find.text('䷭（下巽上坤）'), findsOneWidget);
   });
 
+  testWidgets('shows the changed hexagram when lines change', (tester) async {
+    final base = _result();
+    final changed = GenerationResult(
+      gua: base.gua,
+      method: base.method,
+      lines: base.lines,
+      lineTypes: base.lineTypes,
+      changedLines: const [false, false, true, false, true, false],
+      changedGua:
+          Gua(guaCode: 47, guaName: '澤水困', guaContent: _guaJson),
+    );
+    await tester.pumpWidget(
+      MaterialApp(home: CastResultScreen(result: changed)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Changed hexagram (future state)'), findsOneWidget);
+    expect(find.text('澤水困'), findsOneWidget);
+  });
+
   testWidgets('cast result shows a hexagram figure taller than it is wide',
       (tester) async {
     await tester.pumpWidget(

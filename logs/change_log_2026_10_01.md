@@ -56,3 +56,28 @@ Per the issue comment, "Full Generate" is tracked separately in #51, so this add
 ### Verification
 - `flutter analyze` — 3 pre-existing info lints (unrelated)
 - `flutter test` — 205 tests pass
+
+## Task: Display the changed hexagram (issue #42)
+
+"Original hexagram is current state, bi gram is the change you notice and
+flipped hexagram is the possible future state."
+
+### Design
+- `GenerationResult` carries `changedLines` (the six lines after flipping every
+  老陰/老陽) and `changedGua` (`null` when nothing changes), computed in
+  `GuaGenerator.resolveCast()` so quick, manual and future casts all get them.
+- The cast-result screen shows a "Changed hexagram (future state)" card with the
+  flipped figure; tapping opens its detail screen.
+
+### Changes
+- `lib/services/gua_generator.dart`: `changedLines`/`changedGua` on
+  `GenerationResult`, resolved in `resolveCast()`.
+- `lib/screens/cast_result_screen.dart`: changed-hexagram card.
+- `lib/l10n/app_localizations.dart`: `changedHexagram` (en/zh).
+- `AGENTS.md`: key-pattern note.
+- Tests: `gua_generator_test` (flip + resolve, no-change), and
+  `cast_result_screen_test` (changed card).
+
+### Verification
+- `flutter analyze` — 3 pre-existing info lints (unrelated)
+- `flutter test` — 208 tests pass

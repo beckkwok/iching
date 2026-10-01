@@ -29,11 +29,23 @@ class GenerationResult {
   /// Empty for [GeneratorMethod.manual] or when only boolean lines are known.
   final List<YaoLineType> lineTypes;
 
+  /// The six lines after flipping every changing line (老陰/老陽), bottom → top.
+  ///
+  /// Identical to [lines] when [lineTypes] has no changing lines (or is
+  /// empty). This is the possible future state (issue #42).
+  final List<bool> changedLines;
+
+  /// The hexagram the [changedLines] resolve to, or `null` when no line is
+  /// changing (issue #42).
+  final Gua? changedGua;
+
   const GenerationResult({
     required this.gua,
     required this.method,
     this.lines = const [],
     this.lineTypes = const [],
+    this.changedLines = const [],
+    this.changedGua,
   });
 
   /// True if [lines] holds the six cast lines (system-generated casts).
@@ -108,11 +120,22 @@ class GuaGenerator {
           lines, 'lines', 'A cast must contain exactly 6 lines');
     }
     final list = await _guaList;
+    // Flip every changing line (老陰/老陽) to get the changed hexagram
+    // (issue #42); unchanged casts keep identical lines.
+    final changedLines = List<bool>.generate(6, (i) {
+      final typesChanging =
+          lineTypes.length == 6 && lineTypes[i].isChanging;
+      return typesChanging ? !lines[i] : lines[i];
+    });
+    final hasChanging = lineTypes.length == 6 &&
+        lineTypes.any((t) => t.isChanging);
     return GenerationResult(
       gua: _resolveGua(list, lines),
       method: method,
       lines: lines,
       lineTypes: lineTypes,
+      changedLines: changedLines,
+      changedGua: hasChanging ? _resolveGua(list, changedLines) : null,
     );
   }
 
