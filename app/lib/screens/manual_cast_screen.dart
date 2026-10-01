@@ -6,15 +6,16 @@ import '../models/question_type.dart';
 import '../models/yao_line_type.dart';
 import '../services/database_service.dart';
 import '../services/gua_generator.dart';
+import '../services/hexagram_reading.dart';
 import '../services/llm_service.dart';
 import '../widgets/gradient_button.dart';
-import '../widgets/hexagram_view.dart';
 import '../widgets/twinkling_stars.dart';
 import 'cast_result_screen.dart';
 
 /// Lets the user build a hexagram line by line (issue #20).
 ///
-/// Six yao lines are shown; tapping one lets the user pick
+/// The six lines form a single tall figure like the Quick Generate screen
+/// (same bar width/height/gap), but each line is tappable to pick
 /// 少陰/少陽/老陰/老陽. The resulting hexagram is resolved live, and the user
 /// proceeds to [CastResultScreen] with their manual cast.
 class ManualCastScreen extends StatefulWidget {
@@ -50,18 +51,22 @@ class _ManualCastScreenState extends State<ManualCastScreen> {
   GenerationResult? _result;
   bool _resolving = true;
 
+  /// Bar dimensions matching [HexagramView]'s defaults, so the figure has the
+  /// same tall ratio as the Quick Generate screen.
+  static const double _barWidth = 72;
+  static const double _barHeight = 9;
+  static const double _barGap = 6;
+
   @override
   void initState() {
     super.initState();
     _resolve();
   }
 
-  List<bool> get _lines => _lineTypes.map((t) => t.isYang).toList();
-
   Future<void> _resolve() async {
     setState(() => _resolving = true);
     final result = await widget.generator.resolveCast(
-      _lines,
+      _lineTypes.map((t) => t.isYang).toList(),
       lineTypes: List.of(_lineTypes),
       method: GeneratorMethod.manual,
     );
@@ -154,12 +159,8 @@ class _ManualCastScreenState extends State<ManualCastScreen> {
                     ),
                   ),
                 ),
-                HexagramView(lines: _lines),
-                const SizedBox(height: 8),
                 Text(
-                  _resolving
-                      ? l10n.loading
-                      : (_result?.gua.guaName ?? ''),
+                  _resolving ? l10n.loading : (_result?.gua.guaName ?? ''),
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.bold,
@@ -167,17 +168,27 @@ class _ManualCastScreenState extends State<ManualCastScreen> {
                 ),
                 const SizedBox(height: 12),
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      children: [
-                        // Top line first, matching how a hexagram is drawn.
-                        for (var i = 5; i >= 0; i--)
-                          _LineTile(
-                            type: _lineTypes[i],
-                            onTap: () => _pickLine(i),
-                          ),
-                      ],
+                  child: Center(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        key: const ValueKey('edit-figure'),
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Top line first, matching how a hexagram is drawn.
+                          for (var i = 5; i >= 0; i--) ...[
+                            if (i != 5) const SizedBox(height: _barGap),
+                            _EditableYao(
+                              key: ValueKey('edit-yao-$i'),
+                              type: _lineTypes[i],
+                              position: HexagramReading.linePositionLabel(
+                                i,
+                                _lineTypes[i].isYang,
+                              ),
+                              onTap: () => _pickLine(i),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -201,13 +212,16 @@ class _ManualCastScreenState extends State<ManualCastScreen> {
   }
 }
 
-/// A tappable row for one yao line.
-class _LineTile extends StatelessWidget {
+/// One tappable yao line in the editable figure.
+class _EditableYao extends StatelessWidget {
   final YaoLineType type;
+  final String position;
   final VoidCallback onTap;
 
-  const _LineTile({
+  const _EditableYao({
+    super.key,
     required this.type,
+    required this.position,
     required this.onTap,
   });
 
@@ -217,27 +231,32 @@ class _LineTile extends StatelessWidget {
     final color = type.isChanging
         ? theme.colorScheme.primary
         : theme.colorScheme.onSurface;
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
-      ),
-      child: ListTile(
-        onTap: onTap,
-        title: _bar(color),
-        trailing: Text(
-          type.label,
-          style: theme.textTheme.labelMedium?.copyWith(color: color),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: _ManualCastScreenState._barWidth,
+              child: _yaoBar(color),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              '$position · ${type.label}',
+              style: theme.textTheme.labelSmall?.copyWith(color: color),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _bar(Color color) {
+  Widget _yaoBar(Color color) {
     Widget segment() => Container(
-          height: 8,
+          height: _ManualCastScreenState._barHeight,
           decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(2),
@@ -247,7 +266,9 @@ class _LineTile extends StatelessWidget {
     return Row(
       children: [
         Expanded(child: segment()),
-        const SizedBox(width: 12),
+        const SizedBox(
+            width:
+                _ManualCastScreenState._barHeight * 1.6),
         Expanded(child: segment()),
       ],
     );
