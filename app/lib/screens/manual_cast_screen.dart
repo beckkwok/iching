@@ -9,6 +9,7 @@ import '../services/gua_generator.dart';
 import '../services/hexagram_reading.dart';
 import '../services/llm_service.dart';
 import '../widgets/gradient_button.dart';
+import '../widgets/hexagram_view.dart';
 import '../widgets/twinkling_stars.dart';
 import 'cast_result_screen.dart';
 
@@ -51,22 +52,18 @@ class _ManualCastScreenState extends State<ManualCastScreen> {
   GenerationResult? _result;
   bool _resolving = true;
 
-  /// Bar dimensions matching [HexagramView]'s defaults, so the figure has the
-  /// same tall ratio as the Quick Generate screen.
-  static const double _barWidth = 72;
-  static const double _barHeight = 9;
-  static const double _barGap = 6;
-
   @override
   void initState() {
     super.initState();
     _resolve();
   }
 
+  List<bool> get _lines => _lineTypes.map((t) => t.isYang).toList();
+
   Future<void> _resolve() async {
     setState(() => _resolving = true);
     final result = await widget.generator.resolveCast(
-      _lineTypes.map((t) => t.isYang).toList(),
+      _lines,
       lineTypes: List.of(_lineTypes),
       method: GeneratorMethod.manual,
     );
@@ -168,27 +165,28 @@ class _ManualCastScreenState extends State<ManualCastScreen> {
                 ),
                 const SizedBox(height: 12),
                 Expanded(
-                  child: Center(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        key: const ValueKey('edit-figure'),
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Top line first, matching how a hexagram is drawn.
-                          for (var i = 5; i >= 0; i--) ...[
-                            if (i != 5) const SizedBox(height: _barGap),
-                            _EditableYao(
-                              key: ValueKey('edit-yao-$i'),
-                              type: _lineTypes[i],
-                              position: HexagramReading.linePositionLabel(
-                                i,
-                                _lineTypes[i].isYang,
-                              ),
-                              onTap: () => _pickLine(i),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        // Tall preview figure, same configuration as Quick
+                        // Generate.
+                        HexagramView(lines: _lines),
+                        const SizedBox(height: 12),
+                        // Editable lines, laid out like the Quick Generate
+                        // rows: position left, bar center, type right.
+                        // Top line first, matching how a hexagram is drawn.
+                        for (var i = 5; i >= 0; i--)
+                          _EditableYao(
+                            key: ValueKey('edit-yao-$i'),
+                            type: _lineTypes[i],
+                            position: HexagramReading.linePositionLabel(
+                              i,
+                              _lineTypes[i].isYang,
                             ),
-                          ],
-                        ],
-                      ),
+                            onTap: () => _pickLine(i),
+                          ),
+                      ],
                     ),
                   ),
                 ),
@@ -212,7 +210,8 @@ class _ManualCastScreenState extends State<ManualCastScreen> {
   }
 }
 
-/// One tappable yao line in the editable figure.
+/// One tappable yao line, laid out exactly like the Quick Generate rows:
+/// position left, narrow bar center, type label right.
 class _EditableYao extends StatelessWidget {
   final YaoLineType type;
   final String position;
@@ -225,6 +224,9 @@ class _EditableYao extends StatelessWidget {
     required this.onTap,
   });
 
+  /// Label/pattern column width shared with the Quick Generate rows.
+  static const double _sideWidth = 72.0;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -235,18 +237,32 @@ class _EditableYao extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(
-              width: _ManualCastScreenState._barWidth,
+              width: _sideWidth,
+              child: Text(
+                position,
+                textAlign: TextAlign.right,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            SizedBox(
+              width: 72,
               child: _yaoBar(color),
             ),
-            const SizedBox(height: 2),
-            Text(
-              '$position · ${type.label}',
-              style: theme.textTheme.labelSmall?.copyWith(color: color),
+            const SizedBox(width: 12),
+            SizedBox(
+              width: _sideWidth,
+              child: Text(
+                type.label,
+                style: theme.textTheme.labelMedium?.copyWith(color: color),
+              ),
             ),
           ],
         ),
@@ -256,19 +272,17 @@ class _EditableYao extends StatelessWidget {
 
   Widget _yaoBar(Color color) {
     Widget segment() => Container(
-          height: _ManualCastScreenState._barHeight,
+          height: 8,
           decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(4),
           ),
         );
     if (type.isYang) return segment();
     return Row(
       children: [
         Expanded(child: segment()),
-        const SizedBox(
-            width:
-                _ManualCastScreenState._barHeight * 1.6),
+        const SizedBox(width: 16),
         Expanded(child: segment()),
       ],
     );
