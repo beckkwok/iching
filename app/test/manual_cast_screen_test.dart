@@ -5,6 +5,7 @@ import 'package:app/screens/cast_result_screen.dart';
 import 'package:app/screens/manual_cast_screen.dart';
 import 'package:app/services/gua_generator.dart';
 import 'package:app/services/hexagram_loader.dart';
+import 'package:app/widgets/hexagram_view.dart';
 
 String _fixtureJson(int code) => '''
 {
@@ -56,14 +57,14 @@ void main() {
       expect(find.byKey(ValueKey('edit-yao-$i')), findsOneWidget);
     }
     // All six lines default to 少陽.
-    expect(find.textContaining('少陽'), findsNWidgets(6));
+    expect(find.text('少陽'), findsNWidgets(6));
     expect(find.text('Use this hexagram'), findsOneWidget);
   });
 
-  testWidgets('editable figure is taller than it is wide', (tester) async {
+  testWidgets('preview figure is taller than it is wide', (tester) async {
     await pumpManual(tester);
 
-    final figure = find.byKey(const ValueKey('edit-figure'));
+    final figure = find.byType(HexagramView);
     expect(figure, findsOneWidget);
     final size = tester.getSize(figure);
     expect(size.height, greaterThan(size.width));
@@ -83,8 +84,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // The chosen type is now shown on the row.
-    expect(find.textContaining('老陰'), findsOneWidget);
-    expect(find.textContaining('少陽'), findsNWidgets(5));
+    expect(find.text('老陰'), findsOneWidget);
+    expect(find.text('少陽'), findsNWidgets(5));
   });
 
   testWidgets('proceeding opens the cast result screen', (tester) async {
