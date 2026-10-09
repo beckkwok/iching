@@ -11,6 +11,7 @@ import 'package:app/screens/question_form_screen.dart';
 import 'package:app/services/database_service.dart';
 import 'package:app/services/gua_generator.dart';
 import 'package:app/services/hexagram_loader.dart';
+import 'package:app/widgets/glass_card.dart';
 
 /// Minimal valid hexagram JSON for [code].
 String fixtureJson(int code) {
@@ -92,6 +93,28 @@ void main() {
       find.byType(SegmentedButton<CastMethod>),
     );
     expect(segmented.selected, {CastMethod.quick});
+  });
+
+  testWidgets('form fields sit inside a glass card', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(home: buildForm()),
+    );
+
+    expect(find.byType(GlassCard), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(GlassCard),
+        matching: find.byType(TextFormField),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(GlassCard),
+        matching: find.byType(DropdownButtonFormField<QuestionType>),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('submit without input shows validation errors', (tester) async {
