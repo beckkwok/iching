@@ -59,7 +59,7 @@ void main() {
     expect(tapped, isFalse);
   });
 
-  testWidgets('light mode uses the solid purple gradient', (tester) async {
+  testWidgets('light mode uses the solid gold gradient', (tester) async {
     await pumpButton(tester, onPressed: () {});
     final decoration = ink(tester).decoration! as BoxDecoration;
     final gradient = decoration.gradient! as LinearGradient;
