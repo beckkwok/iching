@@ -5,6 +5,7 @@ import '../models/question_type.dart';
 import '../services/database_service.dart';
 import '../services/gua_generator.dart';
 import '../services/llm_service.dart';
+import '../theme/app_theme.dart';
 import '../widgets/gradient_button.dart';
 import 'cast_result_screen.dart';
 import 'manual_cast_screen.dart';
@@ -205,6 +206,16 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                       ),
                       const SizedBox(height: 8),
                       SegmentedButton<CastMethod>(
+                        style: SegmentedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          foregroundColor: ancientGold,
+                          selectedBackgroundColor: ancientGold,
+                          selectedForegroundColor: Colors.black,
+                          side: const BorderSide(color: ancientGold),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                        ),
                         segments: [
                           ButtonSegment(
                             value: CastMethod.quick,
