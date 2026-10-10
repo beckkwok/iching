@@ -4,8 +4,12 @@ import 'package:forui/forui.dart';
 /// Font family bundled for Traditional Chinese text (LXGW WenKai Mono TC).
 ///
 /// Used as a `fontFamilyFallback` so CJK glyphs render in this kai-style
-/// monospace font while Latin text keeps the default font.
+/// monospace font while Latin text keeps the default.
 const List<String> chineseFontFallback = ['LXGWWenKaiMonoTC'];
+
+/// Serif family for Yijing headers (issue #72). Subset to the app's Latin +
+/// CJK glyph set; everything else falls back to [chineseFontFallback].
+const String notoSerifFamily = 'NotoSerifTC';
 
 /// Ancient gold used for text in the dark theme.
 const Color ancientGold = Color(0xFFD4AF37);
