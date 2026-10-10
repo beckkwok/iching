@@ -6,6 +6,7 @@ import '../services/database_service.dart';
 import '../services/gua_generator.dart';
 import '../services/llm_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/glass_card.dart';
 import '../widgets/gradient_button.dart';
 import 'cast_result_screen.dart';
 import 'manual_cast_screen.dart';
@@ -145,57 +146,76 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Question type selector
-                      Text(
-                        l10n.questionType,
-                        style: theme.textTheme.labelLarge,
-                      ),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<QuestionType>(
-                        initialValue: _selectedType,
-                        decoration: InputDecoration(
-                          labelText: l10n.selectCategory,
-                          border: const OutlineInputBorder(),
-                        ),
-                        items: [
-                          for (final type in QuestionType.values)
-                            DropdownMenuItem(
-                              value: type,
-                              child: Row(
-                                children: [
-                                  Icon(type.icon, size: 18),
-                                  const SizedBox(width: 8),
-                                  Text(l10n.questionTypeLabel(type)),
-                                ],
-                              ),
+                      GlassCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Question type selector
+                            Text(
+                              l10n.questionType,
+                              style: theme.textTheme.labelLarge,
                             ),
-                        ],
-                        onChanged: (value) =>
-                            setState(() => _selectedType = value),
-                        validator: (value) =>
-                            value == null ? l10n.selectTypeError : null,
-                      ),
-                      const SizedBox(height: 16),
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<QuestionType>(
+                              initialValue: _selectedType,
+                              decoration: InputDecoration(
+                                labelText: l10n.selectCategory,
+                                filled: true,
+                                fillColor: theme.colorScheme.surface
+                                    .withValues(alpha: 0.25),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              items: [
+                                for (final type in QuestionType.values)
+                                  DropdownMenuItem(
+                                    value: type,
+                                    child: Row(
+                                      children: [
+                                        Icon(type.icon, size: 18),
+                                        const SizedBox(width: 8),
+                                        Text(l10n.questionTypeLabel(type)),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                              onChanged: (value) =>
+                                  setState(() => _selectedType = value),
+                              validator: (value) => value == null
+                                  ? l10n.selectTypeError
+                                  : null,
+                            ),
+                            const SizedBox(height: 16),
 
-                      // Exact question
-                      Text(
-                        l10n.yourQuestion,
-                        style: theme.textTheme.labelLarge,
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _questionController,
-                        maxLines: 4,
-                        minLines: 3,
-                        decoration: InputDecoration(
-                          hintText: l10n.questionHint,
-                          border: const OutlineInputBorder(),
+                            // Exact question
+                            Text(
+                              l10n.yourQuestion,
+                              style: theme.textTheme.labelLarge,
+                            ),
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              controller: _questionController,
+                              maxLines: 4,
+                              minLines: 3,
+                              decoration: InputDecoration(
+                                hintText: l10n.questionHint,
+                                filled: true,
+                                fillColor: theme.colorScheme.surface
+                                    .withValues(alpha: 0.25),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              validator: (value) =>
+                                  (value == null || value.trim().isEmpty)
+                                  ? l10n.enterQuestionError
+                                  : null,
+                              textInputAction: TextInputAction.newline,
+                            ),
+                          ],
                         ),
-                        validator: (value) =>
-                            (value == null || value.trim().isEmpty)
-                            ? l10n.enterQuestionError
-                            : null,
-                        textInputAction: TextInputAction.newline,
                       ),
                       const SizedBox(height: 8),
 
