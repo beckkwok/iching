@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// A primary action button with an immersive, "glowing jade" look.
+/// A primary action button with an immersive, gold look.
 ///
-/// In dark mode it uses a translucent deep-purple fill (so the star background
+/// In dark mode it uses a translucent deep-gold fill (so the star background
 /// shows through), a fine gold border, and a soft gold glow. In light mode it
-/// falls back to the solid purple gradient for contrast. Pressing it scales the
+/// falls back to the solid gold gradient for contrast. Pressing it scales the
 /// button down slightly and triggers a light haptic.
 class GradientButton extends StatefulWidget {
   const GradientButton({
@@ -23,8 +23,8 @@ class GradientButton extends StatefulWidget {
   /// An optional leading widget (an [Icon] or a loading spinner).
   final Widget? icon;
 
-  static const Color start = Color(0xFF673AB7);
-  static const Color end = Color(0xFFAB47BC);
+  static const Color start = Color(0xFF8C6D1F);
+  static const Color end = Color(0xFFD4AF37);
 
   /// Gold used for the button's border and glow.
   static const Color gold = Color(0xFFD4AF37);
