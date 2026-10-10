@@ -283,53 +283,55 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        // Casting method
+                        // Casting method — two separated pills, each fully
+                        // oval on both sides.
                         Text(
                           l10n.castingMethod,
                           style: theme.textTheme.labelLarge,
                         ),
                         const SizedBox(height: 8),
-                        SegmentedButton<CastMethod>(
-                          style: SegmentedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            foregroundColor: ancientGold,
-                            selectedBackgroundColor: ancientGold,
-                            selectedForegroundColor: Colors.black,
-                            side: const BorderSide(color: ancientGold),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                          ),
-                          segments: [
-                            ButtonSegment(
-                              value: CastMethod.quick,
-                              icon: const Icon(Icons.casino_outlined),
-                              label: Text(l10n.quickGenerate),
-                            ),
-                            ButtonSegment(
-                              value: CastMethod.manual,
-                              icon: const Icon(Icons.tune),
-                              label: Text(l10n.manualGenerate),
-                            ),
+                        Row(
+                          children: [
+                            for (final method in CastMethod.values) ...[
+                              if (method != CastMethod.values.first)
+                                const SizedBox(width: 8),
+                              Expanded(
+                                child: _MethodPill(
+                                  key: ValueKey('method-${method.name}'),
+                                  selected: _method == method,
+                                  icon: method == CastMethod.quick
+                                      ? Icons.casino_outlined
+                                      : Icons.tune,
+                                  label: method == CastMethod.quick
+                                      ? l10n.quickGenerate
+                                      : l10n.manualGenerate,
+                                  onTap: () =>
+                                      setState(() => _method = method),
+                                ),
+                              ),
+                            ],
                           ],
-                          selected: {_method},
-                          onSelectionChanged: (selection) =>
-                              setState(() => _method = selection.first),
                         ),
                         const SizedBox(height: 24),
 
-                        // Submit button
+                        // Submit button — same gold gradient + dark text as
+                        // the selected casting pill.
                         SizedBox(
                           height: 48,
                           child: GradientButton(
                             onPressed: _isSubmitting ? null : _submit,
+                            gradientColors: const [
+                              champagneGold,
+                              bronzeGold,
+                            ],
+                            foregroundColor: Colors.black,
                             icon: _isSubmitting
                                 ? const SizedBox(
                                     width: 20,
                                     height: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: Colors.white,
+                                      color: Colors.black,
                                     ),
                                   )
                                 : const Icon(Icons.question_answer),
@@ -345,6 +347,71 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One half of the casting-method toggle: a full pill, gold gradient + dark
+/// text when selected, transparent + gold outline/text otherwise.
+class _MethodPill extends StatelessWidget {
+  final bool selected;
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _MethodPill({
+    super.key,
+    required this.selected,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = selected ? Colors.black : champagneGold;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: selected
+              ? const LinearGradient(
+                  colors: [champagneGold, bronzeGold],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: selected ? null : Colors.transparent,
+          border: Border.all(
+            color: selected
+                ? champagneGold
+                : champagneGold.withValues(alpha: 0.6),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              selected ? Icons.check : icon,
+              color: foreground,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: foreground,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -42,3 +42,20 @@ form required scroll-into-view before tapping submit in
 
 - `flutter analyze` — clean (3 pre-existing info lints)
 - `flutter test` — green (216 pass)
+
+## Follow-up: submit matches pills, pills fully oval (#66)
+
+- Submit (`GradientButton`) takes optional `gradientColors`/`foregroundColor`
+  (defaults preserve existing behavior); the Ask submit uses the champagne →
+  bronze gradient with black text, matching the selected casting pill.
+- The joined `SegmentedButton` is replaced by two separated `_MethodPill`
+  toggles with an 8px gap — each fully oval on both sides; selected shows a
+  check, gold gradient fill and black text.
+- Tests updated/added for the pills and custom button colors. Note:
+  `find.byType(Container)` also matches `AnimatedContainer` subtypes, so the
+  glass-fill assertion now selects by its exact gradient.
+
+## Verification
+
+- `flutter analyze` — clean (3 pre-existing info lints)
+- `flutter test` — green (217 pass)
