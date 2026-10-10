@@ -98,6 +98,11 @@ flutter:
         - asset: assets/fonts/LXGWWenKaiMonoTC-Regular.ttf
           weight: 400
         - asset: assets/fonts/LXGWWenKaiMonoTC-Bold.ttf
+    - family: NotoSerifTC
+      fonts:
+        - asset: assets/fonts/NotoSerifTC-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/NotoSerifTC-Bold.ttf
           weight: 700
 
   # An image asset can refer to one or more resolution-specific "variants", see
