@@ -121,22 +121,44 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Icon(
-                        Icons.auto_awesome,
-                        size: 64,
-                        color: theme.colorScheme.primary,
+                      Container(
+                        width: 110,
+                        height: 110,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(
+                                0xFFE6D5B8,
+                              ).withValues(alpha: 0.15),
+                              blurRadius: 20,
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/images/medallion.png',
+                            width: 110,
+                            height: 110,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -159,11 +181,16 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                             const SizedBox(height: 8),
                             DropdownButtonFormField<QuestionType>(
                               initialValue: _selectedType,
+                              iconEnabledColor: isDark
+                                  ? const Color(0xFFE6D5B8)
+                                  : const Color(0xFFC5B358),
                               decoration: InputDecoration(
                                 labelText: l10n.selectCategory,
                                 filled: true,
-                                fillColor: theme.colorScheme.surface
-                                    .withValues(alpha: 0.25),
+                                fillColor: isDark
+                                    ? theme.colorScheme.surface
+                                        .withValues(alpha: 0.25)
+                                    : Colors.white,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
                                 ),
@@ -187,7 +214,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                                   ? l10n.selectTypeError
                                   : null,
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 20),
 
                             // Exact question
                             Text(
@@ -201,9 +228,16 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                               minLines: 3,
                               decoration: InputDecoration(
                                 hintText: l10n.questionHint,
+                                hintStyle: TextStyle(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.3)
+                                      : theme.colorScheme.onSurfaceVariant,
+                                ),
                                 filled: true,
-                                fillColor: theme.colorScheme.surface
-                                    .withValues(alpha: 0.25),
+                                fillColor: isDark
+                                    ? theme.colorScheme.surface
+                                        .withValues(alpha: 0.25)
+                                    : Colors.white,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
                                 ),
@@ -217,7 +251,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 20),
 
                       // Casting method
                       Text(

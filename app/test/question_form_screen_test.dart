@@ -67,6 +67,14 @@ void main() {
         guaGenerator: generator,
       );
 
+  /// The medallion made the form taller than the test viewport, so the
+  /// submit button must be scrolled into view before tapping.
+  Future<void> tapSubmit(WidgetTester tester, String label) async {
+    await tester.ensureVisible(find.text(label));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(label));
+  }
+
   testWidgets('question form shows type selector, text box and submit button',
       (tester) async {
     await tester.pumpWidget(
@@ -140,12 +148,41 @@ void main() {
     );
   });
 
+  testWidgets('shows the medallion emblem', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(home: buildForm()),
+    );
+
+    expect(find.byType(Image), findsOneWidget);
+  });
+
+  testWidgets('glass card uses obsidian fill in dark mode', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(brightness: Brightness.dark),
+        home: buildForm(),
+      ),
+    );
+
+    final container = tester.widget<Container>(
+      find.descendant(
+        of: find.byType(GlassCard),
+        matching: find.byType(Container),
+      ),
+    );
+    final decoration = container.decoration! as BoxDecoration;
+    expect(
+      decoration.color,
+      const Color(0xFF13131A).withValues(alpha: 0.6),
+    );
+  });
+
   testWidgets('submit without input shows validation errors', (tester) async {
     await tester.pumpWidget(
       MaterialApp(home: buildForm()),
     );
 
-    await tester.tap(find.text('Submit Question'));
+    await tapSubmit(tester, 'Submit Question');
     await tester.pumpAndSettle();
 
     expect(find.text('Please select a question type'), findsOneWidget);
@@ -167,7 +204,7 @@ void main() {
       find.byType(TextFormField),
       'Should I take the new job?',
     );
-    await tester.tap(find.text('Submit Question'));
+    await tapSubmit(tester, 'Submit Question');
     // Let the async cast + DB reads complete.
     for (var i = 0; i < 5; i++) {
       await tester.runAsync(() async {
@@ -199,7 +236,7 @@ void main() {
     await tester.tap(find.text('Manual'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Submit Question'));
+    await tapSubmit(tester, 'Submit Question');
     for (var i = 0; i < 5; i++) {
       await tester.runAsync(() async {
         await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -258,7 +295,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextFormField), '我應該接受新工作嗎？');
-    await tester.tap(find.text('提交問題'));
+    await tapSubmit(tester, '提交問題');
 
     for (var i = 0; i < 5; i++) {
       await tester.runAsync(() async {
