@@ -161,15 +161,18 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                         ],
                       ),
                           child: ClipOval(
-                            // The coin sits high in the frame with a white
-                            // margin below it: pin the crop to the top so no
-                            // white shows inside the circle.
-                            child: Image.asset(
-                              'assets/images/medallion.png',
-                              width: 110,
-                              height: 110,
-                              fit: BoxFit.cover,
-                              alignment: Alignment.topCenter,
+                            // The artwork has white margins around the coin:
+                            // zoom slightly so the coin edge bleeds past the
+                            // circular clip and no white ring shows.
+                            child: Transform.scale(
+                              scale: 1.06,
+                              child: Image.asset(
+                                'assets/images/medallion.png',
+                                width: 110,
+                                height: 110,
+                                fit: BoxFit.cover,
+                                alignment: Alignment.topCenter,
+                              ),
                             ),
                           ),
                     ),
