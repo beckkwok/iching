@@ -179,6 +179,9 @@ void main() {
         find.byType(TextFormField),
         'Should I take the new job?',
       );
+      // The medallion pushed submit below the test viewport fold.
+      await tester.ensureVisible(find.text('Submit Question'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Submit Question'));
 
       // Let the async cast complete.

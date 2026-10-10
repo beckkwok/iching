@@ -13,6 +13,8 @@ class GradientButton extends StatefulWidget {
     required this.onPressed,
     required this.label,
     this.icon,
+    this.gradientColors,
+    this.foregroundColor = Colors.white,
   });
 
   final VoidCallback? onPressed;
@@ -22,6 +24,13 @@ class GradientButton extends StatefulWidget {
 
   /// An optional leading widget (an [Icon] or a loading spinner).
   final Widget? icon;
+
+  /// Optional gradient fill override (used solid in both modes). Defaults to
+  /// the purple [start] → [end] gradient.
+  final List<Color>? gradientColors;
+
+  /// Color of the label, icon and spinner. Defaults to white.
+  final Color foregroundColor;
 
   static const Color start = Color(0xFF8C6D1F);
   static const Color end = Color(0xFFD4AF37);
@@ -49,10 +58,12 @@ class _GradientButtonState extends State<GradientButton> {
 
   BoxDecoration _decoration(bool isDark) {
     final radius = BorderRadius.circular(24);
-    if (!isDark) {
+    final custom = widget.gradientColors;
+    if (!isDark || custom != null) {
       return BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [GradientButton.start, GradientButton.end],
+        gradient: LinearGradient(
+          colors:
+              custom ?? const [GradientButton.start, GradientButton.end],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -99,8 +110,8 @@ class _GradientButtonState extends State<GradientButton> {
         ],
         Text(
           widget.label,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: widget.foregroundColor,
             fontWeight: FontWeight.w600,
             fontSize: 15,
           ),
@@ -130,7 +141,8 @@ class _GradientButtonState extends State<GradientButton> {
               onTapUp: enabled ? (_) => _setPressed(false) : null,
               onTapCancel: enabled ? () => _setPressed(false) : null,
               child: IconTheme(
-                data: const IconThemeData(color: Colors.white, size: 18),
+                data: IconThemeData(
+                    color: widget.foregroundColor, size: 18),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(minHeight: 40),
                   child: Padding(

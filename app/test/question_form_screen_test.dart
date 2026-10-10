@@ -67,6 +67,14 @@ void main() {
         guaGenerator: generator,
       );
 
+  /// The medallion made the form taller than the test viewport, so the
+  /// submit button must be scrolled into view before tapping.
+  Future<void> tapSubmit(WidgetTester tester, String label) async {
+    await tester.ensureVisible(find.text(label));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(label));
+  }
+
   testWidgets('question form shows type selector, text box and submit button',
       (tester) async {
     await tester.pumpWidget(
@@ -82,7 +90,8 @@ void main() {
     expect(find.text('Manual'), findsOneWidget);
     expect(find.byType(TextFormField), findsOneWidget);
     expect(find.byType(DropdownButtonFormField<QuestionType>), findsOneWidget);
-    expect(find.byType(SegmentedButton<CastMethod>), findsOneWidget);
+    expect(find.byKey(const ValueKey('method-quick')), findsOneWidget);
+    expect(find.byKey(const ValueKey('method-manual')), findsOneWidget);
   });
 
   testWidgets('casting method defaults to quick generate', (tester) async {
@@ -90,31 +99,48 @@ void main() {
       MaterialApp(home: buildForm()),
     );
 
-    final segmented = tester.widget<SegmentedButton<CastMethod>>(
-      find.byType(SegmentedButton<CastMethod>),
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('method-quick')),
+        matching: find.byIcon(Icons.check),
+      ),
+      findsOneWidget,
     );
-    expect(segmented.selected, {CastMethod.quick});
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('method-manual')),
+        matching: find.byIcon(Icons.tune),
+      ),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('casting control uses gold pill styling', (tester) async {
+  testWidgets('casting pills use gold styling', (tester) async {
     await tester.pumpWidget(
       MaterialApp(home: buildForm()),
     );
 
-    final style = tester
-        .widget<SegmentedButton<CastMethod>>(
-          find.byType(SegmentedButton<CastMethod>),
-        )
-        .style!;
-    expect(style.backgroundColor!.resolve({}), Colors.transparent);
-    expect(
-      style.backgroundColor!.resolve({WidgetState.selected}),
-      ancientGold,
+    final quick = tester.widget<AnimatedContainer>(
+      find.descendant(
+        of: find.byKey(const ValueKey('method-quick')),
+        matching: find.byType(AnimatedContainer),
+      ),
     );
-    expect(style.foregroundColor!.resolve({}), ancientGold);
+    final quickDeco = quick.decoration! as BoxDecoration;
+    final gradient = quickDeco.gradient! as LinearGradient;
+    expect(gradient.colors, [champagneGold, bronzeGold]);
+
+    final manual = tester.widget<AnimatedContainer>(
+      find.descendant(
+        of: find.byKey(const ValueKey('method-manual')),
+        matching: find.byType(AnimatedContainer),
+      ),
+    );
+    final manualDeco = manual.decoration! as BoxDecoration;
+    expect(manualDeco.color, Colors.transparent);
     expect(
-      style.foregroundColor!.resolve({WidgetState.selected}),
-      Colors.black,
+      (manualDeco.border! as Border).top.color,
+      champagneGold.withValues(alpha: 0.6),
     );
   });
 
@@ -140,12 +166,56 @@ void main() {
     );
   });
 
+  testWidgets('shows the medallion emblem', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(home: buildForm()),
+    );
+
+    expect(find.byType(Image), findsOneWidget);
+  });
+
+  testWidgets('glass card uses obsidian gradient fill in dark mode',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(brightness: Brightness.dark),
+        home: buildForm(),
+      ),
+    );
+
+    final matches = find.descendant(
+      of: find.byType(GlassCard),
+      matching: find.byType(Container),
+    );
+    final card = matches.evaluate().map((e) => e.widget as Container).singleWhere(
+      (c) {
+        final decoration = c.decoration;
+        return decoration is BoxDecoration &&
+            decoration.gradient is LinearGradient &&
+            (decoration.gradient! as LinearGradient).colors.contains(
+              const Color(0xFF13131A).withValues(alpha: 0.6),
+            );
+      },
+    );
+    final decoration = card.decoration! as BoxDecoration;
+    final gradient = decoration.gradient! as LinearGradient;
+    expect(gradient.colors, [
+      const Color(0xFF1E1E28).withValues(alpha: 0.6),
+      const Color(0xFF13131A).withValues(alpha: 0.6),
+    ]);
+    // Crisp champagne border.
+    expect(
+      (decoration.border! as Border).top.color,
+      champagneGold.withValues(alpha: 0.45),
+    );
+  });
+
   testWidgets('submit without input shows validation errors', (tester) async {
     await tester.pumpWidget(
       MaterialApp(home: buildForm()),
     );
 
-    await tester.tap(find.text('Submit Question'));
+    await tapSubmit(tester, 'Submit Question');
     await tester.pumpAndSettle();
 
     expect(find.text('Please select a question type'), findsOneWidget);
@@ -167,7 +237,7 @@ void main() {
       find.byType(TextFormField),
       'Should I take the new job?',
     );
-    await tester.tap(find.text('Submit Question'));
+    await tapSubmit(tester, 'Submit Question');
     // Let the async cast + DB reads complete.
     for (var i = 0; i < 5; i++) {
       await tester.runAsync(() async {
@@ -199,7 +269,7 @@ void main() {
     await tester.tap(find.text('Manual'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Submit Question'));
+    await tapSubmit(tester, 'Submit Question');
     for (var i = 0; i < 5; i++) {
       await tester.runAsync(() async {
         await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -258,7 +328,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextFormField), '我應該接受新工作嗎？');
-    await tester.tap(find.text('提交問題'));
+    await tapSubmit(tester, '提交問題');
 
     for (var i = 0; i < 5; i++) {
       await tester.runAsync(() async {

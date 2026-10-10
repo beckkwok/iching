@@ -100,6 +100,33 @@ void main() {
     await tester.pump();
   });
 
+  testWidgets('custom gradient and foreground colors apply', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(brightness: Brightness.dark),
+        home: const Scaffold(
+          body: Center(
+            child: GradientButton(
+              onPressed: _noop,
+              label: 'Go',
+              gradientColors: [Color(0xFFE6D5B8), Color(0xFFC5B358)],
+              foregroundColor: Colors.black,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final decoration = ink(tester).decoration! as BoxDecoration;
+    final gradient = decoration.gradient! as LinearGradient;
+    expect(
+      gradient.colors,
+      [const Color(0xFFE6D5B8), const Color(0xFFC5B358)],
+    );
+    final label = tester.widget<Text>(find.text('Go'));
+    expect(label.style!.color, Colors.black);
+  });
+
   testWidgets('sizes to its content when loosely constrained', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
