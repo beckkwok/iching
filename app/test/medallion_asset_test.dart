@@ -11,7 +11,7 @@ void main() {
         theme: ThemeData(brightness: brightness),
         home: Scaffold(
           body: Center(
-            child: Image.asset('assets/images/taichi.png'),
+            child: Image.asset('assets/images/medallion.png'),
           ),
         ),
       ),
