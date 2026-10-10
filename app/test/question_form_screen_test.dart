@@ -11,6 +11,7 @@ import 'package:app/screens/question_form_screen.dart';
 import 'package:app/services/database_service.dart';
 import 'package:app/services/gua_generator.dart';
 import 'package:app/services/hexagram_loader.dart';
+import 'package:app/theme/app_theme.dart';
 
 /// Minimal valid hexagram JSON for [code].
 String fixtureJson(int code) {
@@ -92,6 +93,28 @@ void main() {
       find.byType(SegmentedButton<CastMethod>),
     );
     expect(segmented.selected, {CastMethod.quick});
+  });
+
+  testWidgets('casting control uses gold pill styling', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(home: buildForm()),
+    );
+
+    final style = tester
+        .widget<SegmentedButton<CastMethod>>(
+          find.byType(SegmentedButton<CastMethod>),
+        )
+        .style!;
+    expect(style.backgroundColor!.resolve({}), Colors.transparent);
+    expect(
+      style.backgroundColor!.resolve({WidgetState.selected}),
+      ancientGold,
+    );
+    expect(style.foregroundColor!.resolve({}), ancientGold);
+    expect(
+      style.foregroundColor!.resolve({WidgetState.selected}),
+      Colors.black,
+    );
   });
 
   testWidgets('submit without input shows validation errors', (tester) async {
