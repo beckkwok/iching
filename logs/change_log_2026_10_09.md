@@ -12,7 +12,12 @@ Forui themes untouched.
 call sites pick it up with no changes. Structure, border, glow, white
 label/icon unchanged.
 
+## Task: #60 slice — gold pill segmented control (#63)
+
+Gold pills on the Ask casting control: transparent fill + gold text when
+idle, gold fill + black text when selected, stadium shape. No logic changes.
+
 ## Verification
 
 - `flutter analyze` — clean (3 pre-existing info lints)
-- `flutter test` — green
+- `flutter test` — green (211 pass)
