@@ -90,7 +90,8 @@ void main() {
     expect(find.text('Manual'), findsOneWidget);
     expect(find.byType(TextFormField), findsOneWidget);
     expect(find.byType(DropdownButtonFormField<QuestionType>), findsOneWidget);
-    expect(find.byType(SegmentedButton<CastMethod>), findsOneWidget);
+    expect(find.byKey(const ValueKey('method-quick')), findsOneWidget);
+    expect(find.byKey(const ValueKey('method-manual')), findsOneWidget);
   });
 
   testWidgets('casting method defaults to quick generate', (tester) async {
@@ -98,31 +99,48 @@ void main() {
       MaterialApp(home: buildForm()),
     );
 
-    final segmented = tester.widget<SegmentedButton<CastMethod>>(
-      find.byType(SegmentedButton<CastMethod>),
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('method-quick')),
+        matching: find.byIcon(Icons.check),
+      ),
+      findsOneWidget,
     );
-    expect(segmented.selected, {CastMethod.quick});
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('method-manual')),
+        matching: find.byIcon(Icons.tune),
+      ),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('casting control uses gold pill styling', (tester) async {
+  testWidgets('casting pills use gold styling', (tester) async {
     await tester.pumpWidget(
       MaterialApp(home: buildForm()),
     );
 
-    final style = tester
-        .widget<SegmentedButton<CastMethod>>(
-          find.byType(SegmentedButton<CastMethod>),
-        )
-        .style!;
-    expect(style.backgroundColor!.resolve({}), Colors.transparent);
-    expect(
-      style.backgroundColor!.resolve({WidgetState.selected}),
-      ancientGold,
+    final quick = tester.widget<AnimatedContainer>(
+      find.descendant(
+        of: find.byKey(const ValueKey('method-quick')),
+        matching: find.byType(AnimatedContainer),
+      ),
     );
-    expect(style.foregroundColor!.resolve({}), ancientGold);
+    final quickDeco = quick.decoration! as BoxDecoration;
+    final gradient = quickDeco.gradient! as LinearGradient;
+    expect(gradient.colors, [champagneGold, bronzeGold]);
+
+    final manual = tester.widget<AnimatedContainer>(
+      find.descendant(
+        of: find.byKey(const ValueKey('method-manual')),
+        matching: find.byType(AnimatedContainer),
+      ),
+    );
+    final manualDeco = manual.decoration! as BoxDecoration;
+    expect(manualDeco.color, Colors.transparent);
     expect(
-      style.foregroundColor!.resolve({WidgetState.selected}),
-      Colors.black,
+      (manualDeco.border! as Border).top.color,
+      champagneGold.withValues(alpha: 0.6),
     );
   });
 
@@ -165,13 +183,21 @@ void main() {
       ),
     );
 
-    final container = tester.widget<Container>(
-      find.descendant(
-        of: find.byType(BackdropFilter),
-        matching: find.byType(Container),
-      ),
+    final matches = find.descendant(
+      of: find.byType(GlassCard),
+      matching: find.byType(Container),
     );
-    final decoration = container.decoration! as BoxDecoration;
+    final card = matches.evaluate().map((e) => e.widget as Container).singleWhere(
+      (c) {
+        final decoration = c.decoration;
+        return decoration is BoxDecoration &&
+            decoration.gradient is LinearGradient &&
+            (decoration.gradient! as LinearGradient).colors.contains(
+              const Color(0xFF13131A).withValues(alpha: 0.6),
+            );
+      },
+    );
+    final decoration = card.decoration! as BoxDecoration;
     final gradient = decoration.gradient! as LinearGradient;
     expect(gradient.colors, [
       const Color(0xFF1E1E28).withValues(alpha: 0.6),
