@@ -129,6 +129,9 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final labelStyle = theme.textTheme.labelLarge?.copyWith(
+      fontFamily: notoSerifFamily,
+    );
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
@@ -181,7 +184,9 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                   Text(
                     l10n.askPrompt,
                     textAlign: TextAlign.center,
-                    style: theme.textTheme.titleMedium,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontFamily: notoSerifFamily,
+                    ),
                   ),
                   const SizedBox(height: 24),
 
@@ -193,7 +198,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                         // Question type selector
                         Text(
                           l10n.questionType,
-                          style: theme.textTheme.labelLarge,
+                          style: labelStyle,
                         ),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<QuestionType>(
@@ -247,7 +252,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                         // Exact question
                         Text(
                           l10n.yourQuestion,
-                          style: theme.textTheme.labelLarge,
+                          style: labelStyle,
                         ),
                         const SizedBox(height: 8),
                         TextFormField(
@@ -294,7 +299,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                         // oval on both sides.
                         Text(
                           l10n.castingMethod,
-                          style: theme.textTheme.labelLarge,
+                          style: labelStyle,
                         ),
                         const SizedBox(height: 8),
                         Row(
