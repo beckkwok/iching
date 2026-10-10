@@ -28,6 +28,16 @@ obsidian-equivalent); submit/validation/casting logic untouched. The taller
 form required scroll-into-view before tapping submit in
 `question_form_screen_test.dart` (+ helper) and `privacy_test.dart`.
 
+### Follow-up refinements (from device screenshot review)
+
+- Medallion wrapped in `Center` (the stretch column was flattening it to an
+  oval) with a refined champagne border + layered glow.
+- Explicit champagne `enabledBorder`/`focusedBorder` on both inputs (shared
+  `_fieldBorder` helper).
+- All four controls (type, question, method, submit) unified inside a single
+  `GlassCard`; the card gains a luminosity gradient, layered outer glow, and a
+  crisper border.
+
 ## Verification
 
 - `flutter analyze` — clean (3 pre-existing info lints)

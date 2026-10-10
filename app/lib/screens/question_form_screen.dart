@@ -46,6 +46,13 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
   CastMethod _method = CastMethod.quick;
   bool _isSubmitting = false;
 
+  /// Champagne field border shared by the dropdown and question inputs.
+  OutlineInputBorder _fieldBorder(Color color, {double width = 1}) =>
+      OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: color, width: width),
+      );
+
   @override
   void dispose() {
     _questionController.dispose();
@@ -64,9 +71,9 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
 
     final db = widget.databaseService;
     if (db == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.enableGenerationHint)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.enableGenerationHint)));
       return;
     }
 
@@ -125,195 +132,221 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Container(
-                        width: 110,
-                        height: 110,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(
-                                0xFFE6D5B8,
-                              ).withValues(alpha: 0.15),
-                              blurRadius: 20,
-                            ),
-                          ],
-                        ),
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/images/medallion.png',
-                            width: 110,
-                            height: 110,
-                            fit: BoxFit.cover,
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 110,
+                      height: 110,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: champagneGold, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: champagneGold.withValues(alpha: 0.35),
+                            blurRadius: 12,
                           ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        l10n.askPrompt,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 24),
-
-                      GlassCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Question type selector
-                            Text(
-                              l10n.questionType,
-                              style: theme.textTheme.labelLarge,
-                            ),
-                            const SizedBox(height: 8),
-                            DropdownButtonFormField<QuestionType>(
-                              initialValue: _selectedType,
-                              iconEnabledColor: isDark
-                                  ? const Color(0xFFE6D5B8)
-                                  : const Color(0xFFC5B358),
-                              decoration: InputDecoration(
-                                labelText: l10n.selectCategory,
-                                filled: true,
-                                fillColor: isDark
-                                    ? theme.colorScheme.surface
-                                        .withValues(alpha: 0.25)
-                                    : Colors.white,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              items: [
-                                for (final type in QuestionType.values)
-                                  DropdownMenuItem(
-                                    value: type,
-                                    child: Row(
-                                      children: [
-                                        Icon(type.icon, size: 18),
-                                        const SizedBox(width: 8),
-                                        Text(l10n.questionTypeLabel(type)),
-                                      ],
-                                    ),
-                                  ),
-                              ],
-                              onChanged: (value) =>
-                                  setState(() => _selectedType = value),
-                              validator: (value) => value == null
-                                  ? l10n.selectTypeError
-                                  : null,
-                            ),
-                            const SizedBox(height: 20),
-
-                            // Exact question
-                            Text(
-                              l10n.yourQuestion,
-                              style: theme.textTheme.labelLarge,
-                            ),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _questionController,
-                              maxLines: 4,
-                              minLines: 3,
-                              decoration: InputDecoration(
-                                hintText: l10n.questionHint,
-                                hintStyle: TextStyle(
-                                  color: isDark
-                                      ? Colors.white.withValues(alpha: 0.3)
-                                      : theme.colorScheme.onSurfaceVariant,
-                                ),
-                                filled: true,
-                                fillColor: isDark
-                                    ? theme.colorScheme.surface
-                                        .withValues(alpha: 0.25)
-                                    : Colors.white,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              validator: (value) =>
-                                  (value == null || value.trim().isEmpty)
-                                  ? l10n.enterQuestionError
-                                  : null,
-                              textInputAction: TextInputAction.newline,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Casting method
-                      Text(
-                        l10n.castingMethod,
-                        style: theme.textTheme.labelLarge,
-                      ),
-                      const SizedBox(height: 8),
-                      SegmentedButton<CastMethod>(
-                        style: SegmentedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          foregroundColor: ancientGold,
-                          selectedBackgroundColor: ancientGold,
-                          selectedForegroundColor: Colors.black,
-                          side: const BorderSide(color: ancientGold),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                        ),
-                        segments: [
-                          ButtonSegment(
-                            value: CastMethod.quick,
-                            icon: const Icon(Icons.casino_outlined),
-                            label: Text(l10n.quickGenerate),
-                          ),
-                          ButtonSegment(
-                            value: CastMethod.manual,
-                            icon: const Icon(Icons.tune),
-                            label: Text(l10n.manualGenerate),
+                          BoxShadow(
+                            color: champagneGold.withValues(alpha: 0.15),
+                            blurRadius: 28,
+                            spreadRadius: 1,
                           ),
                         ],
-                        selected: {_method},
-                        onSelectionChanged: (selection) =>
-                            setState(() => _method = selection.first),
                       ),
-                      const SizedBox(height: 24),
-
-                      // Submit button
-                      SizedBox(
-                        height: 48,
-                        child: GradientButton(
-                          onPressed: _isSubmitting ? null : _submit,
-                          icon: _isSubmitting
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Icon(Icons.question_answer),
-                          label: _isSubmitting
-                              ? l10n.casting
-                              : l10n.submitQuestion,
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/medallion.png',
+                          width: 110,
+                          height: 110,
+                          fit: BoxFit.cover,
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  Text(
+                    l10n.askPrompt,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 24),
+
+                  GlassCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Question type selector
+                        Text(
+                          l10n.questionType,
+                          style: theme.textTheme.labelLarge,
+                        ),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<QuestionType>(
+                          initialValue: _selectedType,
+                          iconEnabledColor: isDark
+                              ? const Color(0xFFE6D5B8)
+                              : const Color(0xFFC5B358),
+                          decoration: InputDecoration(
+                            labelText: l10n.selectCategory,
+                            filled: true,
+                            fillColor: isDark
+                                ? theme.colorScheme.surface.withValues(
+                                    alpha: 0.25,
+                                  )
+                                : Colors.white,
+                            enabledBorder: _fieldBorder(
+                              isDark
+                                  ? champagneGold.withValues(alpha: 0.6)
+                                  : bronzeGold,
+                            ),
+                            focusedBorder: _fieldBorder(
+                              isDark ? champagneGold : bronzeGold,
+                              width: 2,
+                            ),
+                            border: _fieldBorder(
+                              isDark
+                                  ? champagneGold.withValues(alpha: 0.6)
+                                  : bronzeGold,
+                            ),
+                          ),
+                          items: [
+                            for (final type in QuestionType.values)
+                              DropdownMenuItem(
+                                value: type,
+                                child: Row(
+                                  children: [
+                                    Icon(type.icon, size: 18),
+                                    const SizedBox(width: 8),
+                                    Text(l10n.questionTypeLabel(type)),
+                                  ],
+                                ),
+                              ),
+                          ],
+                          onChanged: (value) =>
+                              setState(() => _selectedType = value),
+                          validator: (value) =>
+                              value == null ? l10n.selectTypeError : null,
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Exact question
+                        Text(
+                          l10n.yourQuestion,
+                          style: theme.textTheme.labelLarge,
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _questionController,
+                          maxLines: 4,
+                          minLines: 3,
+                          decoration: InputDecoration(
+                            hintText: l10n.questionHint,
+                            hintStyle: TextStyle(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.3)
+                                  : theme.colorScheme.onSurfaceVariant,
+                            ),
+                            filled: true,
+                            fillColor: isDark
+                                ? theme.colorScheme.surface.withValues(
+                                    alpha: 0.25,
+                                  )
+                                : Colors.white,
+                            enabledBorder: _fieldBorder(
+                              isDark
+                                  ? champagneGold.withValues(alpha: 0.6)
+                                  : bronzeGold,
+                            ),
+                            focusedBorder: _fieldBorder(
+                              isDark ? champagneGold : bronzeGold,
+                              width: 2,
+                            ),
+                            border: _fieldBorder(
+                              isDark
+                                  ? champagneGold.withValues(alpha: 0.6)
+                                  : bronzeGold,
+                            ),
+                          ),
+                          validator: (value) =>
+                              (value == null || value.trim().isEmpty)
+                              ? l10n.enterQuestionError
+                              : null,
+                          textInputAction: TextInputAction.newline,
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Casting method
+                        Text(
+                          l10n.castingMethod,
+                          style: theme.textTheme.labelLarge,
+                        ),
+                        const SizedBox(height: 8),
+                        SegmentedButton<CastMethod>(
+                          style: SegmentedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            foregroundColor: ancientGold,
+                            selectedBackgroundColor: ancientGold,
+                            selectedForegroundColor: Colors.black,
+                            side: const BorderSide(color: ancientGold),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                          ),
+                          segments: [
+                            ButtonSegment(
+                              value: CastMethod.quick,
+                              icon: const Icon(Icons.casino_outlined),
+                              label: Text(l10n.quickGenerate),
+                            ),
+                            ButtonSegment(
+                              value: CastMethod.manual,
+                              icon: const Icon(Icons.tune),
+                              label: Text(l10n.manualGenerate),
+                            ),
+                          ],
+                          selected: {_method},
+                          onSelectionChanged: (selection) =>
+                              setState(() => _method = selection.first),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Submit button
+                        SizedBox(
+                          height: 48,
+                          child: GradientButton(
+                            onPressed: _isSubmitting ? null : _submit,
+                            icon: _isSubmitting
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.question_answer),
+                            label: _isSubmitting
+                                ? l10n.casting
+                                : l10n.submitQuestion,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
+        ),
+      ),
     );
   }
 }

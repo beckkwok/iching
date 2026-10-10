@@ -10,6 +10,12 @@ const List<String> chineseFontFallback = ['LXGWWenKaiMonoTC'];
 /// Ancient gold used for text in the dark theme.
 const Color ancientGold = Color(0xFFD4AF37);
 
+/// Champagne gold for celestial borders and glows (issue #60).
+const Color champagneGold = Color(0xFFE6D5B8);
+
+/// Antique bronze for light-mode borders (issue #60).
+const Color bronzeGold = Color(0xFFC5B358);
+
 /// The light [ThemeData] for the app (gold-forward accent, issue #60).
 ThemeData buildLightTheme() => ThemeData(
       colorScheme: ColorScheme.fromSeed(seedColor: ancientGold),
