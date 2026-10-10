@@ -10,9 +10,9 @@ const List<String> chineseFontFallback = ['LXGWWenKaiMonoTC'];
 /// Ancient gold used for text in the dark theme.
 const Color ancientGold = Color(0xFFD4AF37);
 
-/// The light [ThemeData] for the app.
+/// The light [ThemeData] for the app (gold-forward accent, issue #60).
 ThemeData buildLightTheme() => ThemeData(
-      colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+      colorScheme: ColorScheme.fromSeed(seedColor: ancientGold),
       useMaterial3: true,
       fontFamilyFallback: chineseFontFallback,
     );
@@ -20,7 +20,7 @@ ThemeData buildLightTheme() => ThemeData(
 /// The dark [ThemeData] for the app, with ancient-gold text.
 ThemeData buildDarkTheme() {
   final scheme = ColorScheme.fromSeed(
-    seedColor: const Color(0xFF673AB7),
+    seedColor: ancientGold,
     brightness: Brightness.dark,
   ).copyWith(
     onSurface: ancientGold,

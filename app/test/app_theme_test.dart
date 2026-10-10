@@ -35,6 +35,17 @@ void main() {
     expect(buildLightTheme().textTheme.bodyMedium?.color, isNot(ancientGold));
   });
 
+  test('primary is gold-derived in both modes', () {
+    final lightGold =
+        ColorScheme.fromSeed(seedColor: ancientGold).primary;
+    final darkGold = ColorScheme.fromSeed(
+      seedColor: ancientGold,
+      brightness: Brightness.dark,
+    ).primary;
+    expect(buildLightTheme().colorScheme.primary, lightGold);
+    expect(buildDarkTheme().colorScheme.primary, darkGold);
+  });
+
   test('dark forui theme uses the gold foreground', () {
     expect(buildForuiTheme(Brightness.dark).colors.foreground, ancientGold);
     expect(
