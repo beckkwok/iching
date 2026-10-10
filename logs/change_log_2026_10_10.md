@@ -62,3 +62,30 @@ form required scroll-into-view before tapping submit in
 
 - `flutter analyze` — clean (3 pre-existing info lints)
 - `flutter test` — green (217 pass)
+
+## Task: #60 slice — solid gold submit + purple sweep (#73)
+
+Make `GradientButton` a solid rich-gold fill in **both** modes with dark text,
+matching the author's spec §3 + §5.
+
+- `gradient_button.dart`: `start` is now champagne `#E6D5B8`, `end` deeper
+  bronze `#C5B358`; new `ink` `#13131A` is the default `foregroundColor`.
+  Dropped the dark-mode translucent branch (and white text / gold border):
+  `_decoration()` is now mode-independent and always keeps the soft gold
+  `#E6D5B8` glow. Press-scale + haptic unchanged.
+- Ask submit (`question_form_screen.dart`) dropped its now-redundant
+  `gradientColors`/`foregroundColor` overrides and its spinner uses
+  `GradientButton.ink`.
+- `prompt_editor_screen.dart` save-spinner changed from white to
+  `GradientButton.ink` (white was invisible on the gold fill).
+- Purple sweep: the only remaining reference is the `GradientButton` doc
+  comment (rewritten). The single other hit is the classical I-Ching text in
+  `assets/hexagrams/gua_47.json` ("purple knee bands") — content, not UI, left
+  as-is.
+- `gradient_button_test.dart` rewritten: solid gradient + dark ink asserted in
+  both modes; the old translucent/white light-mode assertions replaced.
+
+## Verification
+
+- `flutter analyze` — clean (3 pre-existing info lints)
+- `flutter test` — green (218 pass)
