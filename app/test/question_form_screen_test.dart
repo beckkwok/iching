@@ -12,6 +12,7 @@ import 'package:app/services/database_service.dart';
 import 'package:app/services/gua_generator.dart';
 import 'package:app/services/hexagram_loader.dart';
 import 'package:app/theme/app_theme.dart';
+import 'package:app/widgets/glass_card.dart';
 
 /// Minimal valid hexagram JSON for [code].
 String fixtureJson(int code) {
@@ -114,6 +115,28 @@ void main() {
     expect(
       style.foregroundColor!.resolve({WidgetState.selected}),
       Colors.black,
+    );
+  });
+
+  testWidgets('form fields sit inside a glass card', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(home: buildForm()),
+    );
+
+    expect(find.byType(GlassCard), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(GlassCard),
+        matching: find.byType(TextFormField),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(GlassCard),
+        matching: find.byType(DropdownButtonFormField<QuestionType>),
+      ),
+      findsOneWidget,
     );
   });
 
