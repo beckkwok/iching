@@ -90,6 +90,7 @@ flutter:
 
   assets:
     - assets/hexagrams/
+    - assets/images/taichi.png
 
   fonts:
     - family: LXGWWenKaiMonoTC
