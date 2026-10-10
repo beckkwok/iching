@@ -156,7 +156,8 @@ void main() {
     expect(find.byType(Image), findsOneWidget);
   });
 
-  testWidgets('glass card uses obsidian fill in dark mode', (tester) async {
+  testWidgets('glass card uses obsidian gradient fill in dark mode',
+      (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: ThemeData(brightness: Brightness.dark),
@@ -166,14 +167,20 @@ void main() {
 
     final container = tester.widget<Container>(
       find.descendant(
-        of: find.byType(GlassCard),
+        of: find.byType(BackdropFilter),
         matching: find.byType(Container),
       ),
     );
     final decoration = container.decoration! as BoxDecoration;
-    expect(
-      decoration.color,
+    final gradient = decoration.gradient! as LinearGradient;
+    expect(gradient.colors, [
+      const Color(0xFF1E1E28).withValues(alpha: 0.6),
       const Color(0xFF13131A).withValues(alpha: 0.6),
+    ]);
+    // Crisp champagne border.
+    expect(
+      (decoration.border! as Border).top.color,
+      champagneGold.withValues(alpha: 0.45),
     );
   });
 
