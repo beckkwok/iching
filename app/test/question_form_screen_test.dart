@@ -174,6 +174,17 @@ void main() {
     expect(find.byType(Image), findsOneWidget);
   });
 
+  testWidgets('headers use the Noto Serif family', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(home: buildForm()),
+    );
+
+    final title = tester.widget<Text>(find.text('What would you like to ask the I-Ching?'));
+    expect(title.style?.fontFamily, notoSerifFamily);
+    final label = tester.widget<Text>(find.text('Question type').first);
+    expect(label.style?.fontFamily, notoSerifFamily);
+  });
+
   testWidgets('glass card uses obsidian gradient fill in dark mode',
       (tester) async {
     await tester.pumpWidget(

@@ -63,6 +63,13 @@ form required scroll-into-view before tapping submit in
 - `flutter analyze` — clean (3 pre-existing info lints)
 - `flutter test` — green (217 pass)
 
+## Task: #60 slice — Noto Serif TC headers (#72)
+
+Bundle subsetted Noto Serif TC (Regular + Bold, ~0.76MB each covering the
+app's Latin + CJK glyph set, OFL via Google Fonts) and use it as the
+`fontFamily` for the Ask title and section labels. Everything else keeps the
+LXGW fallback chain.
+
 ## Task: #60 slice — solid gold submit + purple sweep (#73)
 
 Make `GradientButton` a solid rich-gold fill in **both** modes with dark text,
