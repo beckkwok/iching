@@ -54,6 +54,9 @@ form required scroll-into-view before tapping submit in
 - Tests updated/added for the pills and custom button colors. Note:
   `find.byType(Container)` also matches `AnimatedContainer` subtypes, so the
   glass-fill assertion now selects by its exact gradient.
+- Medallion crop pinned to the top (`Alignment.topCenter`): the coin sits
+  high in its frame with a white margin below, which showed as a white band
+  inside the circle.
 
 ## Verification
 

@@ -160,14 +160,18 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                           ),
                         ],
                       ),
-                      child: ClipOval(
-                        child: Image.asset(
-                          'assets/images/medallion.png',
-                          width: 110,
-                          height: 110,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
+                          child: ClipOval(
+                            // The coin sits high in the frame with a white
+                            // margin below it: pin the crop to the top so no
+                            // white shows inside the circle.
+                            child: Image.asset(
+                              'assets/images/medallion.png',
+                              width: 110,
+                              height: 110,
+                              fit: BoxFit.cover,
+                              alignment: Alignment.topCenter,
+                            ),
+                          ),
                     ),
                   ),
                   const SizedBox(height: 16),
