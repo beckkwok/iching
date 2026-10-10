@@ -181,13 +181,13 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                      Text(
-                        l10n.askPrompt,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontFamily: notoSerifFamily,
-                        ),
-                      ),
+                  Text(
+                    l10n.askPrompt,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontFamily: notoSerifFamily,
+                    ),
+                  ),
                   const SizedBox(height: 24),
 
                   GlassCard(
@@ -295,7 +295,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        // Casting method â€” two separated pills, each fully
+                        // Casting method — two separated pills, each fully
                         // oval on both sides.
                         Text(
                           l10n.castingMethod,
@@ -326,24 +326,19 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                         ),
                         const SizedBox(height: 24),
 
-                        // Submit button â€” same gold gradient + dark text as
-                        // the selected casting pill.
+                        // Submit button — solid gold gradient + dark text,
+                        // matching the selected casting pill.
                         SizedBox(
                           height: 48,
                           child: GradientButton(
                             onPressed: _isSubmitting ? null : _submit,
-                            gradientColors: const [
-                              champagneGold,
-                              bronzeGold,
-                            ],
-                            foregroundColor: Colors.black,
                             icon: _isSubmitting
                                 ? const SizedBox(
                                     width: 20,
                                     height: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: Colors.black,
+                                      color: GradientButton.ink,
                                     ),
                                   )
                                 : const Icon(Icons.question_answer),
@@ -429,4 +424,3 @@ class _MethodPill extends StatelessWidget {
     );
   }
 }
-

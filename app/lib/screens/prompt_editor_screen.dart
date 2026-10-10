@@ -165,7 +165,7 @@ class _PromptEditorScreenState extends State<PromptEditorScreen> {
                                     height: 18,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: Colors.white,
+                                      color: GradientButton.ink,
                                     ),
                                   )
                                 : const Icon(Icons.save),
