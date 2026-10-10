@@ -59,30 +59,59 @@ void main() {
     expect(tapped, isFalse);
   });
 
-  testWidgets('light mode uses the solid gold gradient', (tester) async {
-    await pumpButton(tester, onPressed: () {});
-    final decoration = ink(tester).decoration! as BoxDecoration;
-    final gradient = decoration.gradient! as LinearGradient;
+  testWidgets('uses the solid gold gradient in both modes', (tester) async {
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      await pumpButton(tester, onPressed: () {}, brightness: brightness);
+      final decoration = ink(tester).decoration! as BoxDecoration;
+      final gradient = decoration.gradient! as LinearGradient;
 
-    expect(gradient.colors, [GradientButton.start, GradientButton.end]);
-    expect(decoration.boxShadow, isNull);
+      expect(gradient.colors, [GradientButton.start, GradientButton.end]);
+      expect(
+        gradient.colors,
+        [const Color(0xFFE6D5B8), const Color(0xFFC5B358)],
+      );
+    }
   });
 
-  testWidgets('dark mode has a translucent fill, gold border and glow',
-      (tester) async {
-    await pumpButton(tester, onPressed: () {}, brightness: Brightness.dark);
-    final decoration = ink(tester).decoration! as BoxDecoration;
+  testWidgets('has a soft gold glow in both modes', (tester) async {
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      await pumpButton(tester, onPressed: () {}, brightness: brightness);
+      final decoration = ink(tester).decoration! as BoxDecoration;
+      final shadow = decoration.boxShadow!.single;
 
-    expect(decoration.border, isA<Border>());
-    expect(
-      (decoration.border! as Border).top.color,
-      GradientButton.gold.withValues(alpha: 0.55),
-    );
+      expect(shadow.color, GradientButton.gold.withValues(alpha: 0.5));
+      expect(shadow.blurRadius, GradientButton.glowBlurRadius);
+      expect(shadow.spreadRadius, GradientButton.glowSpreadRadius);
+    }
+  });
 
-    final shadow = decoration.boxShadow!.single;
-    expect(shadow.color, GradientButton.gold.withValues(alpha: 0.5));
-    expect(shadow.blurRadius, GradientButton.glowBlurRadius);
-    expect(shadow.spreadRadius, GradientButton.glowSpreadRadius);
+  testWidgets('label and icons use dark ink by default', (tester) async {
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      await pumpButton(
+        tester,
+        onPressed: () {},
+        icon: const Icon(Icons.star),
+        brightness: brightness,
+      );
+
+      final button =
+          tester.widget<GradientButton>(find.byType(GradientButton));
+      expect(button.foregroundColor, GradientButton.ink);
+
+      final label = tester.widget<Text>(find.text('Go'));
+      expect(label.style!.color, GradientButton.ink);
+
+      final iconThemes = tester.widgetList<IconTheme>(
+        find.descendant(
+          of: find.byType(GradientButton),
+          matching: find.byType(IconTheme),
+        ),
+      );
+      expect(
+        iconThemes.any((t) => t.data.color == GradientButton.ink),
+        isTrue,
+      );
+    }
   });
 
   testWidgets('shrinks while pressed', (tester) async {

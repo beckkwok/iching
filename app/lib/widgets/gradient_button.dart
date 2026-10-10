@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// A primary action button with an immersive, gold look.
+/// A primary action button with a solid, celestial gold fill.
 ///
-/// In dark mode it uses a translucent deep-gold fill (so the star background
-/// shows through), a fine gold border, and a soft gold glow. In light mode it
-/// falls back to the solid gold gradient for contrast. Pressing it scales the
-/// button down slightly and triggers a light haptic.
+/// Both themes use the same rich-gold gradient (champagne [start] → deeper
+/// bronze [end]) with dark [ink] label/icons, so the CTA stays a bright focal
+/// point against either backdrop. A soft gold glow surrounds it. Pressing it
+/// scales the button down slightly and triggers a light haptic.
 class GradientButton extends StatefulWidget {
   const GradientButton({
     super.key,
@@ -14,7 +14,7 @@ class GradientButton extends StatefulWidget {
     required this.label,
     this.icon,
     this.gradientColors,
-    this.foregroundColor = Colors.white,
+    this.foregroundColor = ink,
   });
 
   final VoidCallback? onPressed;
@@ -25,18 +25,22 @@ class GradientButton extends StatefulWidget {
   /// An optional leading widget (an [Icon] or a loading spinner).
   final Widget? icon;
 
-  /// Optional gradient fill override (used solid in both modes). Defaults to
-  /// the purple [start] → [end] gradient.
+  /// Optional gradient fill override. Defaults to the champagne [start] →
+  /// deeper bronze [end] gradient.
   final List<Color>? gradientColors;
 
-  /// Color of the label, icon and spinner. Defaults to white.
+  /// Color of the label, icon and spinner. Defaults to [ink] for contrast on
+  /// the gold fill.
   final Color foregroundColor;
 
-  static const Color start = Color(0xFF8C6D1F);
-  static const Color end = Color(0xFFD4AF37);
+  static const Color start = Color(0xFFE6D5B8); // champagne gold
+  static const Color end = Color(0xFFC5B358); // deeper bronze
 
-  /// Gold used for the button's border and glow.
-  static const Color gold = Color(0xFFD4AF37);
+  /// Gold used for the button's glow.
+  static const Color gold = Color(0xFFE6D5B8);
+
+  /// Dark ink used for the label and icons on the gold fill (issue #73).
+  static const Color ink = Color(0xFF13131A);
 
   /// The glow's blur and spread radii.
   static const double glowBlurRadius = 24;
@@ -56,34 +60,16 @@ class _GradientButtonState extends State<GradientButton> {
     if (_pressed != value) setState(() => _pressed = value);
   }
 
-  BoxDecoration _decoration(bool isDark) {
+  BoxDecoration _decoration() {
     final radius = BorderRadius.circular(24);
     final custom = widget.gradientColors;
-    if (!isDark || custom != null) {
-      return BoxDecoration(
-        gradient: LinearGradient(
-          colors:
-              custom ?? const [GradientButton.start, GradientButton.end],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: radius,
-      );
-    }
-
     return BoxDecoration(
       gradient: LinearGradient(
-        colors: [
-          GradientButton.start.withValues(alpha: 0.35),
-          GradientButton.end.withValues(alpha: 0.22),
-        ],
+        colors: custom ?? const [GradientButton.start, GradientButton.end],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
       borderRadius: radius,
-      border: Border.all(
-        color: GradientButton.gold.withValues(alpha: 0.55),
-      ),
       boxShadow: [
         BoxShadow(
           color: GradientButton.gold.withValues(alpha: 0.5),
@@ -97,7 +83,6 @@ class _GradientButtonState extends State<GradientButton> {
   @override
   Widget build(BuildContext context) {
     final enabled = widget.onPressed != null;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final radius = BorderRadius.circular(24);
 
     final content = Row(
@@ -128,7 +113,7 @@ class _GradientButtonState extends State<GradientButton> {
         child: Material(
           color: Colors.transparent,
           child: Ink(
-            decoration: _decoration(isDark),
+            decoration: _decoration(),
             child: InkWell(
               onTap: widget.onPressed,
               borderRadius: radius,
