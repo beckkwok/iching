@@ -116,11 +116,16 @@ original hexagram.
   `hasChangedHexagram`, derived from the stored line types.
 - New `ConsultationDetailScreen` shows: question/type/date, then a side-by-side
   comparison — the original hexagram (bars + each yao's label, changing lines
-  marked `→`) → the changed hexagram (flipped line figure, in the accent
-  colour) — followed by the full LLM explanation and feedback. Tapping either
+  highlighted in the accent colour) → the changed hexagram (flipped line
+  figure, also in the accent colour) — followed by the full LLM explanation and
+  feedback. The two figures share the same line height/gap so their lines stay
+  aligned, and the separator arrow is vertically centred. Tapping either
   hexagram opens its full `HexagramDetailScreen` explanation. The history card
   shows the changed hexagram name plus a compact changed-line figure, and opens
   this screen on tap.
+- `HexagramView` label rows are pinned to the bar height (labels scale with
+  `lineHeight`) so a labelled figure aligns with an unlabelled one; the
+  per-line `→` marker was dropped in favour of colour highlighting.
 - Added `original` / `changed` l10n keys for the comparison headers.
 - `HexagramView` gains optional `labels` / `labelColors` so a per-line label
   can sit to the right of each bar (used by the consultation detail).
@@ -137,6 +142,8 @@ original hexagram.
 - `history_screen_test.dart` — changed hexagram + line figure shown; tap opens
   the full record with both hexagram figures; tapping a hexagram opens its
   full explanation.
+- `hexagram_view_test.dart` — labelled and unlabelled figures keep the same
+  height (line-spacing alignment).
 
 ## Verification
 

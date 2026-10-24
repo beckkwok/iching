@@ -95,4 +95,37 @@ void main() {
     final size = tester.getSize(find.byKey(const Key('hexagram')));
     expect(size.width, greaterThan(72));
   });
+
+  testWidgets('labelled and unlabelled figures keep the same line spacing', (
+    tester,
+  ) async {
+    const lines = [true, false, true, false, true, false];
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: Column(
+            children: [
+              HexagramView(
+                key: Key('with-labels'),
+                lines: lines,
+                lineHeight: 14,
+                gap: 10,
+                labels: ['少陽', '少陰', '少陽', '少陰', '少陽', '少陰'],
+              ),
+              HexagramView(
+                key: Key('plain'),
+                lines: lines,
+                lineHeight: 14,
+                gap: 10,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final labelled = tester.getSize(find.byKey(const Key('with-labels')));
+    final plain = tester.getSize(find.byKey(const Key('plain')));
+    expect(labelled.height, plain.height);
+  });
 }
