@@ -4,6 +4,7 @@ import '../l10n/app_localizations.dart';
 import '../models/consultation.dart';
 import '../models/reaction.dart';
 import '../services/database_service.dart';
+import '../widgets/hexagram_view.dart';
 import 'consultation_detail_screen.dart';
 
 /// Lists the recorded consultations (question, hexagram, explanation).
@@ -208,14 +209,30 @@ class _ConsultationCard extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              if (consultation.changedHexagramName != null) ...[
+              if (consultation.hasChangedHexagram) ...[
                 const SizedBox(height: 4),
-                Text(
-                  '${l10n.changedHexagram}: '
-                  '${consultation.changedHexagramName}',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.primary,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        consultation.changedHexagramName != null
+                            ? '${l10n.changedHexagram}: '
+                                '${consultation.changedHexagramName}'
+                            : l10n.changedHexagram,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                    if (consultation.changedLines.length == 6)
+                      HexagramView(
+                        lines: consultation.changedLines,
+                        width: 32,
+                        lineHeight: 3,
+                        gap: 3,
+                        radius: 1,
+                      ),
+                  ],
                 ),
               ],
               const SizedBox(height: 8),
