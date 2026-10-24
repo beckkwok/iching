@@ -82,7 +82,7 @@ class ConsultationDetailScreen extends StatelessWidget {
             _Section(
               title: l10n.hexagramSymbolSection,
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
                     child: _HexagramColumn(
@@ -92,9 +92,10 @@ class ConsultationDetailScreen extends StatelessWidget {
                       view: consultation.lineTypes.isNotEmpty
                           ? HexagramView(
                               lines: consultation.castLines,
+                              lineHeight: 14,
+                              gap: 10,
                               labels: [
-                                for (final t in consultation.lineTypes)
-                                  '${t.label}${t.isChanging ? ' →' : ''}',
+                                for (final t in consultation.lineTypes) t.label,
                               ],
                               labelColors: [
                                 for (final t in consultation.lineTypes)
@@ -114,11 +115,7 @@ class ConsultationDetailScreen extends StatelessWidget {
                   ),
                   if (consultation.hasChangedHexagram) ...[
                     Padding(
-                      padding: const EdgeInsets.only(
-                        top: 40,
-                        left: 4,
-                        right: 4,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Icon(
                         Icons.arrow_forward,
                         size: 18,
@@ -136,7 +133,11 @@ class ConsultationDetailScreen extends StatelessWidget {
                             : '',
                         highlight: true,
                         view: consultation.changedLines.length == 6
-                            ? HexagramView(lines: consultation.changedLines)
+                            ? HexagramView(
+                                lines: consultation.changedLines,
+                                lineHeight: 14,
+                                gap: 10,
+                              )
                             : const SizedBox.shrink(),
                         onTap: consultation.changedHexagramContent != null
                             ? () => _openGua(

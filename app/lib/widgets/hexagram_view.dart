@@ -66,29 +66,36 @@ class HexagramView extends StatelessWidget {
                 radius: radius,
               )
             else
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: width,
-                    child: _YaoBar(
-                      isYang: lines[i],
-                      color: color,
-                      height: lineHeight,
-                      radius: radius,
+              SizedBox(
+                // Fix the row height to the bar height so a labelled figure
+                // lines up exactly with an unlabelled one (e.g. the original
+                // vs the changed hexagram).
+                height: lineHeight,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: width,
+                      child: _YaoBar(
+                        isYang: lines[i],
+                        color: color,
+                        height: lineHeight,
+                        radius: radius,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    labels[i],
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: (i < (labelColors?.length ?? 0))
-                          ? labelColors![i]
-                          : theme.colorScheme.onSurfaceVariant,
+                    const SizedBox(width: 10),
+                    Text(
+                      labels[i],
+                      style: TextStyle(
+                        fontSize: lineHeight * 0.85,
+                        height: 1,
+                        color: (i < (labelColors?.length ?? 0))
+                            ? labelColors![i]
+                            : theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
           ],
         ],
