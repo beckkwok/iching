@@ -114,12 +114,14 @@ original hexagram.
   saves the consultation.
 - `Consultation` exposes `castLines` / `changedLines` / `hasChangingLines` /
   `hasChangedHexagram`, derived from the stored line types.
-- New `ConsultationDetailScreen` shows: question/type/date, the original
-  hexagram with each yao's label beside its bar (e.g. `- - 少陰`, changing
-  lines marked `→`), the changed hexagram **with its flipped line figure**,
-  the full LLM explanation and feedback. The history card shows the changed
-  hexagram name plus a compact changed-line figure, and opens this screen on
-  tap.
+- New `ConsultationDetailScreen` shows: question/type/date, then a side-by-side
+  comparison — the original hexagram (bars + each yao's label, changing lines
+  marked `→`) → the changed hexagram (flipped line figure, in the accent
+  colour) — followed by the full LLM explanation and feedback. Tapping either
+  hexagram opens its full `HexagramDetailScreen` explanation. The history card
+  shows the changed hexagram name plus a compact changed-line figure, and opens
+  this screen on tap.
+- Added `original` / `changed` l10n keys for the comparison headers.
 - `HexagramView` gains optional `labels` / `labelColors` so a per-line label
   can sit to the right of each bar (used by the consultation detail).
 - Added the `consultationDetail` l10n key; no other strings added.
@@ -133,7 +135,8 @@ original hexagram.
 - `explanation_screen_test.dart` — the saved consultation includes the
   changed hexagram and line types.
 - `history_screen_test.dart` — changed hexagram + line figure shown; tap opens
-  the full record with both hexagram figures.
+  the full record with both hexagram figures; tapping a hexagram opens its
+  full explanation.
 
 ## Verification
 

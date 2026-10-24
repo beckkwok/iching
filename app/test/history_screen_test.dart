@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:app/models/consultation.dart';
 import 'package:app/models/yao_line_type.dart';
 import 'package:app/screens/consultation_detail_screen.dart';
+import 'package:app/screens/hexagram_detail_screen.dart';
 import 'package:app/screens/history_screen.dart';
 import 'package:app/services/database_service.dart';
 import 'package:app/widgets/hexagram_view.dart';
@@ -142,5 +143,24 @@ void main() {
     expect(find.byType(HexagramView), findsNWidgets(2));
     expect(find.text('A gentle reflection.'), findsOneWidget);
     expect(find.text('I feel hopeful about the move.'), findsOneWidget);
+  });
+
+  testWidgets('tapping a hexagram opens its full explanation', (tester) async {
+    final db = _FakeDb([_consultation()]);
+
+    await tester.pumpWidget(
+      MaterialApp(home: HistoryScreen(databaseService: db)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('地風升'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ConsultationDetailScreen), findsOneWidget);
+
+    // Tap the changed hexagram column → full hexagram explanation.
+    await tester.tap(find.text('天地否'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(HexagramDetailScreen), findsOneWidget);
   });
 }
