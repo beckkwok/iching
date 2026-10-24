@@ -29,133 +29,155 @@ class ConsultationDetailScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.consultationDetail)),
-      body: ListView(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        children: [
-          Text(
-            consultation.question,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              consultation.question,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          if (typeLabel != null && typeLabel.isNotEmpty) ...[
+            if (typeLabel != null && typeLabel.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                typeLabel,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
             const SizedBox(height: 4),
             Text(
-              typeLabel,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.primary,
+              _formatDate(consultation.createdAt),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-          ],
-          const SizedBox(height: 4),
-          Text(
-            _formatDate(consultation.createdAt),
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const Divider(height: 32),
+            const Divider(height: 32),
 
-          // 1. Hexagram result (plus the cast lines when known).
-          _Section(
-            title: l10n.hexagramSymbolSection,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        consultation.hexagramName,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      l10n.hexagramNumber(consultation.hexagramCode),
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                if (consultation.lineTypes.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  HexagramView(
-                    lines: consultation.lineTypes
-                        .map((t) => t.isYang)
-                        .toList(),
-                  ),
-                ],
-              ],
-            ),
-          ),
-
-          // 2 + 3. Changed lines / changed hexagram.
-          if (consultation.changedHexagramName != null)
+            // 1. Hexagram result (plus the cast lines when known).
             _Section(
-              title: l10n.changedHexagram,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      consultation.changedHexagramName!,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  if (consultation.changedHexagramCode != null)
-                    Text(
-                      l10n.hexagramNumber(
-                        consultation.changedHexagramCode!,
-                      ),
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-
-          // 4. LLM interpretation.
-          _Section(
-            title: l10n.explanation,
-            child: SelectableText(
-              consultation.explanation,
-              style: theme.textTheme.bodyMedium,
-            ),
-          ),
-
-          // 5. User feedback.
-          if (reaction != null || (comment != null && comment.isNotEmpty))
-            _Section(
-              title: l10n.feedbackTitle,
+              title: l10n.hexagramSymbolSection,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (reaction != null)
-                    Text(
-                      reaction.emoji,
-                      style: const TextStyle(fontSize: 24),
-                    ),
-                  if (comment != null && comment.isNotEmpty) ...[
-                    if (reaction != null) const SizedBox(height: 8),
-                    Text(
-                      comment,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontStyle: FontStyle.italic,
-                        color: theme.colorScheme.onSurfaceVariant,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          consultation.hexagramName,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                    ),
+                      Text(
+                        l10n.hexagramNumber(consultation.hexagramCode),
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (consultation.lineTypes.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    HexagramView(lines: consultation.castLines),
+                    const SizedBox(height: 12),
+                    for (var i = consultation.lineTypes.length - 1; i >= 0; i--)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          '${i + 1}. ${consultation.lineTypes[i].label}'
+                          '${consultation.lineTypes[i].isChanging ? ' →' : ''}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: consultation.lineTypes[i].isChanging
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
                   ],
                 ],
               ),
             ),
-        ],
+
+            // 2 + 3. Changed lines / changed hexagram.
+            if (consultation.hasChangedHexagram)
+              _Section(
+                title: l10n.changedHexagram,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            consultation.changedHexagramName ?? '',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        if (consultation.changedHexagramCode != null)
+                          Text(
+                            l10n.hexagramNumber(
+                              consultation.changedHexagramCode!,
+                            ),
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (consultation.changedLines.length == 6) ...[
+                      const SizedBox(height: 12),
+                      HexagramView(lines: consultation.changedLines),
+                    ],
+                  ],
+                ),
+              ),
+
+            // 4. LLM interpretation.
+            _Section(
+              title: l10n.explanation,
+              child: Text(
+                consultation.explanation,
+                style: theme.textTheme.bodyMedium,
+              ),
+            ),
+
+            // 5. User feedback.
+            if (reaction != null || (comment != null && comment.isNotEmpty))
+              _Section(
+                title: l10n.feedbackTitle,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (reaction != null)
+                      Text(
+                        reaction.emoji,
+                        style: const TextStyle(fontSize: 24),
+                      ),
+                    if (comment != null && comment.isNotEmpty) ...[
+                      if (reaction != null) const SizedBox(height: 8),
+                      Text(
+                        comment,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontStyle: FontStyle.italic,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

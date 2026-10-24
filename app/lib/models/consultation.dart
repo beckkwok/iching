@@ -29,6 +29,23 @@ class Consultation {
   final String? changedHexagramName;
   final String? changedHexagramContent;
 
+  /// The six cast lines (yang = `true`), bottom → top. Empty when [lineTypes]
+  /// is empty.
+  List<bool> get castLines => lineTypes.map((t) => t.isYang).toList();
+
+  /// The six lines after flipping every changing line (老陰/老陽), bottom → top.
+  /// Empty when [lineTypes] is empty.
+  List<bool> get changedLines =>
+      lineTypes.map((t) => t.isChanging ? !t.isYang : t.isYang).toList();
+
+  /// True when the cast has at least one changing line.
+  bool get hasChangingLines => lineTypes.any((t) => t.isChanging);
+
+  /// True when this record has a changed hexagram to display (either the
+  /// stored name or the derived changing lines).
+  bool get hasChangedHexagram =>
+      changedHexagramName != null || hasChangingLines;
+
   /// Feedback reaction key (see `Reaction`), set after the response.
   final String? reaction;
 
@@ -139,19 +156,19 @@ class Consultation {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        question,
-        questionTypeLabel,
-        hexagramCode,
-        hexagramName,
-        hexagramContent,
-        explanation,
-        Object.hashAll(lineTypes),
-        changedHexagramCode,
-        changedHexagramName,
-        changedHexagramContent,
-        reaction,
-        comment,
-        createdAt,
-      );
+    id,
+    question,
+    questionTypeLabel,
+    hexagramCode,
+    hexagramName,
+    hexagramContent,
+    explanation,
+    Object.hashAll(lineTypes),
+    changedHexagramCode,
+    changedHexagramName,
+    changedHexagramContent,
+    reaction,
+    comment,
+    createdAt,
+  );
 }
