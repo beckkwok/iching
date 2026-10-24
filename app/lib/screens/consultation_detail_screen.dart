@@ -92,8 +92,8 @@ class ConsultationDetailScreen extends StatelessWidget {
                       view: consultation.lineTypes.isNotEmpty
                           ? HexagramView(
                               lines: consultation.castLines,
-                              lineHeight: 14,
-                              gap: 10,
+                              lineHeight: 9,
+                              gap: 3,
                               labels: [
                                 for (final t in consultation.lineTypes) t.label,
                               ],
@@ -135,8 +135,8 @@ class ConsultationDetailScreen extends StatelessWidget {
                         view: consultation.changedLines.length == 6
                             ? HexagramView(
                                 lines: consultation.changedLines,
-                                lineHeight: 14,
-                                gap: 10,
+                                lineHeight: 9,
+                                gap: 3,
                               )
                             : const SizedBox.shrink(),
                         onTap: consultation.changedHexagramContent != null
@@ -220,49 +220,59 @@ class _HexagramColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.all(4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              name,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: highlight ? theme.colorScheme.primary : null,
-              ),
-            ),
-            if (number.isNotEmpty)
+    final radius = BorderRadius.circular(12);
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: radius,
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: radius,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                number,
-                style: theme.textTheme.labelMedium?.copyWith(
+                label,
+                style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.primary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-            const SizedBox(height: 12),
-            Center(child: view),
-            if (onTap != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 2),
               Text(
-                l10n.tapForDetails,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                name,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: highlight ? theme.colorScheme.primary : null,
                 ),
               ),
+              if (number.isNotEmpty)
+                Text(
+                  number,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              const SizedBox(height: 12),
+              Center(child: view),
+              if (onTap != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  l10n.tapForDetails,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

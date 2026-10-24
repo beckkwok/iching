@@ -87,7 +87,7 @@ class HexagramView extends StatelessWidget {
                     Text(
                       labels[i],
                       style: TextStyle(
-                        fontSize: lineHeight * 0.85,
+                        fontSize: lineHeight * 0.9,
                         height: 1,
                         color: (i < (labelColors?.length ?? 0))
                             ? labelColors![i]
