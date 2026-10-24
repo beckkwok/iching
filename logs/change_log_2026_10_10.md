@@ -118,11 +118,13 @@ original hexagram.
   comparison — the original hexagram (bars + each yao's label, changing lines
   highlighted in the accent colour) → the changed hexagram (flipped line
   figure, also in the accent colour) — followed by the full LLM explanation and
-  feedback. The two figures share the same line height/gap so their lines stay
-  aligned, and the separator arrow is vertically centred. Tapping either
-  hexagram opens its full `HexagramDetailScreen` explanation. The history card
-  shows the changed hexagram name plus a compact changed-line figure, and opens
-  this screen on tap.
+  feedback. Each hexagram sits in its own bordered card (matching the cast
+  result / history card style), the figures are compact (`lineHeight 9`,
+  `gap 3` — about half the previous height) and share the same spacing so their
+  lines stay aligned, and the separator arrow is vertically centred. Tapping
+  either card opens its full `HexagramDetailScreen` explanation. The history
+  card shows the changed hexagram name plus a compact changed-line figure, and
+  opens this screen on tap.
 - `HexagramView` label rows are pinned to the bar height (labels scale with
   `lineHeight`) so a labelled figure aligns with an unlabelled one; the
   per-line `→` marker was dropped in favour of colour highlighting.
