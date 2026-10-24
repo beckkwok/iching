@@ -96,3 +96,39 @@ matching the author's spec §3 + §5.
 
 - `flutter analyze` — clean (3 pre-existing info lints)
 - `flutter test` — green (218 pass)
+
+## Task: store + show the full consultation record (#47)
+
+The history now keeps and displays the complete record instead of only the
+original hexagram.
+
+- `Consultation` gains `lineTypes` (the six 老陰/少陽/少陰/老陽 values) and the
+  changed hexagram (`code` / `name` / `content`), all nullable/defaulted for
+  legacy rows. `toMap`/`fromMap` serialize them (`line_types` as a JSON array;
+  malformed JSON falls back to empty) and `==`/`hashCode` include them.
+- DB **v13** adds `line_types`, `changed_hexagram_code`,
+  `changed_hexagram_name`, `changed_hexagram_content` to `consultations`
+  (idempotent `ALTER`s guarded by `PRAGMA table_info`). `createConsultation`
+  now round-trips through `fromMap` so no field is dropped.
+- `ExplanationScreen` persists the cast's line types and `changedGua` when it
+  saves the consultation.
+- New `ConsultationDetailScreen` shows: question/type/date, original hexagram
+  (+ yao lines), changed hexagram, full LLM explanation and feedback. The
+  history card shows the changed hexagram and opens this screen on tap.
+- Added the `consultationDetail` l10n key; no other strings added.
+
+### Tests
+
+- `consultation_test.dart` — full-record round-trip, legacy defaults,
+  malformed `line_types`.
+- `database_service_test.dart` — full cast persists through SQLite.
+- `migration_v4_test.dart` — v12 → v13 adds the columns and preserves rows.
+- `explanation_screen_test.dart` — the saved consultation includes the
+  changed hexagram and line types.
+- `history_screen_test.dart` — changed hexagram shown; tap opens the full
+  record.
+
+## Verification
+
+- `flutter analyze` — clean (3 pre-existing info lints)
+- `flutter test` — green (225 pass)
