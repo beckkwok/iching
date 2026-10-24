@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/consultation.dart';
+import '../models/gua.dart';
 import '../models/reaction.dart';
 import '../widgets/hexagram_view.dart';
+import 'hexagram_detail_screen.dart';
 
 /// Shows the complete saved record for a consultation (issue #47):
 /// the question, the original hexagram, the changed hexagram, the LLM
@@ -17,6 +19,22 @@ class ConsultationDetailScreen extends StatelessWidget {
     String two(int n) => n.toString().padLeft(2, '0');
     return '${dt.year}-${two(dt.month)}-${two(dt.day)} '
         '${two(dt.hour)}:${two(dt.minute)}';
+  }
+
+  /// Open the full hexagram explanation (卦辭/彖傳/爻辭/...) for [gua].
+  void _openGua(
+    BuildContext context, {
+    required int guaCode,
+    required String guaName,
+    required String guaContent,
+  }) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => HexagramDetailScreen(
+          gua: Gua(guaCode: guaCode, guaName: guaName, guaContent: guaContent),
+        ),
+      ),
+    );
   }
 
   @override
@@ -58,87 +76,83 @@ class ConsultationDetailScreen extends StatelessWidget {
             ),
             const Divider(height: 32),
 
-            // 1. Hexagram result (plus the cast lines when known).
+            // 1-3. Original hexagram | changed lines | changed hexagram, side
+            // by side so the change is visible at a glance (issue #47).
+            // Tapping either figure opens its full explanation.
             _Section(
               title: l10n.hexagramSymbolSection,
-              child: Column(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          consultation.hexagramName,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                  Expanded(
+                    child: _HexagramColumn(
+                      label: l10n.original,
+                      name: consultation.hexagramName,
+                      number: l10n.hexagramNumber(consultation.hexagramCode),
+                      view: consultation.lineTypes.isNotEmpty
+                          ? HexagramView(
+                              lines: consultation.castLines,
+                              labels: [
+                                for (final t in consultation.lineTypes)
+                                  '${t.label}${t.isChanging ? ' →' : ''}',
+                              ],
+                              labelColors: [
+                                for (final t in consultation.lineTypes)
+                                  t.isChanging
+                                      ? theme.colorScheme.primary
+                                      : theme.colorScheme.onSurfaceVariant,
+                              ],
+                            )
+                          : const SizedBox.shrink(),
+                      onTap: () => _openGua(
+                        context,
+                        guaCode: consultation.hexagramCode,
+                        guaName: consultation.hexagramName,
+                        guaContent: consultation.hexagramContent,
                       ),
-                      Text(
-                        l10n.hexagramNumber(consultation.hexagramCode),
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                  if (consultation.lineTypes.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    HexagramView(
-                      lines: consultation.castLines,
-                      labels: [
-                        for (final t in consultation.lineTypes)
-                          '${t.label}${t.isChanging ? ' →' : ''}',
-                      ],
-                      labelColors: [
-                        for (final t in consultation.lineTypes)
-                          t.isChanging
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.onSurfaceVariant,
-                      ],
+                  if (consultation.hasChangedHexagram) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        top: 40,
+                        left: 4,
+                        right: 4,
+                      ),
+                      child: Icon(
+                        Icons.arrow_forward,
+                        size: 18,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    Expanded(
+                      child: _HexagramColumn(
+                        label: l10n.changed,
+                        name: consultation.changedHexagramName ?? '',
+                        number: consultation.changedHexagramCode != null
+                            ? l10n.hexagramNumber(
+                                consultation.changedHexagramCode!,
+                              )
+                            : '',
+                        highlight: true,
+                        view: consultation.changedLines.length == 6
+                            ? HexagramView(lines: consultation.changedLines)
+                            : const SizedBox.shrink(),
+                        onTap: consultation.changedHexagramContent != null
+                            ? () => _openGua(
+                                context,
+                                guaCode: consultation.changedHexagramCode ?? 0,
+                                guaName: consultation.changedHexagramName ?? '',
+                                guaContent:
+                                    consultation.changedHexagramContent!,
+                              )
+                            : null,
+                      ),
                     ),
                   ],
                 ],
               ),
             ),
-
-            // 2 + 3. Changed lines / changed hexagram.
-            if (consultation.hasChangedHexagram)
-              _Section(
-                title: l10n.changedHexagram,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            consultation.changedHexagramName ?? '',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        if (consultation.changedHexagramCode != null)
-                          Text(
-                            l10n.hexagramNumber(
-                              consultation.changedHexagramCode!,
-                            ),
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                      ],
-                    ),
-                    if (consultation.changedLines.length == 6) ...[
-                      const SizedBox(height: 12),
-                      HexagramView(lines: consultation.changedLines),
-                    ],
-                  ],
-                ),
-              ),
 
             // 4. LLM interpretation.
             _Section(
@@ -174,6 +188,79 @@ class ConsultationDetailScreen extends StatelessWidget {
                   ],
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One side of the original → changed comparison: a header (label, name,
+/// number), the hexagram figure, and a tap hint when it opens the full
+/// explanation.
+class _HexagramColumn extends StatelessWidget {
+  final String label;
+  final String name;
+  final String number;
+  final Widget view;
+  final bool highlight;
+  final VoidCallback? onTap;
+
+  const _HexagramColumn({
+    required this.label,
+    required this.name,
+    required this.number,
+    required this.view,
+    this.highlight = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              name,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: highlight ? theme.colorScheme.primary : null,
+              ),
+            ),
+            if (number.isNotEmpty)
+              Text(
+                number,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            const SizedBox(height: 12),
+            Center(child: view),
+            if (onTap != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                l10n.tapForDetails,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ],
         ),
       ),
