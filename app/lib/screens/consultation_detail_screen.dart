@@ -85,21 +85,19 @@ class ConsultationDetailScreen extends StatelessWidget {
                   ),
                   if (consultation.lineTypes.isNotEmpty) ...[
                     const SizedBox(height: 12),
-                    HexagramView(lines: consultation.castLines),
-                    const SizedBox(height: 12),
-                    for (var i = consultation.lineTypes.length - 1; i >= 0; i--)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 2),
-                        child: Text(
-                          '${i + 1}. ${consultation.lineTypes[i].label}'
-                          '${consultation.lineTypes[i].isChanging ? ' →' : ''}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: consultation.lineTypes[i].isChanging
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
+                    HexagramView(
+                      lines: consultation.castLines,
+                      labels: [
+                        for (final t in consultation.lineTypes)
+                          '${t.label}${t.isChanging ? ' →' : ''}',
+                      ],
+                      labelColors: [
+                        for (final t in consultation.lineTypes)
+                          t.isChanging
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurfaceVariant,
+                      ],
+                    ),
                   ],
                 ],
               ),

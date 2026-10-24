@@ -115,10 +115,13 @@ original hexagram.
 - `Consultation` exposes `castLines` / `changedLines` / `hasChangingLines` /
   `hasChangedHexagram`, derived from the stored line types.
 - New `ConsultationDetailScreen` shows: question/type/date, the original
-  hexagram + its six line labels (changing lines marked `→`), the changed
-  hexagram **with its flipped line figure**, the full LLM explanation and
-  feedback. The history card shows the changed hexagram name plus a compact
-  changed-line figure, and opens this screen on tap.
+  hexagram with each yao's label beside its bar (e.g. `- - 少陰`, changing
+  lines marked `→`), the changed hexagram **with its flipped line figure**,
+  the full LLM explanation and feedback. The history card shows the changed
+  hexagram name plus a compact changed-line figure, and opens this screen on
+  tap.
+- `HexagramView` gains optional `labels` / `labelColors` so a per-line label
+  can sit to the right of each bar (used by the consultation detail).
 - Added the `consultationDetail` l10n key; no other strings added.
 
 ### Tests
