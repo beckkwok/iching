@@ -120,6 +120,64 @@ void main() {
     await File(path).delete();
   });
 
+  test('migration from v12 adds the full-cast columns', () async {
+    final path = _tmpPath();
+    // Simulate a v12 consultations table (before issue #47's columns).
+    final legacy = await databaseFactory.openDatabase(
+      path,
+      options: OpenDatabaseOptions(version: 12),
+    );
+    await legacy.execute('''
+      CREATE TABLE consultations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        question TEXT NOT NULL,
+        question_type TEXT,
+        hexagram_code INTEGER NOT NULL,
+        hexagram_name TEXT NOT NULL,
+        hexagram_content TEXT NOT NULL,
+        explanation TEXT NOT NULL,
+        rating INTEGER,
+        comment TEXT,
+        reaction TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await legacy.insert('consultations', {
+      'question': 'q',
+      'hexagram_code': 1,
+      'hexagram_name': '乾為天',
+      'hexagram_content': '{}',
+      'explanation': 'e',
+      'created_at': '2026-01-01T00:00:00.000',
+    });
+    await legacy.close();
+
+    final service = DatabaseService(databasePath: path);
+    final db = await service.database;
+
+    final columns = await db.rawQuery('PRAGMA table_info(consultations)');
+    final names = columns.map((c) => c['name']).toSet();
+    expect(
+      names,
+      containsAll([
+        'line_types',
+        'changed_hexagram_code',
+        'changed_hexagram_name',
+        'changed_hexagram_content',
+      ]),
+    );
+
+    // Existing rows survive with default (empty) cast fields.
+    final saved = (await service.getConsultations()).single;
+    expect(saved.question, 'q');
+    expect(saved.lineTypes, isEmpty);
+    expect(saved.changedHexagramCode, isNull);
+    expect(saved.changedHexagramName, isNull);
+
+    await service.close();
+    await File(path).delete();
+  });
+
   test('a fresh database has settings and consultations tables', () async {
     final path = _tmpPath();
     final service = DatabaseService(databasePath: path);

@@ -98,6 +98,7 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
       final db = widget.databaseService;
       if (db != null) {
         final gua = widget.result.gua;
+        final changed = widget.result.changedGua;
         final saved = await db.createConsultation(Consultation(
           question: widget.question,
           questionTypeLabel: widget.questionTypeLabel,
@@ -105,6 +106,10 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
           hexagramName: gua.guaName,
           hexagramContent: gua.guaContent,
           explanation: text,
+          lineTypes: widget.result.lineTypes,
+          changedHexagramCode: changed?.guaCode,
+          changedHexagramName: changed?.guaName,
+          changedHexagramContent: changed?.guaContent,
           createdAt: DateTime.now(),
         ));
         _consultationId = saved.id;

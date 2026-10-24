@@ -55,6 +55,23 @@ GenerationResult _result() {
   );
 }
 
+/// A cast with changing lines and a resolved changed hexagram (issue #47).
+GenerationResult _resultWithChange() {
+  final base = _result();
+  return GenerationResult(
+    gua: base.gua,
+    method: base.method,
+    lines: base.lines,
+    lineTypes: base.lineTypes,
+    changedLines: base.changedLines,
+    changedGua: Gua(
+      guaCode: 12,
+      guaName: '天地否',
+      guaContent: '{"卦名":"天地否","卦序":12}',
+    ),
+  );
+}
+
 void main() {
   testWidgets('shows question, hexagram, and LLM explanation', (tester) async {
     final llm = FakeLlmService();
@@ -170,6 +187,32 @@ void main() {
     expect(c.explanation, 'A gentle mirror for your question.');
   });
 
+  testWidgets('saves the full cast including the changed hexagram',
+      (tester) async {
+    final llm = FakeLlmService();
+    llm.explanationResponse = 'A gentle mirror for your question.';
+    final db = _RecordingDb();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ExplanationScreen(
+          question: 'Should I take the new job?',
+          result: _resultWithChange(),
+          llmService: llm,
+          databaseService: db,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final c = db.saved.single;
+    expect(c.lineTypes, hasLength(6));
+    expect(c.lineTypes.first, YaoLineType.oldYang);
+    expect(c.changedHexagramCode, 12);
+    expect(c.changedHexagramName, '天地否');
+    expect(c.changedHexagramContent, contains('天地否'));
+  });
+
   testWidgets('submits feedback on the consultation', (tester) async {
     final llm = FakeLlmService();
     llm.explanationResponse = 'A gentle mirror for your question.';
@@ -236,16 +279,10 @@ class _RecordingDb extends DatabaseService {
 
   @override
   Future<Consultation> createConsultation(Consultation consultation) async {
-    final withId = Consultation(
-      id: saved.length + 1,
-      question: consultation.question,
-      questionTypeLabel: consultation.questionTypeLabel,
-      hexagramCode: consultation.hexagramCode,
-      hexagramName: consultation.hexagramName,
-      hexagramContent: consultation.hexagramContent,
-      explanation: consultation.explanation,
-      createdAt: consultation.createdAt,
-    );
+    final withId = Consultation.fromMap({
+      ...consultation.toMap(),
+      'id': saved.length + 1,
+    });
     saved.add(withId);
     return withId;
   }

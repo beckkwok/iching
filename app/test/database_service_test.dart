@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:app/models/consultation.dart';
+import 'package:app/models/yao_line_type.dart';
 import 'package:app/services/database_service.dart';
 
 void main() {
@@ -98,6 +99,41 @@ void main() {
       expect(all.first.hexagramContent, '{"卦名":"地風升","卦序":46}');
       expect(all.first.explanation, 'A gentle reflection.');
       expect(all.first.createdAt, DateTime(2026, 1, 2, 3, 4));
+    });
+
+    test('createConsultation stores the full cast (issue #47)', () async {
+      await service.createConsultation(Consultation(
+        question: 'Should I move?',
+        hexagramCode: 46,
+        hexagramName: '地風升',
+        hexagramContent: '{"卦名":"地風升","卦序":46}',
+        explanation: 'e',
+        lineTypes: const [
+          YaoLineType.oldYang,
+          YaoLineType.youngYin,
+          YaoLineType.youngYang,
+          YaoLineType.oldYin,
+          YaoLineType.youngYang,
+          YaoLineType.youngYin,
+        ],
+        changedHexagramCode: 12,
+        changedHexagramName: '天地否',
+        changedHexagramContent: '{"卦名":"天地否","卦序":12}',
+        createdAt: DateTime(2026, 1, 2),
+      ));
+
+      final saved = (await service.getConsultations()).single;
+      expect(saved.lineTypes, [
+        YaoLineType.oldYang,
+        YaoLineType.youngYin,
+        YaoLineType.youngYang,
+        YaoLineType.oldYin,
+        YaoLineType.youngYang,
+        YaoLineType.youngYin,
+      ]);
+      expect(saved.changedHexagramCode, 12);
+      expect(saved.changedHexagramName, '天地否');
+      expect(saved.changedHexagramContent, '{"卦名":"天地否","卦序":12}');
     });
 
     test('getConsultations returns most recent first', () async {
