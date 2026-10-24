@@ -1,5 +1,12 @@
+import 'dart:convert';
+
+import 'package:app/models/yao_line_type.dart';
+
 /// A single recorded consultation: the user's question, the cast hexagram,
 /// the LLM explanation, and (optionally) the user's feedback.
+///
+/// Also stores the six cast line types and the changed hexagram (issue #47) so
+/// the history can show the complete record.
 class Consultation {
   final int? id;
   final String question;
@@ -12,6 +19,32 @@ class Consultation {
   final String hexagramContent;
 
   final String explanation;
+
+  /// The six cast line types (老陰/少陽/少陰/老陽), bottom → top. Empty for
+  /// manual lookups and for records saved before issue #47.
+  final List<YaoLineType> lineTypes;
+
+  /// The hexagram the changing lines resolve to, if any (issue #47).
+  final int? changedHexagramCode;
+  final String? changedHexagramName;
+  final String? changedHexagramContent;
+
+  /// The six cast lines (yang = `true`), bottom → top. Empty when [lineTypes]
+  /// is empty.
+  List<bool> get castLines => lineTypes.map((t) => t.isYang).toList();
+
+  /// The six lines after flipping every changing line (老陰/老陽), bottom → top.
+  /// Empty when [lineTypes] is empty.
+  List<bool> get changedLines =>
+      lineTypes.map((t) => t.isChanging ? !t.isYang : t.isYang).toList();
+
+  /// True when the cast has at least one changing line.
+  bool get hasChangingLines => lineTypes.any((t) => t.isChanging);
+
+  /// True when this record has a changed hexagram to display (either the
+  /// stored name or the derived changing lines).
+  bool get hasChangedHexagram =>
+      changedHexagramName != null || hasChangingLines;
 
   /// Feedback reaction key (see `Reaction`), set after the response.
   final String? reaction;
@@ -29,6 +62,10 @@ class Consultation {
     required this.hexagramName,
     required this.hexagramContent,
     required this.explanation,
+    this.lineTypes = const [],
+    this.changedHexagramCode,
+    this.changedHexagramName,
+    this.changedHexagramContent,
     this.reaction,
     this.comment,
     required this.createdAt,
@@ -42,6 +79,10 @@ class Consultation {
       'hexagram_name': hexagramName,
       'hexagram_content': hexagramContent,
       'explanation': explanation,
+      'line_types': jsonEncode(lineTypes.map((t) => t.value).toList()),
+      'changed_hexagram_code': changedHexagramCode,
+      'changed_hexagram_name': changedHexagramName,
+      'changed_hexagram_content': changedHexagramContent,
       'reaction': reaction,
       'comment': comment,
       'created_at': createdAt.toIso8601String(),
@@ -59,10 +100,34 @@ class Consultation {
       hexagramName: map['hexagram_name'] as String,
       hexagramContent: map['hexagram_content'] as String,
       explanation: map['explanation'] as String,
+      lineTypes: _decodeLineTypes(map['line_types']),
+      changedHexagramCode: map['changed_hexagram_code'] as int?,
+      changedHexagramName: map['changed_hexagram_name'] as String?,
+      changedHexagramContent: map['changed_hexagram_content'] as String?,
       reaction: map['reaction'] as String?,
       comment: map['comment'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),
     );
+  }
+
+  /// Decode the stored `line_types` JSON array (cast values 6–9).
+  static List<YaoLineType> _decodeLineTypes(dynamic value) {
+    if (value is! String || value.isEmpty) return const [];
+    try {
+      final decoded = jsonDecode(value);
+      if (decoded is! List) return const [];
+      return decoded.whereType<int>().map(YaoLineType.fromValue).toList();
+    } on FormatException {
+      return const [];
+    }
+  }
+
+  static bool _lineTypesEqual(List<YaoLineType> a, List<YaoLineType> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   @override
@@ -81,11 +146,29 @@ class Consultation {
           hexagramName == other.hexagramName &&
           hexagramContent == other.hexagramContent &&
           explanation == other.explanation &&
+          _lineTypesEqual(lineTypes, other.lineTypes) &&
+          changedHexagramCode == other.changedHexagramCode &&
+          changedHexagramName == other.changedHexagramName &&
+          changedHexagramContent == other.changedHexagramContent &&
           reaction == other.reaction &&
           comment == other.comment &&
           createdAt == other.createdAt;
 
   @override
-  int get hashCode => Object.hash(id, question, questionTypeLabel, hexagramCode,
-      hexagramName, hexagramContent, explanation, reaction, comment, createdAt);
+  int get hashCode => Object.hash(
+    id,
+    question,
+    questionTypeLabel,
+    hexagramCode,
+    hexagramName,
+    hexagramContent,
+    explanation,
+    Object.hashAll(lineTypes),
+    changedHexagramCode,
+    changedHexagramName,
+    changedHexagramContent,
+    reaction,
+    comment,
+    createdAt,
+  );
 }

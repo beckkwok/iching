@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/consultation.dart';
-import '../models/gua.dart';
 import '../models/reaction.dart';
 import '../services/database_service.dart';
-import 'hexagram_detail_screen.dart';
+import '../widgets/hexagram_view.dart';
+import 'consultation_detail_screen.dart';
 
 /// Lists the recorded consultations (question, hexagram, explanation).
 ///
@@ -172,12 +172,8 @@ class _ConsultationCard extends StatelessWidget {
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (_) => HexagramDetailScreen(
-                gua: Gua(
-                  guaCode: consultation.hexagramCode,
-                  guaName: consultation.hexagramName,
-                  guaContent: consultation.hexagramContent,
-                ),
+              builder: (_) => ConsultationDetailScreen(
+                consultation: consultation,
               ),
             ),
           );
@@ -213,6 +209,32 @@ class _ConsultationCard extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              if (consultation.hasChangedHexagram) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        consultation.changedHexagramName != null
+                            ? '${l10n.changedHexagram}: '
+                                '${consultation.changedHexagramName}'
+                            : l10n.changedHexagram,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                    if (consultation.changedLines.length == 6)
+                      HexagramView(
+                        lines: consultation.changedLines,
+                        width: 32,
+                        lineHeight: 3,
+                        gap: 3,
+                        radius: 1,
+                      ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 8),
               Text(
                 consultation.explanation,

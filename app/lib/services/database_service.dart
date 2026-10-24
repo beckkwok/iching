@@ -15,7 +15,7 @@ class DatabaseService {
   static const String _agentMemoryTable = 'agent_memory';
 
   /// The database version for migration tracking.
-  static const int _databaseVersion = 12;
+  static const int _databaseVersion = 13;
 
   /// Custom database path (used for in-memory testing).
   final String? _customPath;
@@ -127,6 +127,10 @@ class DatabaseService {
         rating INTEGER,
         comment TEXT,
         reaction TEXT,
+        line_types TEXT NOT NULL DEFAULT '[]',
+        changed_hexagram_code INTEGER,
+        changed_hexagram_name TEXT,
+        changed_hexagram_content TEXT,
         created_at TEXT NOT NULL
       )
     ''');
@@ -165,6 +169,11 @@ class DatabaseService {
     if (oldVersion < 12) {
       // v11 → v12: add the `feelings` map (per-topic feelings) — issue #26.
       await _addAgentMemoryFeelingsColumn(db);
+    }
+    if (oldVersion < 13) {
+      // v12 → v13: store the full cast — line types + changed hexagram
+      // (issue #47).
+      await _addConsultationCastColumns(db);
     }
   }
 
@@ -227,6 +236,38 @@ class DatabaseService {
     }
   }
 
+  /// Adds the full-cast columns to the consultations table if they are missing
+  /// (line types + changed hexagram, issue #47).
+  Future<void> _addConsultationCastColumns(Database db) async {
+    final columns =
+        await db.rawQuery('PRAGMA table_info($_consultationsTable)');
+    final names = columns.map((c) => c['name']).toSet();
+    if (!names.contains('line_types')) {
+      await db.execute(
+        "ALTER TABLE $_consultationsTable "
+        "ADD COLUMN line_types TEXT NOT NULL DEFAULT '[]'",
+      );
+    }
+    if (!names.contains('changed_hexagram_code')) {
+      await db.execute(
+        "ALTER TABLE $_consultationsTable "
+        "ADD COLUMN changed_hexagram_code INTEGER",
+      );
+    }
+    if (!names.contains('changed_hexagram_name')) {
+      await db.execute(
+        "ALTER TABLE $_consultationsTable "
+        "ADD COLUMN changed_hexagram_name TEXT",
+      );
+    }
+    if (!names.contains('changed_hexagram_content')) {
+      await db.execute(
+        "ALTER TABLE $_consultationsTable "
+        "ADD COLUMN changed_hexagram_content TEXT",
+      );
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Settings CRUD
   // ---------------------------------------------------------------------------
@@ -273,18 +314,7 @@ class DatabaseService {
     final map = consultation.toMap();
     map.remove('id');
     final id = await db.insert(_consultationsTable, map);
-    return Consultation(
-      id: id,
-      question: consultation.question,
-      questionTypeLabel: consultation.questionTypeLabel,
-      hexagramCode: consultation.hexagramCode,
-      hexagramName: consultation.hexagramName,
-      hexagramContent: consultation.hexagramContent,
-      explanation: consultation.explanation,
-      reaction: consultation.reaction,
-      comment: consultation.comment,
-      createdAt: consultation.createdAt,
-    );
+    return Consultation.fromMap({...map, 'id': id});
   }
 
   /// Store the user's feedback (emoji reaction + comment) on an existing

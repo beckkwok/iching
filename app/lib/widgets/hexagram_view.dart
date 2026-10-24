@@ -22,6 +22,16 @@ class HexagramView extends StatelessWidget {
   /// Corner radius of each bar.
   final double radius;
 
+  /// Optional per-line labels, in the same bottom → top order as [lines].
+  ///
+  /// When provided, each bar is rendered in a row with its label to the right
+  /// (e.g. `- - 少陰`).
+  final List<String>? labels;
+
+  /// Optional per-line label colors, in the same bottom → top order as
+  /// [lines]. Defaults to the theme's `onSurfaceVariant`.
+  final List<Color>? labelColors;
+
   const HexagramView({
     super.key,
     required this.lines,
@@ -29,24 +39,64 @@ class HexagramView extends StatelessWidget {
     this.lineHeight = 9,
     this.gap = 6,
     this.radius = 2,
+    this.labels,
+    this.labelColors,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    final color = theme.colorScheme.primary;
+    final labels = this.labels;
+    final labelColors = this.labelColors;
+
     return SizedBox(
-      width: width,
+      width: labels == null ? width : null,
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           for (var i = lines.length - 1; i >= 0; i--) ...[
             if (i != lines.length - 1) SizedBox(height: gap),
-            _YaoBar(
-              isYang: lines[i],
-              color: color,
-              height: lineHeight,
-              radius: radius,
-            ),
+            if (labels == null)
+              _YaoBar(
+                isYang: lines[i],
+                color: color,
+                height: lineHeight,
+                radius: radius,
+              )
+            else
+              SizedBox(
+                // Fix the row height to the bar height so a labelled figure
+                // lines up exactly with an unlabelled one (e.g. the original
+                // vs the changed hexagram).
+                height: lineHeight,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: width,
+                      child: _YaoBar(
+                        isYang: lines[i],
+                        color: color,
+                        height: lineHeight,
+                        radius: radius,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      labels[i],
+                      style: TextStyle(
+                        fontSize: lineHeight * 0.9,
+                        height: 1,
+                        color: (i < (labelColors?.length ?? 0))
+                            ? labelColors![i]
+                            : theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ],
       ),
@@ -82,10 +132,10 @@ class _YaoBar extends StatelessWidget {
   }
 
   Widget _bar() => Container(
-        height: height,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(radius),
-        ),
-      );
+    height: height,
+    decoration: BoxDecoration(
+      color: color,
+      borderRadius: BorderRadius.circular(radius),
+    ),
+  );
 }

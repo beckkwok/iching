@@ -96,3 +96,58 @@ matching the author's spec §3 + §5.
 
 - `flutter analyze` — clean (3 pre-existing info lints)
 - `flutter test` — green (218 pass)
+
+## Task: store + show the full consultation record (#47)
+
+The history now keeps and displays the complete record instead of only the
+original hexagram.
+
+- `Consultation` gains `lineTypes` (the six 老陰/少陽/少陰/老陽 values) and the
+  changed hexagram (`code` / `name` / `content`), all nullable/defaulted for
+  legacy rows. `toMap`/`fromMap` serialize them (`line_types` as a JSON array;
+  malformed JSON falls back to empty) and `==`/`hashCode` include them.
+- DB **v13** adds `line_types`, `changed_hexagram_code`,
+  `changed_hexagram_name`, `changed_hexagram_content` to `consultations`
+  (idempotent `ALTER`s guarded by `PRAGMA table_info`). `createConsultation`
+  now round-trips through `fromMap` so no field is dropped.
+- `ExplanationScreen` persists the cast's line types and `changedGua` when it
+  saves the consultation.
+- `Consultation` exposes `castLines` / `changedLines` / `hasChangingLines` /
+  `hasChangedHexagram`, derived from the stored line types.
+- New `ConsultationDetailScreen` shows: question/type/date, then a side-by-side
+  comparison — the original hexagram (bars + each yao's label, changing lines
+  highlighted in the accent colour) → the changed hexagram (flipped line
+  figure, also in the accent colour) — followed by the full LLM explanation and
+  feedback. Each hexagram sits in its own bordered card (matching the cast
+  result / history card style), the figures are compact (`lineHeight 9`,
+  `gap 3` — about half the previous height) and share the same spacing so their
+  lines stay aligned, and the separator arrow is vertically centred. Tapping
+  either card opens its full `HexagramDetailScreen` explanation. The history
+  card shows the changed hexagram name plus a compact changed-line figure, and
+  opens this screen on tap.
+- `HexagramView` label rows are pinned to the bar height (labels scale with
+  `lineHeight`) so a labelled figure aligns with an unlabelled one; the
+  per-line `→` marker was dropped in favour of colour highlighting.
+- Added `original` / `changed` l10n keys for the comparison headers.
+- `HexagramView` gains optional `labels` / `labelColors` so a per-line label
+  can sit to the right of each bar (used by the consultation detail).
+- Added the `consultationDetail` l10n key; no other strings added.
+
+### Tests
+
+- `consultation_test.dart` — full-record round-trip, legacy defaults,
+  malformed `line_types`, and the derived cast/changed lines.
+- `database_service_test.dart` — full cast persists through SQLite.
+- `migration_v4_test.dart` — v12 → v13 adds the columns and preserves rows.
+- `explanation_screen_test.dart` — the saved consultation includes the
+  changed hexagram and line types.
+- `history_screen_test.dart` — changed hexagram + line figure shown; tap opens
+  the full record with both hexagram figures; tapping a hexagram opens its
+  full explanation.
+- `hexagram_view_test.dart` — labelled and unlabelled figures keep the same
+  height (line-spacing alignment).
+
+## Verification
+
+- `flutter analyze` — clean (3 pre-existing info lints)
+- `flutter test` — green (226 pass)
