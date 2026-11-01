@@ -94,6 +94,52 @@ void main() {
       expect(LlmService.cleanResponseText('Answer.<|endoftext|'), 'Answer.');
     });
 
+    test('removes Gemma 4 thinking channels', () {
+      expect(
+        LlmService.cleanResponseText(
+          '<|channel>thought\nreasoning here<channel|>Answer.',
+        ),
+        'Answer.',
+      );
+      expect(
+        LlmService.cleanResponseText(
+          '<|channel>thought\r\nreasoning<channel|>\r\nAnswer.',
+        ),
+        'Answer.',
+      );
+      expect(
+        LlmService.cleanResponseText(
+          '<|channel>thought\na<channel|>'
+          '<|channel>thought\nb<channel|>Answer.',
+        ),
+        'Answer.',
+      );
+    });
+
+    test('removes Gemma 4 final channel markers', () {
+      expect(
+        LlmService.cleanResponseText('<|channel>final\nAnswer.<channel|>'),
+        'Answer.',
+      );
+      expect(
+        LlmService.cleanResponseText('<|channel|>Answer.<|channel|>'),
+        'Answer.',
+      );
+      expect(
+        LlmService.cleanResponseText('Intro. <|channel>final\nAnswer.'),
+        'Intro. Answer.',
+      );
+    });
+
+    test('removes common chat-template tokens', () {
+      expect(
+        LlmService.cleanResponseText(
+          '<start_of_turn>model\nAnswer.<end_of_turn><|im_end|>',
+        ),
+        'Answer.',
+      );
+    });
+
     test('trims surrounding whitespace', () {
       expect(LlmService.cleanResponseText('  \n Answer. \n '), 'Answer.');
     });

@@ -86,13 +86,46 @@ class DefaultLlmPromptStrategy extends LlmPromptStrategy {
   @override
   String cleanExplanation(String raw) {
     var cleaned = raw;
+
+    // Gemma 4 thinking channel: <|channel>thought\n...<channel|>.
+    cleaned = cleaned.replaceAll(
+      RegExp(r'<\|channel>thought\s*\r?\n?.*?<channel\|>', dotAll: true),
+      '',
+    );
+
+    // DeepSeek / Qwen3 reasoning blocks.
     cleaned = cleaned.replaceAll(
       RegExp(r'<think>.*?</think>', dotAll: true),
       '',
     );
-    cleaned = cleaned.replaceAll(RegExp(r'<think>', dotAll: true), '');
-    cleaned = cleaned.replaceAll(RegExp(r'</think>', dotAll: true), '');
-    cleaned = cleaned.replaceAll(RegExp(r'<\|endoftext\|>?'), '');
+    cleaned = cleaned.replaceAll(RegExp(r'</?think>'), '');
+
+    // Remaining channel markers, e.g. <|channel>final\n ... <channel|>.
+    cleaned = cleaned.replaceAll(
+      RegExp(r'<\|channel>\s*(?:thought|final)?\s*\r?\n?'),
+      '',
+    );
+    cleaned = cleaned.replaceAll(RegExp(r'<\|?channel\|?>'), '');
+
+    // Common chat-template / control tokens.
+    cleaned = cleaned.replaceAll(RegExp(r'<\|endoftext\|?>?'), '');
+    cleaned = cleaned.replaceAll(
+      RegExp(
+        r'<\|(?:im_start|im_end|eot_id|assistant|user|system|'
+        r'start_header_id|end_header_id)\|?>',
+      ),
+      '',
+    );
+    // Gemma turn markers, including the role word after the start marker.
+    cleaned = cleaned.replaceAll(
+      RegExp(r'<start_of_turn>\s*(?:model|user|assistant)\s*\r?\n?'),
+      '',
+    );
+    cleaned = cleaned.replaceAll(
+      RegExp(r'</?(?:start_of_turn|end_of_turn)>'),
+      '',
+    );
+
     return cleaned.trim();
   }
 
