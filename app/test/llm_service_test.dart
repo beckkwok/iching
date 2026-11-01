@@ -90,14 +90,8 @@ void main() {
     });
 
     test('removes end-of-text tokens', () {
-      expect(
-        LlmService.cleanResponseText('Answer.<|endoftext|>'),
-        'Answer.',
-      );
-      expect(
-        LlmService.cleanResponseText('Answer.<|endoftext|'),
-        'Answer.',
-      );
+      expect(LlmService.cleanResponseText('Answer.<|endoftext|>'), 'Answer.');
+      expect(LlmService.cleanResponseText('Answer.<|endoftext|'), 'Answer.');
     });
 
     test('trims surrounding whitespace', () {
@@ -117,21 +111,23 @@ void main() {
   });
 
   group('LlmService memory extraction', () {
-    test('buildMemoryPrompt includes question, hexagram, explanation, comment',
-        () {
-      final prompt = LlmService.buildMemoryPrompt(
-        question: 'Should I move?',
-        hexagramName: '地風升',
-        explanation: 'A gentle reflection.',
-        comment: 'I feel hopeful.',
-      );
+    test(
+      'buildMemoryPrompt includes question, hexagram, explanation, comment',
+      () {
+        final prompt = LlmService.buildMemoryPrompt(
+          question: 'Should I move?',
+          hexagramName: '地風升',
+          explanation: 'A gentle reflection.',
+          comment: 'I feel hopeful.',
+        );
 
-      expect(prompt, contains('Should I move?'));
-      expect(prompt, contains('地風升'));
-      expect(prompt, contains('A gentle reflection.'));
-      expect(prompt, contains('I feel hopeful.'));
-      expect(prompt, contains('JSON'));
-    });
+        expect(prompt, contains('Should I move?'));
+        expect(prompt, contains('地風升'));
+        expect(prompt, contains('A gentle reflection.'));
+        expect(prompt, contains('I feel hopeful.'));
+        expect(prompt, contains('JSON'));
+      },
+    );
 
     test('buildMemoryPrompt omits the comment when null', () {
       final prompt = LlmService.buildMemoryPrompt(
@@ -193,8 +189,7 @@ void main() {
       expect(extraction!.feeling, 'x');
     });
 
-    test('parseMemoryExtraction returns null for malformed or empty input',
-        () {
+    test('parseMemoryExtraction returns null for malformed or empty input', () {
       expect(LlmService.parseMemoryExtraction('no json here'), isNull);
       expect(
         LlmService.parseMemoryExtraction(
@@ -206,43 +201,67 @@ void main() {
   });
 
   group('LlmService backend delegation', () {
-    test('uses the injected backend for generation, memory and readiness',
-        () async {
-      final backend = _RecordingBackend();
+    test(
+      'uses the injected backend for generation, memory and readiness',
+      () async {
+        final backend = _RecordingBackend();
+        final service = LlmService(
+          modelInfo: ModelCatalog.all.first,
+          backend: backend,
+        );
+
+        expect(service.isReady, isTrue);
+
+        final text = await service.generateExplanation(
+          question: 'q',
+          result: _result(),
+        );
+        expect(text, 'from-fake');
+        expect(backend.explanationCalls, 1);
+
+        final memory = await service.extractMemory(
+          question: 'q',
+          hexagramName: 'h',
+          explanation: 'e',
+        );
+        expect(memory?.feeling, 'calm');
+        expect(backend.memoryCalls, 1);
+
+        await service.closeChat();
+        expect(backend.closed, isTrue);
+      },
+    );
+  });
+
+  group('LlmPromptStrategy injection', () {
+    test('local backend uses the injected strategy system prompt', () {
       final service = LlmService(
         modelInfo: ModelCatalog.all.first,
-        backend: backend,
+        promptStrategy: const _FakePromptStrategy(),
       );
 
-      expect(service.isReady, isTrue);
+      expect(service.systemPrompt, 'fake-system');
 
-      final text = await service.generateExplanation(
-        question: 'q',
-        result: _result(),
+      service.systemPrompt = 'custom';
+      expect(service.systemPrompt, 'custom');
+    });
+
+    test('default strategy matches the legacy static helpers', () {
+      const strategy = DefaultLlmPromptStrategy();
+      expect(
+        strategy.explanationPrompt(question: 'q', hexagramContext: 'ctx'),
+        LlmService.buildExplanationPrompt(
+          question: 'q',
+          hexagramContext: 'ctx',
+        ),
       );
-      expect(text, 'from-fake');
-      expect(backend.explanationCalls, 1);
-
-      final memory = await service.extractMemory(
-        question: 'q',
-        hexagramName: 'h',
-        explanation: 'e',
-      );
-      expect(memory?.feeling, 'calm');
-      expect(backend.memoryCalls, 1);
-
-      await service.closeChat();
-      expect(backend.closed, isTrue);
+      expect(strategy.cleanExplanation('<think>x</think>ok'), 'ok');
     });
   });
 }
 
 GenerationResult _result() {
-  final gua = Gua(
-    guaCode: 1,
-    guaName: '乾為天',
-    guaContent: '{}',
-  );
+  final gua = Gua(guaCode: 1, guaName: '乾為天', guaContent: '{}');
   return GenerationResult(
     gua: gua,
     method: GeneratorMethod.systemGenerated,
@@ -280,15 +299,43 @@ class _RecordingBackend implements LlmBackend {
     String? topicLabel,
   }) async {
     memoryCalls++;
-    return const MemoryExtraction(
-      feeling: 'calm',
-      facts: [],
-      preferences: [],
-    );
+    return const MemoryExtraction(feeling: 'calm', facts: [], preferences: []);
   }
 
   @override
   Future<void> close() async {
     closed = true;
   }
+}
+
+/// A [LlmPromptStrategy] that returns fixed values, for injection tests.
+class _FakePromptStrategy extends LlmPromptStrategy {
+  const _FakePromptStrategy();
+
+  @override
+  String get defaultSystemPrompt => 'fake-system';
+
+  @override
+  String explanationPrompt({
+    required String question,
+    String? questionTypeLabel,
+    required String hexagramContext,
+    LanguagePreference language = LanguagePreference.english,
+  }) => 'fake-explanation';
+
+  @override
+  String memoryPrompt({
+    required String question,
+    required String hexagramName,
+    required String explanation,
+    String? comment,
+    String? reaction,
+    String? topicLabel,
+  }) => 'fake-memory';
+
+  @override
+  String cleanExplanation(String raw) => raw.trim();
+
+  @override
+  MemoryExtraction? parseMemory(String raw) => null;
 }

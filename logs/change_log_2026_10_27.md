@@ -76,25 +76,29 @@ with no behavior change and no Firebase dependency.
 
 ### Changes
 
+- New `app/lib/services/llm_prompts.dart` — a pluggable `LlmPromptStrategy`
+  (prompt building, response cleaning, memory parsing) plus
+  `DefaultLlmPromptStrategy` for the on-device model. `LocalGemmaBackend`
+  accepts an injected strategy so a remote backend (Gemini) can use its own
+  prompts/structured output. The legacy static helpers remain for compatibility.
 - New `app/lib/services/llm_backend.dart` — `LlmBackend` contract + the moved
   `MemoryExtraction` model.
-- New `app/lib/services/llm_prompts.dart` — shared, pure prompt builders,
-  response cleaner and memory parser (moved out of `LlmService`).
 - New `app/lib/services/local_gemma_backend.dart` — the existing
   `flutter_gemma` implementation (model download/path/init, one-shot
   explanation, memory extraction, cleanup) behind `LlmBackend`.
 - `app/lib/services/llm_service.dart` — now a thin facade delegating to the
   active backend (local by default) and re-exporting `LlmBackend` /
-  `MemoryExtraction`; the local-model management API is preserved for the
-  screens.
-- `app/test/llm_service_test.dart` — added a delegation test with a recording
-  fake backend.
+  `MemoryExtraction` / `LlmPromptStrategy`; the local-model management API is
+  preserved for the screens.
+- `app/test/llm_service_test.dart` — added backend-delegation and
+  prompt-strategy injection tests.
 - `app/test/privacy_test.dart` — allow `local_gemma_backend.dart` in the
   network allowlist (the model download moved there).
 
 ### Notes
 
-- No behavior change: the default active backend is `LocalGemmaBackend`.
+- No behavior change: the default active backend is `LocalGemmaBackend` with
+  `DefaultLlmPromptStrategy`.
 - `FakeLlmService` continues to extend `LlmService`.
 - The docs/privacy alignment from the previous task is still in the working
   tree (not part of this commit).
@@ -102,4 +106,4 @@ with no behavior change and no Firebase dependency.
 ### Verification
 
 - `flutter analyze` — clean (3 pre-existing info lints)
-- `flutter test` — green (230 pass)
+- `flutter test` — green (232 pass)

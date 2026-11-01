@@ -22,12 +22,21 @@ class LocalGemmaBackend implements LlmBackend {
   InferenceModel? _model;
   InferenceChat? _chat;
   GuaGenerator? _guaGenerator;
+  final LlmPromptStrategy _prompts;
+  String? _systemPrompt;
 
   /// Construct with a [modelInfo] describing the model to load.
-  LocalGemmaBackend({required this.modelInfo});
+  ///
+  /// [promptStrategy] lets callers override how prompts are built/parsed;
+  /// defaults to [DefaultLlmPromptStrategy].
+  LocalGemmaBackend({
+    required this.modelInfo,
+    LlmPromptStrategy? promptStrategy,
+  }) : _prompts = promptStrategy ?? const DefaultLlmPromptStrategy();
 
   /// The system prompt used when opening a chat.
-  String systemPrompt = LlmPrompts.systemPrompt;
+  String get systemPrompt => _systemPrompt ?? _prompts.defaultSystemPrompt;
+  set systemPrompt(String value) => _systemPrompt = value;
 
   @override
   bool get isReady => _chat != null;
@@ -206,7 +215,7 @@ class LocalGemmaBackend implements LlmBackend {
     await openExplanationChat();
 
     final context = _guaGenerator!.formatContext(result);
-    final prompt = LlmPrompts.buildExplanationPrompt(
+    final prompt = _prompts.explanationPrompt(
       question: question,
       questionTypeLabel: questionTypeLabel,
       hexagramContext: context,
@@ -225,7 +234,7 @@ class LocalGemmaBackend implements LlmBackend {
         () => _chat!.generateChatResponse(),
       ).timeout(_responseTimeout);
       if (response is TextResponse) {
-        final cleaned = LlmPrompts.cleanResponseText(response.token);
+        final cleaned = _prompts.cleanExplanation(response.token);
         if (cleaned.isNotEmpty) {
           return cleaned;
         }
@@ -255,7 +264,7 @@ class LocalGemmaBackend implements LlmBackend {
       await openExplanationChat();
     }
 
-    final prompt = LlmPrompts.buildMemoryPrompt(
+    final prompt = _prompts.memoryPrompt(
       question: question,
       hexagramName: hexagramName,
       explanation: explanation,
@@ -271,9 +280,7 @@ class LocalGemmaBackend implements LlmBackend {
         () => _chat!.generateChatResponse(),
       ).timeout(_responseTimeout);
       if (response is TextResponse) {
-        return LlmPrompts.parseMemoryExtraction(
-          LlmPrompts.cleanResponseText(response.token),
-        );
+        return _prompts.parseMemory(_prompts.cleanExplanation(response.token));
       }
     } on TimeoutException {
       await _chat!.stopGeneration();
