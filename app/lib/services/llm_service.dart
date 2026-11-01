@@ -7,6 +7,8 @@ import 'package:app/services/local_gemma_backend.dart';
 
 export 'package:app/services/llm_backend.dart'
     show LlmBackend, MemoryExtraction;
+export 'package:app/services/llm_prompts.dart'
+    show DefaultLlmPromptStrategy, LlmPromptStrategy;
 
 /// Facade over the active [LlmBackend].
 ///
@@ -23,9 +25,17 @@ class LlmService {
   /// Construct with a [modelInfo] describing the on-device model.
   ///
   /// [backend] overrides the active backend for prompt generation; when it is
-  /// omitted the local backend is used.
-  LlmService({required ModelInfo modelInfo, LlmBackend? backend}) {
-    _local = LocalGemmaBackend(modelInfo: modelInfo);
+  /// omitted the local backend is used. [promptStrategy] customizes how the
+  /// local backend builds/parses prompts.
+  LlmService({
+    required ModelInfo modelInfo,
+    LlmBackend? backend,
+    LlmPromptStrategy? promptStrategy,
+  }) {
+    _local = LocalGemmaBackend(
+      modelInfo: modelInfo,
+      promptStrategy: promptStrategy,
+    );
     _active = backend ?? _local;
   }
 

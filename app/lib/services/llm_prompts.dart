@@ -3,14 +3,47 @@ import 'dart:convert';
 import 'package:app/models/language_preference.dart';
 import 'package:app/services/llm_backend.dart';
 
-/// Pure prompt-building and response-parsing helpers shared by every
-/// [LlmBackend] (on-device or remote).
+/// Builds prompts and parses responses for a specific [LlmBackend].
 ///
-/// Kept side-effect free so they can be unit-tested without a model.
-class LlmPrompts {
-  LlmPrompts._();
+/// Prompt/response handling differs per backend: the on-device model uses
+/// plain text plus `<think>`/templating cleanup, while a remote provider such
+/// as Gemini can use its own system instruction and structured JSON output.
+/// Implement this per backend instead of sharing one implementation.
+abstract class LlmPromptStrategy {
+  const LlmPromptStrategy();
 
-  /// The default I-Ching consultant system prompt.
+  /// The default system instruction for this backend.
+  String get defaultSystemPrompt;
+
+  /// Build the one-shot explanation prompt.
+  String explanationPrompt({
+    required String question,
+    String? questionTypeLabel,
+    required String hexagramContext,
+    LanguagePreference language = LanguagePreference.english,
+  });
+
+  /// Build the prompt that asks for a JSON user-profile extraction.
+  String memoryPrompt({
+    required String question,
+    required String hexagramName,
+    required String explanation,
+    String? comment,
+    String? reaction,
+    String? topicLabel,
+  });
+
+  /// Clean a raw explanation response.
+  String cleanExplanation(String raw);
+
+  /// Parse a raw memory response into a [MemoryExtraction].
+  MemoryExtraction? parseMemory(String raw);
+}
+
+/// The default text-only strategy used by the on-device model.
+class DefaultLlmPromptStrategy extends LlmPromptStrategy {
+  const DefaultLlmPromptStrategy();
+
   static const String systemPrompt =
       'You are a compassionate I-Ching consultant. Help users reflect through '
       'the wisdom of the I-Ching (Book of Changes).\n\n'
@@ -26,8 +59,11 @@ class LlmPrompts {
       'sentences.\n'
       '- Use gentle, poetic language when referencing I-Ching concepts.';
 
-  /// Build the one-shot user message that asks the model for an explanation.
-  static String buildExplanationPrompt({
+  @override
+  String get defaultSystemPrompt => systemPrompt;
+
+  @override
+  String explanationPrompt({
     required String question,
     String? questionTypeLabel,
     required String hexagramContext,
@@ -47,11 +83,9 @@ class LlmPrompts {
         '$languageInstruction';
   }
 
-  /// Strip model artifacts from a raw response: `<think>` blocks (and stray
-  /// opening/closing tags) and `<|endoftext|>` tokens. Returns the trimmed
-  /// result.
-  static String cleanResponseText(String text) {
-    var cleaned = text;
+  @override
+  String cleanExplanation(String raw) {
+    var cleaned = raw;
     cleaned = cleaned.replaceAll(
       RegExp(r'<think>.*?</think>', dotAll: true),
       '',
@@ -62,9 +96,8 @@ class LlmPrompts {
     return cleaned.trim();
   }
 
-  /// Build the prompt that asks the model to extract the user's profile as
-  /// JSON.
-  static String buildMemoryPrompt({
+  @override
+  String memoryPrompt({
     required String question,
     required String hexagramName,
     required String explanation,
@@ -102,15 +135,14 @@ class LlmPrompts {
         'nothing applies.';
   }
 
-  /// Parse a JSON memory extraction. Returns `null` on malformed or empty
-  /// input.
-  static MemoryExtraction? parseMemoryExtraction(String text) {
-    final start = text.indexOf('{');
-    final end = text.lastIndexOf('}');
+  @override
+  MemoryExtraction? parseMemory(String raw) {
+    final start = raw.indexOf('{');
+    final end = raw.lastIndexOf('}');
     if (start < 0 || end <= start) return null;
     try {
       final decoded =
-          jsonDecode(text.substring(start, end + 1)) as Map<String, dynamic>;
+          jsonDecode(raw.substring(start, end + 1)) as Map<String, dynamic>;
       final feeling = (decoded['feeling'] as String? ?? '').trim();
       final topicFeeling = (decoded['topic_feeling'] as String? ?? '').trim();
       final facts = _stringList(decoded['facts']);
@@ -140,4 +172,50 @@ class LlmPrompts {
         .where((s) => s.isNotEmpty)
         .toList();
   }
+}
+
+/// Backwards-compatible static helpers.
+///
+/// New code should inject an [LlmPromptStrategy] into its backend instead.
+class LlmPrompts {
+  LlmPrompts._();
+
+  static const LlmPromptStrategy _default = DefaultLlmPromptStrategy();
+
+  /// The default system prompt (on-device strategy).
+  static const String systemPrompt = DefaultLlmPromptStrategy.systemPrompt;
+
+  static String buildExplanationPrompt({
+    required String question,
+    String? questionTypeLabel,
+    required String hexagramContext,
+    LanguagePreference language = LanguagePreference.english,
+  }) => _default.explanationPrompt(
+    question: question,
+    questionTypeLabel: questionTypeLabel,
+    hexagramContext: hexagramContext,
+    language: language,
+  );
+
+  static String cleanResponseText(String text) =>
+      _default.cleanExplanation(text);
+
+  static String buildMemoryPrompt({
+    required String question,
+    required String hexagramName,
+    required String explanation,
+    String? comment,
+    String? reaction,
+    String? topicLabel,
+  }) => _default.memoryPrompt(
+    question: question,
+    hexagramName: hexagramName,
+    explanation: explanation,
+    comment: comment,
+    reaction: reaction,
+    topicLabel: topicLabel,
+  );
+
+  static MemoryExtraction? parseMemoryExtraction(String text) =>
+      _default.parseMemory(text);
 }
