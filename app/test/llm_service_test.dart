@@ -1,6 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:app/data/model_catalog.dart';
+import 'package:app/models/gua.dart';
 import 'package:app/models/language_preference.dart';
+import 'package:app/services/gua_generator.dart';
 import 'package:app/services/llm_service.dart';
 
 void main() {
@@ -201,4 +204,91 @@ void main() {
       );
     });
   });
+
+  group('LlmService backend delegation', () {
+    test('uses the injected backend for generation, memory and readiness',
+        () async {
+      final backend = _RecordingBackend();
+      final service = LlmService(
+        modelInfo: ModelCatalog.all.first,
+        backend: backend,
+      );
+
+      expect(service.isReady, isTrue);
+
+      final text = await service.generateExplanation(
+        question: 'q',
+        result: _result(),
+      );
+      expect(text, 'from-fake');
+      expect(backend.explanationCalls, 1);
+
+      final memory = await service.extractMemory(
+        question: 'q',
+        hexagramName: 'h',
+        explanation: 'e',
+      );
+      expect(memory?.feeling, 'calm');
+      expect(backend.memoryCalls, 1);
+
+      await service.closeChat();
+      expect(backend.closed, isTrue);
+    });
+  });
+}
+
+GenerationResult _result() {
+  final gua = Gua(
+    guaCode: 1,
+    guaName: '乾為天',
+    guaContent: '{}',
+  );
+  return GenerationResult(
+    gua: gua,
+    method: GeneratorMethod.systemGenerated,
+    lines: const [true, true, true, true, true, true],
+  );
+}
+
+/// A minimal [LlmBackend] that records calls.
+class _RecordingBackend implements LlmBackend {
+  int explanationCalls = 0;
+  int memoryCalls = 0;
+  bool closed = false;
+
+  @override
+  bool get isReady => true;
+
+  @override
+  Future<String> generateExplanation({
+    required String question,
+    String? questionTypeLabel,
+    required GenerationResult result,
+    LanguagePreference language = LanguagePreference.english,
+  }) async {
+    explanationCalls++;
+    return 'from-fake';
+  }
+
+  @override
+  Future<MemoryExtraction?> extractMemory({
+    required String question,
+    required String hexagramName,
+    required String explanation,
+    String? comment,
+    String? reaction,
+    String? topicLabel,
+  }) async {
+    memoryCalls++;
+    return const MemoryExtraction(
+      feeling: 'calm',
+      facts: [],
+      preferences: [],
+    );
+  }
+
+  @override
+  Future<void> close() async {
+    closed = true;
+  }
 }
