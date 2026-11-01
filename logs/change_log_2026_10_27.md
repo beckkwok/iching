@@ -81,6 +81,10 @@ with no behavior change and no Firebase dependency.
   `DefaultLlmPromptStrategy` for the on-device model. `LocalGemmaBackend`
   accepts an injected strategy so a remote backend (Gemini) can use its own
   prompts/structured output. The legacy static helpers remain for compatibility.
+  - `cleanExplanation` now strips Gemma 4 `<|channel>thought …<channel|>` and
+    `<|channel>final` markers, `<think>` blocks, and common chat-template /
+    control tokens (`<start_of_turn>model`, `<|im_end|>`, …), so raw control
+    tags no longer leak into the explanation UI.
 - New `app/lib/services/llm_backend.dart` — `LlmBackend` contract + the moved
   `MemoryExtraction` model.
 - New `app/lib/services/local_gemma_backend.dart` — the existing
@@ -90,8 +94,8 @@ with no behavior change and no Firebase dependency.
   active backend (local by default) and re-exporting `LlmBackend` /
   `MemoryExtraction` / `LlmPromptStrategy`; the local-model management API is
   preserved for the screens.
-- `app/test/llm_service_test.dart` — added backend-delegation and
-  prompt-strategy injection tests.
+- `app/test/llm_service_test.dart` — added backend-delegation, prompt-strategy
+  injection, and control-token/channel cleanup tests.
 - `app/test/privacy_test.dart` — allow `local_gemma_backend.dart` in the
   network allowlist (the model download moved there).
 
@@ -106,4 +110,4 @@ with no behavior change and no Firebase dependency.
 ### Verification
 
 - `flutter analyze` — clean (3 pre-existing info lints)
-- `flutter test` — green (232 pass)
+- `flutter test` — green (235 pass)
