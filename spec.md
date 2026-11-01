@@ -18,12 +18,12 @@ User Story
     - A text box to allow user to type the things that bother him
     - A button to submit the query
 2. The system casts a 'gua' (六爻, three-coin method) and shows the hexagram (卦象) with per-line yao types.
-3. The user taps "Get Explanation" and the local LLM generates a reflection/explanation combining the hexagram context, the question, and the language preference (one-shot, no chat history, stays within on-device context limits).
+3. The user taps "Get Explanation" and the LLM (on-device or a configured remote provider) generates a reflection/explanation combining the hexagram context, the question, and the language preference (one-shot, no chat history, tool-free).
 
 Architecture Overview
 ---------------------
 1. The project build as android application. Flutter is the framework.
-2. The system uses Gemma-compatible local models (via `flutter_gemma`). The whole process does not call the internet to protect user privacy (network only used to download the model at first run).
+2. The system can use Gemma-compatible **on-device** models (via `flutter_gemma`) and/or a **remote LLM provider**. On-device inference needs the internet only to download the model; remote inference sends the prompt (question + hexagram context) to the configured provider, which requires a privacy notice and secure key handling. See [ADR 0001](docs/adr/0001-remote-llm-support.md).
 3. The following will be stored:
     - Gua content — as JSON asset files (`assets/hexagrams/gua_<n>.json`) and seeded into the `gua` SQLite table
     - Settings (language preference, custom system prompt, selected model) — `settings` SQLite table
@@ -41,7 +41,7 @@ Project Plan
 -------------
 1. Define project scope
     - Confirm target platform and framework (Android app, Flutter)
-    - Define offline privacy requirements (no internet access, local model only)
+    - Define privacy requirements: on-device inference and/or remote providers — data handling, consent, and key storage (ADR 0001)
     - Clarify main user flow: question form -> cast gua -> one-shot LLM explanation
 2. Design data model
     - Gua
@@ -80,7 +80,7 @@ Project Plan
     - implement SQLite persistence layer
         - database_service.dart (gua + settings tables, migrations to v5)
     - Hexagrams loaded directly from JSON assets via HexagramLoader (no gua DB table)
-    - integrate offline Gemma-compatible local model runtime
+    - integrate on-device Gemma-compatible model runtime (optional offline path)
         - flutter_gemma plugin integrated
         - Default model (Qwen3-0.6B) auto-downloaded on first run; selection is development-only
         - openExplanationChat() tool-free session
@@ -116,7 +116,7 @@ Project Plan
     - unit tests for trigram mapping (trigram_hexagram_data_test.dart)
     - unit tests for the explanation prompt/response helpers (llm_service_test.dart)
     - widget tests for UI screens (question_form, cast_result, explanation, hexagram_browser, hexagram_detail, model_selection, settings, prompt_editor)
-    - privacy enforcement tests (privacy_test.dart) — static allowlist + runtime no-network guard
+    - privacy enforcement tests (privacy_test.dart) — static allowlist + runtime guard against unintended network calls
     - integration test cast_and_browse_test.dart — cast flow + hexagram browser
     - FakeLlmService for deterministic LLM responses in tests
     - migration test (migration_v4_test.dart) verifies schema migrations
