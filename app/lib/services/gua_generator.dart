@@ -1,6 +1,7 @@
 import 'dart:math';
 import '../data/trigram_hexagram_data.dart';
 import '../models/gua.dart';
+import '../models/hexagram_content.dart';
 import '../models/yao_line_type.dart';
 import 'hexagram_loader.dart';
 
@@ -199,22 +200,88 @@ class GuaGenerator {
       }
     }
     if (content != null) {
-      if (content.guaCi.isNotEmpty) {
-        buffer.writeln('卦辭: ${content.guaCi}');
-      }
-      if (content.tuanZhuan.isNotEmpty) {
-        buffer.writeln('彖傳: ${content.tuanZhuan}');
-      }
-      if (content.daXiangZhuan.isNotEmpty) {
-        buffer.writeln('大象傳: ${content.daXiangZhuan}');
-      }
-      if (content.symbolicMeaning.summary.isNotEmpty) {
-        buffer.writeln('象徵總結: ${content.symbolicMeaning.summary}');
-      }
+      _writeContent(buffer, content);
     } else {
       buffer.writeln(gua.guaContent);
     }
     return buffer.toString();
+  }
+
+  /// Format the changing lines (變爻) as context for a follow-up
+  /// interpretation step (issue #5 / #79).
+  ///
+  /// Returns an empty string when [result] has no changing lines or no
+  /// parseable content.
+  String formatChangingLinesContext(GenerationResult result) {
+    if (result.lineTypes.length != 6) return '';
+    final content = result.gua.content;
+    if (content == null) return '';
+
+    final changing = <int>[
+      for (var i = 0; i < 6; i++)
+        if (result.lineTypes[i].isChanging) i,
+    ];
+    if (changing.isEmpty) return '';
+
+    final buffer = StringBuffer(
+      'Changing lines (變爻) in ${result.gua.guaName}, bottom to top:\n',
+    );
+    for (final i in changing) {
+      final type = result.lineTypes[i];
+      buffer.write('- Line ${i + 1} (${type.label})');
+      if (i < content.lines.length) {
+        final line = content.lines[i];
+        if (line.position.isNotEmpty) buffer.write(' ${line.position}');
+        if (line.text.isNotEmpty) buffer.write(': ${line.text}');
+        if (line.xiaoXiangZhuan.isNotEmpty) {
+          buffer.write('\n  小象傳: ${line.xiaoXiangZhuan}');
+        }
+      }
+      buffer.writeln();
+    }
+    return buffer.toString().trim();
+  }
+
+  /// Format the changed hexagram (變卦) as context for a follow-up
+  /// interpretation step (issue #5 / #79).
+  ///
+  /// Returns an empty string when the cast has no changed hexagram.
+  String formatChangedHexagramContext(GenerationResult result) {
+    final changed = result.changedGua;
+    if (changed == null) return '';
+
+    final buffer = StringBuffer(
+      'Changed hexagram (變卦): ${changed.guaName} '
+      '(gua code ${changed.guaCode})\n',
+    );
+    if (result.changedLines.length == 6) {
+      buffer.writeln('Changed lines (bottom to top): '
+          '${result.changedLines.map((l) => l ? 'yang' : 'yin').join(', ')}');
+    }
+    final content = changed.content;
+    if (content != null) {
+      _writeContent(buffer, content);
+    } else {
+      buffer.writeln(changed.guaContent);
+    }
+    return buffer.toString().trim();
+  }
+
+  /// Append the shared hexagram text sections (卦辭 / 彖傳 / 大象傳 /
+  /// 象徵總結) to [buffer].
+  void _writeContent(StringBuffer buffer, HexagramContent content) {
+    if (content.guaCi.isNotEmpty) {
+      buffer.writeln('卦辭: ${content.guaCi}');
+    }
+    if (content.tuanZhuan.isNotEmpty) {
+      buffer.writeln('彖傳: ${content.tuanZhuan}');
+    }
+    if (content.daXiangZhuan.isNotEmpty) {
+      buffer.writeln('大象傳: ${content.daXiangZhuan}');
+    }
+    if (content.symbolicMeaning.summary.isNotEmpty) {
+      buffer.writeln('象徵總結: ${content.symbolicMeaning.summary}');
+    }
   }
 
   /// The opening line that frames how this hexagram came about.
