@@ -1,288 +1,92 @@
-import 'dart:async';
-import 'dart:convert';
-import 'package:flutter_gemma/flutter_gemma.dart';
-import 'package:flutter_gemma_litertlm/flutter_gemma_litertlm.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-import 'package:http/http.dart' as http;
-import 'dart:io';
-import '../models/language_preference.dart';
-import '../models/model_info.dart';
-import '../services/gua_generator.dart';
+import 'package:app/models/language_preference.dart';
+import 'package:app/models/model_info.dart';
+import 'package:app/services/gua_generator.dart';
+import 'package:app/services/llm_backend.dart';
+import 'package:app/services/llm_prompts.dart';
+import 'package:app/services/local_gemma_backend.dart';
 
-/// Wraps flutter_gemma for the I-Ching app.
+export 'package:app/services/llm_backend.dart'
+    show LlmBackend, MemoryExtraction;
+export 'package:app/services/llm_prompts.dart'
+    show DefaultLlmPromptStrategy, LlmPromptStrategy;
+
+/// Facade over the active [LlmBackend].
+///
+/// Today the active backend is the on-device [LocalGemmaBackend]; issue #82
+/// adds a remote backend and #86 lets the user pick one. Screens keep talking
+/// to this class so the UI layer does not depend on the backend.
+///
+/// The facade also exposes the local-model management API (download, path,
+/// system prompt) that the model-selection/settings screens use.
 class LlmService {
-  final ModelInfo modelInfo;
+  late final LocalGemmaBackend _local;
+  late final LlmBackend _active;
 
-  InferenceModel? _model;
-  InferenceChat? _chat;
-  GuaGenerator? _guaGenerator;
+  /// Construct with a [modelInfo] describing the on-device model.
+  ///
+  /// [backend] overrides the active backend for prompt generation; when it is
+  /// omitted the local backend is used. [promptStrategy] customizes how the
+  /// local backend builds/parses prompts.
+  LlmService({
+    required ModelInfo modelInfo,
+    LlmBackend? backend,
+    LlmPromptStrategy? promptStrategy,
+  }) {
+    _local = LocalGemmaBackend(
+      modelInfo: modelInfo,
+      promptStrategy: promptStrategy,
+    );
+    _active = backend ?? _local;
+  }
 
-  /// Construct with a [modelInfo] describing the model to load.
-  LlmService({required this.modelInfo});
+  /// The on-device model metadata.
+  ModelInfo get modelInfo => _local.modelInfo;
 
   /// Settings table key under which a custom system prompt is stored.
   static const String systemPromptSettingsKey = 'system_prompt';
 
-  /// The system prompt used when opening a chat. Defaults to [_systemPrompt];
-  /// callers can override it (e.g. from a saved user preference).
-  String systemPrompt = _systemPrompt;
+  /// The system prompt used when opening a chat.
+  String get systemPrompt => _local.systemPrompt;
+  set systemPrompt(String value) => _local.systemPrompt = value;
 
-  bool get isReady => _chat != null;
+  bool get isReady => _active.isReady;
 
   /// The current model filename (e.g. "Qwen3-0.6B.litertlm").
-  String get modelFilename => modelInfo.filename;
+  String get modelFilename => _local.modelFilename;
 
   /// Full absolute path to the model file.
-  Future<String> get modelFilePath async => _modelPath;
-
-  /// Set the Gua generator used to format hexagram context for explanations.
-  set guaGenerator(GuaGenerator? g) => _guaGenerator = g;
-
-  // ---------------------------------------------------------------------------
-  // Model config (derived from [modelInfo])
-  // ---------------------------------------------------------------------------
-
-  static const ModelFileType _fileType = ModelFileType.litertlm;
+  Future<String> get modelFilePath => _local.modelFilePath;
 
   /// Human-readable model name for UI display.
-  String get modelDisplayName => modelInfo.modelFamily;
+  String get modelDisplayName => _local.modelDisplayName;
 
-  Future<String> get _modelsDir async {
-    final appDir = await getApplicationSupportDirectory();
-    final dir = Directory(p.join(appDir.path, 'models'));
-    if (!await dir.exists()) await dir.create(recursive: true);
-    return dir.path;
-  }
+  /// Set the Gua generator used to format hexagram context for explanations.
+  set guaGenerator(GuaGenerator? g) => _local.guaGenerator = g;
 
-  Future<String> get _modelPath async =>
-      p.join(await _modelsDir, modelInfo.filename);
-
-  // ---------------------------------------------------------------------------
-  // Init & download
-  // ---------------------------------------------------------------------------
-
-  Future<void> initialize({String? huggingFaceToken}) async {
-    await FlutterGemma.initialize(
-      huggingFaceToken: huggingFaceToken,
-      inferenceEngines: [LiteRtLmEngine()],
-    );
-  }
+  Future<void> initialize({String? huggingFaceToken}) =>
+      _local.initialize(huggingFaceToken: huggingFaceToken);
 
   Future<void> downloadModel({
     String? token,
     void Function(double progress)? onProgress,
-  }) async {
-    final targetPath = await _modelPath;
-    // ignore: avoid_print
-    print('📥 Downloading model to: $targetPath');
-    final file = File(targetPath);
-    final request = http.Request('GET', Uri.parse(modelInfo.downloadUrl));
-    if (token != null && token.isNotEmpty) {
-      request.headers['Authorization'] = 'Bearer $token';
-    }
-    final response = await http.Client().send(request);
-    if (response.statusCode != 200) {
-      throw HttpException(
-        'Download failed (HTTP ${response.statusCode})',
-        uri: Uri.parse(modelInfo.downloadUrl),
-      );
-    }
-    final totalBytes = response.contentLength ?? -1;
-    var receivedBytes = 0;
-    final sink = file.openWrite();
-    await for (final chunk in response.stream) {
-      sink.add(chunk);
-      receivedBytes += chunk.length;
-      if (totalBytes > 0) onProgress?.call(receivedBytes / totalBytes);
-    }
-    await sink.flush();
-    await sink.close();
-    await _registerAndLoad();
-  }
+  }) => _local.downloadModel(token: token, onProgress: onProgress);
 
-  Future<void> _registerAndLoad() async {
-    final modelPath = await modelFilePath;
-    final file = File(modelPath);
-    if (!await file.exists()) {
-      // ignore: avoid_print
-      print('❌ Model file not found at: $modelPath');
-      throw StateError('Model file not found at: $modelPath');
-    } else {
-      // ignore: avoid_print
-      print('✅ Model file found at: $modelPath');
-    }
-    await _copyToFlutterGemmaPath(modelPath);
-    await FlutterGemma.installModel(
-      modelType: modelInfo.modelType,
-      fileType: _fileType,
-    ).fromFile(modelPath).install();
-  }
+  Future<void> openExplanationChat() => _local.openExplanationChat();
 
-  Future<void> _copyToFlutterGemmaPath(String sourcePath) async {
-    if (Platform.isWindows) {
-      final localAppData = Platform.environment['LOCALAPPDATA'] ?? '';
-      if (localAppData.isNotEmpty) {
-        final targetDir = Directory(p.join(localAppData, 'flutter_gemma'));
-        if (!await targetDir.exists()) await targetDir.create(recursive: true);
-        final targetPath = p.join(targetDir.path, modelInfo.filename);
-        if (!await File(targetPath).exists()) {
-          await File(sourcePath).copy(targetPath);
-        }
-      }
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Explanation session (form-based flow)
-  // ---------------------------------------------------------------------------
-
-  /// Open a fresh chat session for one-shot explanations.
-  ///
-  /// Function calling is disabled and no tools are registered, so the model
-  /// answers directly instead of trying to call `generate_gua` (the hexagram
-  /// is already cast in the form-based flow).
-  ///
-  /// The loaded [InferenceModel] is **reused** across calls: only the
-  /// conversation is recreated. Reloading the native engine per explanation
-  /// allocates a second copy of the model and gets the app killed by the OS
-  /// lowmemorykiller on memory-constrained devices. The model is created with
-  /// the CPU backend because the default GPU/WebGPU path allocates several
-  /// gigabytes for `.litertlm` models.
-  Future<void> openExplanationChat() async {
-    if (_model == null) {
-      await _registerAndLoad();
-
-      _model = await FlutterGemmaPlugin.instance.createModel(
-        modelType: modelInfo.modelType,
-        fileType: _fileType,
-        maxTokens: 4096,
-        preferredBackend: PreferredBackend.cpu,
-      );
-    } else if (_chat != null) {
-      // Reuse the model; only start a fresh conversation.
-      await _chat!.close();
-      _chat = null;
-    }
-
-    _chat = await _model!.createChat(
-      temperature: 0.7,
-      topK: 40,
-      topP: 0.95,
-      tokenBuffer: 100,
-      modelType: modelInfo.modelType,
-      // The explanation is a short 3-5 sentence answer, so a reasoning pass is
-      // unnecessary and makes CPU inference exceed the response timeout.
-      // For Qwen3 this also appends `/no_think` to suppress reasoning.
-      isThinking: false,
-      // Cap the generated response so CPU inference stays responsive.
-      maxOutputTokens: _maxOutputTokens,
-      supportsFunctionCalls: false,
-      tools: const [],
-      systemInstruction: systemPrompt,
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // One-shot explanation (form-based flow)
-  // ---------------------------------------------------------------------------
-
-  static const Duration _responseTimeout = Duration(seconds: 120);
-
-  /// Upper bound on tokens generated per response. CPU inference is used to
-  /// keep memory low, so the output is capped to keep latency reasonable.
-  static const int _maxOutputTokens = 512;
-
-  /// Generate a single explanation that connects a cast [result] to the
-  /// user's [question]. This is a one-shot call (no multi-turn history, no
-  /// function-calling tools), so token usage stays low enough for on-device
-  /// LLMs.
-  ///
-  /// [questionTypeLabel] is the human-readable category (e.g. "Career
-  /// Achievement"). [language] selects the language the model should respond
-  /// in (defaults to [LanguagePreference.english]).
+  /// Generate a single explanation through the active backend.
   Future<String> generateExplanation({
     required String question,
     String? questionTypeLabel,
     required GenerationResult result,
     LanguagePreference language = LanguagePreference.english,
-  }) async {
-    // Fresh, tool-free session dedicated to the single-shot explanation.
-    await openExplanationChat();
+  }) => _active.generateExplanation(
+    question: question,
+    questionTypeLabel: questionTypeLabel,
+    result: result,
+    language: language,
+  );
 
-    final context = _guaGenerator!.formatContext(result);
-    final prompt = buildExplanationPrompt(
-      question: question,
-      questionTypeLabel: questionTypeLabel,
-      hexagramContext: context,
-      language: language,
-    );
-
-    // Print the full prompt so the developer can verify the hexagram info,
-    // the user's question, and the language preference are all included.
-    // ignore: avoid_print
-    print('📝 Explanation prompt:\n$prompt');
-
-    await _chat!.addQuery(Message(text: prompt, isUser: true));
-
-    try {
-      final response = await Future(
-        () => _chat!.generateChatResponse(),
-      ).timeout(_responseTimeout);
-      if (response is TextResponse) {
-        final cleaned = cleanResponseText(response.token);
-        if (cleaned.isNotEmpty) {
-          return cleaned;
-        }
-      }
-    } on TimeoutException {
-      await _chat!.stopGeneration();
-    }
-    return '(The explanation could not be generated.)';
-  }
-
-  /// Build the one-shot user message that asks the model for an explanation.
-  ///
-  /// Pure and side-effect free, so it can be unit-tested without an LLM.
-  static String buildExplanationPrompt({
-    required String question,
-    String? questionTypeLabel,
-    required String hexagramContext,
-    LanguagePreference language = LanguagePreference.english,
-  }) {
-    final languageInstruction = switch (language) {
-      LanguagePreference.english => 'Respond in English.',
-      LanguagePreference.chinese => 'Respond in Traditional Chinese.',
-    };
-    return 'The user asked: "$question"'
-        '${questionTypeLabel != null ? ' (category: $questionTypeLabel)' : ''}'
-        '\n\n'
-        'The hexagram below was cast for them:\n$hexagramContext\n\n'
-        'Provide a compassionate I-Ching explanation that connects this '
-        'hexagram to the user\'s question. Never predict fortune. Keep it to '
-        '3-5 sentences and frame it as an invitation for reflection.\n'
-        '$languageInstruction';
-  }
-
-  /// Strip model artifacts from a raw response: `<think>` blocks (and stray
-  /// opening/closing tags) and `<|endoftext|>` tokens. Returns the trimmed
-  /// result. Pure and side-effect free, so it can be unit-tested.
-  static String cleanResponseText(String text) {
-    var cleaned = text;
-    cleaned =
-        cleaned.replaceAll(RegExp(r'<think>.*?</think>', dotAll: true), '');
-    cleaned = cleaned.replaceAll(RegExp(r'<think>', dotAll: true), '');
-    cleaned = cleaned.replaceAll(RegExp(r'</think>', dotAll: true), '');
-    cleaned = cleaned.replaceAll(RegExp(r'<\|endoftext\|>?'), '');
-    return cleaned.trim();
-  }
-
-  // ---------------------------------------------------------------------------
-  // Memory extraction (agent memory, issue #3)
-  // ---------------------------------------------------------------------------
-
-  /// Extract a concise user profile (feeling, facts, preferences) from a
-  /// consultation. Reuses the open chat session when one exists.
+  /// Extract agent memory through the active backend.
   Future<MemoryExtraction?> extractMemory({
     required String question,
     required String hexagramName,
@@ -290,37 +94,42 @@ class LlmService {
     String? comment,
     String? reaction,
     String? topicLabel,
-  }) async {
-    if (_chat == null) {
-      await openExplanationChat();
+  }) => _active.extractMemory(
+    question: question,
+    hexagramName: hexagramName,
+    explanation: explanation,
+    comment: comment,
+    reaction: reaction,
+    topicLabel: topicLabel,
+  );
+
+  /// Release the active backend and the local model resources.
+  Future<void> closeChat() async {
+    await _active.close();
+    if (!identical(_active, _local)) {
+      await _local.close();
     }
-
-    final prompt = buildMemoryPrompt(
-      question: question,
-      hexagramName: hexagramName,
-      explanation: explanation,
-      comment: comment,
-      reaction: reaction,
-      topicLabel: topicLabel,
-    );
-
-    await _chat!.addQuery(Message(text: prompt, isUser: true));
-
-    try {
-      final response = await Future(
-        () => _chat!.generateChatResponse(),
-      ).timeout(_responseTimeout);
-      if (response is TextResponse) {
-        return parseMemoryExtraction(cleanResponseText(response.token));
-      }
-    } on TimeoutException {
-      await _chat!.stopGeneration();
-    }
-    return null;
   }
 
-  /// Build the prompt that asks the model to extract the user's profile as
-  /// JSON. Pure and side-effect free, so it can be unit-tested.
+  // ---------------------------------------------------------------------------
+  // Prompt helpers (kept here for callers/tests; implemented by [LlmPrompts])
+  // ---------------------------------------------------------------------------
+
+  static String buildExplanationPrompt({
+    required String question,
+    String? questionTypeLabel,
+    required String hexagramContext,
+    LanguagePreference language = LanguagePreference.english,
+  }) => LlmPrompts.buildExplanationPrompt(
+    question: question,
+    questionTypeLabel: questionTypeLabel,
+    hexagramContext: hexagramContext,
+    language: language,
+  );
+
+  static String cleanResponseText(String text) =>
+      LlmPrompts.cleanResponseText(text);
+
   static String buildMemoryPrompt({
     required String question,
     required String hexagramName,
@@ -328,126 +137,15 @@ class LlmService {
     String? comment,
     String? reaction,
     String? topicLabel,
-  }) {
-    final commentLine = (comment != null && comment.isNotEmpty)
-        ? 'User\'s comment: "$comment"\n'
-        : '';
-    final reactionLine = (reaction != null && reaction.isNotEmpty)
-        ? 'User\'s reaction to the answer: $reaction\n'
-        : '';
-    final topicLine = (topicLabel != null && topicLabel.isNotEmpty)
-        ? 'Question topic: $topicLabel\n'
-        : '';
-    return 'A user asked an I-Ching question and received a hexagram and an '
-        'explanation.\n\n'
-        'Question: "$question"\n'
-        '$topicLine'
-        'Hexagram: $hexagramName\n'
-        'Explanation: $explanation\n'
-        '$commentLine'
-        '$reactionLine'
-        '\n'
-        'Extract a concise profile of the user. Respond in JSON only, with '
-        'this exact shape:\n'
-        '{"feeling": "one short sentence about how the user seems to feel '
-        'overall", '
-        '"topic_feeling": "one short sentence about how the user seems to feel '
-        'about this specific topic", '
-        '"facts": ["a fact about the user"], '
-        '"preferences": ["a preference or value the user expressed"]}\n'
-        'Keep each fact and preference to a few words. Use empty arrays when '
-        'nothing applies.';
-  }
+  }) => LlmPrompts.buildMemoryPrompt(
+    question: question,
+    hexagramName: hexagramName,
+    explanation: explanation,
+    comment: comment,
+    reaction: reaction,
+    topicLabel: topicLabel,
+  );
 
-  /// Parse a JSON memory extraction. Returns `null` on malformed or empty
-  /// input. Pure and side-effect free, so it can be unit-tested.
-  static MemoryExtraction? parseMemoryExtraction(String text) {
-    final start = text.indexOf('{');
-    final end = text.lastIndexOf('}');
-    if (start < 0 || end <= start) return null;
-    try {
-      final decoded =
-          jsonDecode(text.substring(start, end + 1)) as Map<String, dynamic>;
-      final feeling = (decoded['feeling'] as String? ?? '').trim();
-      final topicFeeling = (decoded['topic_feeling'] as String? ?? '').trim();
-      final facts = _stringList(decoded['facts']);
-      final preferences = _stringList(decoded['preferences']);
-      if (feeling.isEmpty &&
-          topicFeeling.isEmpty &&
-          facts.isEmpty &&
-          preferences.isEmpty) {
-        return null;
-      }
-      return MemoryExtraction(
-        feeling: feeling,
-        topicFeeling: topicFeeling,
-        facts: facts,
-        preferences: preferences,
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-
-  static List<String> _stringList(dynamic v) {
-    if (v is! List) return const [];
-    return v
-        .whereType<String>()
-        .map((s) => s.trim())
-        .where((s) => s.isNotEmpty)
-        .toList();
-  }
-
-  // ---------------------------------------------------------------------------
-  // Cleanup
-  // ---------------------------------------------------------------------------
-
-  Future<void> closeChat() async {
-    if (_chat != null) {
-      await _chat!.close();
-      _chat = null;
-    }
-    if (_model != null) {
-      await _model!.close();
-      _model = null;
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // I-Ching system prompt
-  // ---------------------------------------------------------------------------
-
-  static const String _systemPrompt =
-      'You are a compassionate I-Ching consultant. Help users reflect through '
-      'the wisdom of the I-Ching (Book of Changes).\n\n'
-      'A hexagram has already been cast for the user and its details are '
-      'provided in the prompt. Connect that hexagram to the user\'s question '
-      'and help them reflect on it.\n\n'
-      'Guidelines:\n'
-      '- Listen carefully to what the user shares.\n'
-      '- Never predict good or bad fortune. Frame responses as invitations '
-      'for reflection.\n'
-      '- Ask open-ended questions to help the user explore their feelings.\n'
-      '- Be warm, supportive, and encouraging. Keep responses to 3-5 '
-      'sentences.\n'
-      '- Use gentle, poetic language when referencing I-Ching concepts.';
-}
-
-/// The parsed result of a memory extraction.
-class MemoryExtraction {
-  /// Overall summary of how the user seems to feel.
-  final String feeling;
-
-  /// How the user seems to feel about the current consultation's topic.
-  final String topicFeeling;
-
-  final List<String> facts;
-  final List<String> preferences;
-
-  const MemoryExtraction({
-    required this.feeling,
-    this.topicFeeling = '',
-    required this.facts,
-    required this.preferences,
-  });
+  static MemoryExtraction? parseMemoryExtraction(String text) =>
+      LlmPrompts.parseMemoryExtraction(text);
 }

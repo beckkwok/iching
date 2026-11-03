@@ -1,6 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:app/data/model_catalog.dart';
+import 'package:app/models/gua.dart';
 import 'package:app/models/language_preference.dart';
+import 'package:app/services/gua_generator.dart';
 import 'package:app/services/llm_service.dart';
 
 void main() {
@@ -87,12 +90,52 @@ void main() {
     });
 
     test('removes end-of-text tokens', () {
+      expect(LlmService.cleanResponseText('Answer.<|endoftext|>'), 'Answer.');
+      expect(LlmService.cleanResponseText('Answer.<|endoftext|'), 'Answer.');
+    });
+
+    test('removes Gemma 4 thinking channels', () {
       expect(
-        LlmService.cleanResponseText('Answer.<|endoftext|>'),
+        LlmService.cleanResponseText(
+          '<|channel>thought\nreasoning here<channel|>Answer.',
+        ),
         'Answer.',
       );
       expect(
-        LlmService.cleanResponseText('Answer.<|endoftext|'),
+        LlmService.cleanResponseText(
+          '<|channel>thought\r\nreasoning<channel|>\r\nAnswer.',
+        ),
+        'Answer.',
+      );
+      expect(
+        LlmService.cleanResponseText(
+          '<|channel>thought\na<channel|>'
+          '<|channel>thought\nb<channel|>Answer.',
+        ),
+        'Answer.',
+      );
+    });
+
+    test('removes Gemma 4 final channel markers', () {
+      expect(
+        LlmService.cleanResponseText('<|channel>final\nAnswer.<channel|>'),
+        'Answer.',
+      );
+      expect(
+        LlmService.cleanResponseText('<|channel|>Answer.<|channel|>'),
+        'Answer.',
+      );
+      expect(
+        LlmService.cleanResponseText('Intro. <|channel>final\nAnswer.'),
+        'Intro. Answer.',
+      );
+    });
+
+    test('removes common chat-template tokens', () {
+      expect(
+        LlmService.cleanResponseText(
+          '<start_of_turn>model\nAnswer.<end_of_turn><|im_end|>',
+        ),
         'Answer.',
       );
     });
@@ -114,21 +157,23 @@ void main() {
   });
 
   group('LlmService memory extraction', () {
-    test('buildMemoryPrompt includes question, hexagram, explanation, comment',
-        () {
-      final prompt = LlmService.buildMemoryPrompt(
-        question: 'Should I move?',
-        hexagramName: '地風升',
-        explanation: 'A gentle reflection.',
-        comment: 'I feel hopeful.',
-      );
+    test(
+      'buildMemoryPrompt includes question, hexagram, explanation, comment',
+      () {
+        final prompt = LlmService.buildMemoryPrompt(
+          question: 'Should I move?',
+          hexagramName: '地風升',
+          explanation: 'A gentle reflection.',
+          comment: 'I feel hopeful.',
+        );
 
-      expect(prompt, contains('Should I move?'));
-      expect(prompt, contains('地風升'));
-      expect(prompt, contains('A gentle reflection.'));
-      expect(prompt, contains('I feel hopeful.'));
-      expect(prompt, contains('JSON'));
-    });
+        expect(prompt, contains('Should I move?'));
+        expect(prompt, contains('地風升'));
+        expect(prompt, contains('A gentle reflection.'));
+        expect(prompt, contains('I feel hopeful.'));
+        expect(prompt, contains('JSON'));
+      },
+    );
 
     test('buildMemoryPrompt omits the comment when null', () {
       final prompt = LlmService.buildMemoryPrompt(
@@ -190,8 +235,7 @@ void main() {
       expect(extraction!.feeling, 'x');
     });
 
-    test('parseMemoryExtraction returns null for malformed or empty input',
-        () {
+    test('parseMemoryExtraction returns null for malformed or empty input', () {
       expect(LlmService.parseMemoryExtraction('no json here'), isNull);
       expect(
         LlmService.parseMemoryExtraction(
@@ -201,4 +245,143 @@ void main() {
       );
     });
   });
+
+  group('LlmService backend delegation', () {
+    test(
+      'uses the injected backend for generation, memory and readiness',
+      () async {
+        final backend = _RecordingBackend();
+        final service = LlmService(
+          modelInfo: ModelCatalog.all.first,
+          backend: backend,
+        );
+
+        expect(service.isReady, isTrue);
+
+        final text = await service.generateExplanation(
+          question: 'q',
+          result: _result(),
+        );
+        expect(text, 'from-fake');
+        expect(backend.explanationCalls, 1);
+
+        final memory = await service.extractMemory(
+          question: 'q',
+          hexagramName: 'h',
+          explanation: 'e',
+        );
+        expect(memory?.feeling, 'calm');
+        expect(backend.memoryCalls, 1);
+
+        await service.closeChat();
+        expect(backend.closed, isTrue);
+      },
+    );
+  });
+
+  group('LlmPromptStrategy injection', () {
+    test('local backend uses the injected strategy system prompt', () {
+      final service = LlmService(
+        modelInfo: ModelCatalog.all.first,
+        promptStrategy: const _FakePromptStrategy(),
+      );
+
+      expect(service.systemPrompt, 'fake-system');
+
+      service.systemPrompt = 'custom';
+      expect(service.systemPrompt, 'custom');
+    });
+
+    test('default strategy matches the legacy static helpers', () {
+      const strategy = DefaultLlmPromptStrategy();
+      expect(
+        strategy.explanationPrompt(question: 'q', hexagramContext: 'ctx'),
+        LlmService.buildExplanationPrompt(
+          question: 'q',
+          hexagramContext: 'ctx',
+        ),
+      );
+      expect(strategy.cleanExplanation('<think>x</think>ok'), 'ok');
+    });
+  });
+}
+
+GenerationResult _result() {
+  final gua = Gua(guaCode: 1, guaName: '乾為天', guaContent: '{}');
+  return GenerationResult(
+    gua: gua,
+    method: GeneratorMethod.systemGenerated,
+    lines: const [true, true, true, true, true, true],
+  );
+}
+
+/// A minimal [LlmBackend] that records calls.
+class _RecordingBackend implements LlmBackend {
+  int explanationCalls = 0;
+  int memoryCalls = 0;
+  bool closed = false;
+
+  @override
+  bool get isReady => true;
+
+  @override
+  Future<String> generateExplanation({
+    required String question,
+    String? questionTypeLabel,
+    required GenerationResult result,
+    LanguagePreference language = LanguagePreference.english,
+  }) async {
+    explanationCalls++;
+    return 'from-fake';
+  }
+
+  @override
+  Future<MemoryExtraction?> extractMemory({
+    required String question,
+    required String hexagramName,
+    required String explanation,
+    String? comment,
+    String? reaction,
+    String? topicLabel,
+  }) async {
+    memoryCalls++;
+    return const MemoryExtraction(feeling: 'calm', facts: [], preferences: []);
+  }
+
+  @override
+  Future<void> close() async {
+    closed = true;
+  }
+}
+
+/// A [LlmPromptStrategy] that returns fixed values, for injection tests.
+class _FakePromptStrategy extends LlmPromptStrategy {
+  const _FakePromptStrategy();
+
+  @override
+  String get defaultSystemPrompt => 'fake-system';
+
+  @override
+  String explanationPrompt({
+    required String question,
+    String? questionTypeLabel,
+    required String hexagramContext,
+    LanguagePreference language = LanguagePreference.english,
+  }) => 'fake-explanation';
+
+  @override
+  String memoryPrompt({
+    required String question,
+    required String hexagramName,
+    required String explanation,
+    String? comment,
+    String? reaction,
+    String? topicLabel,
+  }) => 'fake-memory';
+
+  @override
+  String cleanExplanation(String raw) => raw.trim();
+
+  @override
+  MemoryExtraction? parseMemory(String raw) => null;
 }
