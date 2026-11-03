@@ -152,7 +152,7 @@ void main() {
 
     expect(find.text('Choose Your Model'), findsOneWidget);
     expect(
-      find.text('All models run fully offline on your device.'),
+      find.text('These on-device models run fully offline on your device.'),
       findsOneWidget,
     );
 

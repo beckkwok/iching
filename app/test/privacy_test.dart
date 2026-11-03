@@ -52,7 +52,7 @@ String _fixtureJson(int code) => '''
 ''';
 
 /// [HttpOverrides] that records and blocks every HTTP request, proving the
-/// app makes no network calls during normal use.
+/// on-device flow makes no unintended network calls.
 class _BlockingHttpOverrides extends HttpOverrides {
   final List<Uri> requests = [];
 
@@ -92,10 +92,14 @@ Directory _packageRoot() {
 }
 
 void main() {
-  group('static guard: no network APIs outside the model download', () {
-    // The only file allowed to reference networking (the explicit, user-
-    // initiated model download).
-    final allowed = {p.join('lib', 'services', 'llm_service.dart')};
+  group('static guard: no unintended network APIs', () {
+    // Networking is allowed only in the explicit model download and the
+    // (planned) remote LLM provider. Everything else must stay network-free.
+    final allowed = {
+      p.join('lib', 'services', 'llm_service.dart'),
+      p.join('lib', 'services', 'local_gemma_backend.dart'),
+      p.join('lib', 'services', 'remote_llm_service.dart'),
+    };
 
     final patterns = <String, RegExp>{
       'package:http': RegExp(r'package:http/'),
@@ -108,7 +112,7 @@ void main() {
       'Image.network': RegExp(r'\bImage\.network\b'),
     };
 
-    test('lib/ uses no network APIs outside the model download', () {
+    test('lib/ uses no network APIs outside the LLM services', () {
       final root = _packageRoot();
       final libDir = Directory(p.join(root.path, 'lib'));
       expect(libDir.existsSync(), isTrue, reason: 'lib/ not found');
@@ -127,13 +131,15 @@ void main() {
       expect(
         offenders,
         isEmpty,
-        reason: 'Network APIs must only be used for the model download '
-            '(lib/services/llm_service.dart):\n${offenders.join('\n')}',
+        reason: 'Network APIs must only be used by the LLM/model-download '
+            'services (llm_service.dart, local_gemma_backend.dart, '
+            'remote_llm_service.dart):\n'
+            '${offenders.join('\n')}',
       );
     });
   });
 
-  group('runtime guard: no network during normal use', () {
+  group('runtime guard: no unintended network during the on-device flow', () {
     test('the guard blocks direct HTTP requests', () async {
       final overrides = _BlockingHttpOverrides();
       final previous = HttpOverrides.current;
@@ -148,7 +154,7 @@ void main() {
       expect(overrides.requests, contains(uri));
     });
 
-    testWidgets('the consultation flow makes no network requests',
+    testWidgets('the on-device consultation flow makes no network requests',
         (tester) async {
       final overrides = _BlockingHttpOverrides();
       final previous = HttpOverrides.current;
@@ -208,7 +214,9 @@ void main() {
       expect(
         overrides.requests,
         isEmpty,
-        reason: 'The consultation flow must not touch the network.',
+        reason: 'The on-device consultation flow must not touch the network. '
+            '(Remote-provider mode is expected to use the network and is not '
+            'covered by this guard.)',
       );
     });
   });
