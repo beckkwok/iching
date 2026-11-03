@@ -7,13 +7,13 @@
 | Framework    | Flutter                              |
 | Language     | Dart 3.12+                           |
 | Database     | SQLite via `sqflite` / `sqflite_ffi` |
-| LLM Runtime  | `flutter_gemma`                      |
-| Model        | Gemma 4 / Qwen3 0.6B (downloaded at first run) |
+| LLM Runtime  | `flutter_gemma` (on-device) and/or a remote LLM provider ([ADR 0001](docs/adr/0001-remote-llm-support.md)) |
+| Model        | On-device: Gemma 4 / Qwen3 0.6B (downloaded at first run); remote: provider-configured |
 | State        | StatelessWidget / StatefulWidget     |
 | Testing      | `flutter_test` with `sqflite_ffi` (in-memory DB) |
 | Linting      | `flutter_lints` (default rules)      |
 
-**Key constraint:** All LLM inference runs locally on-device. No internet access required after model download. No telemetry, no analytics, no external API calls.
+**Key constraint:** LLM inference is **not restricted to on-device models**. The app supports on-device inference via `flutter_gemma` **and** remote LLM providers, because small local models are too limited for the desired interpretation quality (see [ADR 0001](docs/adr/0001-remote-llm-support.md)). Local-only/offline is no longer a requirement: remote inference sends the prompt (question + hexagram context) to the configured provider, so a privacy notice and secure key handling are required. No telemetry or analytics beyond the configured provider's traffic; consultation data is still stored only in local SQLite.
 
 ---
 
@@ -117,7 +117,7 @@ iching/
 - Services are plain Dart classes injected via constructor.
 - DatabaseService uses a `_customPath` constructor param for test in-memory DBs (`:memory:`).
 - Catch platform-specific errors gracefully (e.g., `DatabaseService.create()` returns `null` on unsupported platforms).
-- `LlmService.generateExplanation()` is a one-shot call (no function calling, no history) on a tool-free session.
+- `LlmService.generateExplanation()` is a one-shot call (no function calling, no history) on a tool-free session. The backend may be on-device (`flutter_gemma`) or remote ([ADR 0001](docs/adr/0001-remote-llm-support.md)).
 
 ### Naming
 
@@ -207,11 +207,11 @@ directly from JSON assets (`assets/hexagrams/gua_<n>.json`) via `HexagramLoader`
 
 - **GuaGenerator** uses `GeneratorMethod` enum (`manual`, `systemGenerated`) with different context prompt headers per method. Casts 6 yao lines via the three-coin method (`YaoLineType`: 老陰/少陽/少陰/老陽), resolves the hexagram via `TrigramHexagramData`. Hexagrams are loaded from JSON assets through `HexagramLoader` (no DB table). `resolveCast()` takes an optional `method` so manual casts are framed as `manual`, and also computes the changed lines/hexagram (issue #42) shown on the cast-result screen.
 - **Consultation flow** (form-based, low token usage): QuestionFormScreen (choose Quick Generate or Manual) → CastResultScreen (卦象 + per-line types) → "Get Explanation" → `LlmService.generateExplanation()` (one-shot, no multi-turn history, tool-free) → ExplanationScreen. Quick Generate casts randomly via `GuaGenerator.generateRandom()`; Manual opens `ManualCastScreen` (issue #20) to pick the six lines, which resolves via `resolveCast(..., method: manual)`.
-- **LlmService** wraps flutter_gemma. `generateExplanation()` opens its own tool-free session (`openExplanationChat()`), sends one prompt combining hexagram context + question + language preference, and returns the response.
+- **LlmService** wraps the LLM backend — on-device `flutter_gemma` and/or a remote provider ([ADR 0001](docs/adr/0001-remote-llm-support.md)). `generateExplanation()` opens its own tool-free session (`openExplanationChat()`), sends one prompt combining hexagram context + question + language preference, and returns the response.
 - **Language & prompts**: `LanguagePreference` (en/cn) and a custom system prompt are stored in the `settings` table and injected into the explanation prompt.
 - **Hexagram data** is read straight from the bundled JSON assets by `HexagramLoader`. The DB migration to v6 drops any legacy `gua` table.
-- **Model startup**: production auto-selects and downloads `ModelCatalog.defaultModel` (Qwen3-0.6B) on first launch; the model-selection grid is development-only, gated by `AppConfig.allowModelSelection` (`--dart-define=ALLOW_MODEL_SELECTION`, defaults to `kDebugMode`). Internet is used only to download the model; no personal data is uploaded.
-- **`.litertlm` platform support**: the model requires an **arm64-v8a** Android device (or Windows desktop). The x86_64 Android emulator cannot run it.
+- **Model startup**: production auto-selects and downloads `ModelCatalog.defaultModel` (Qwen3-0.6B) on first launch; the model-selection grid is development-only, gated by `AppConfig.allowModelSelection` (`--dart-define=ALLOW_MODEL_SELECTION`, defaults to `kDebugMode`). Internet is used to download the on-device model (no personal data is uploaded for that). When a remote provider is configured, the explanation prompt is sent to that provider ([ADR 0001](docs/adr/0001-remote-llm-support.md)).
+- **`.litertlm` platform support**: the **on-device** model requires an **arm64-v8a** Android device (or Windows desktop). The x86_64 Android emulator cannot run it.
 - **Mobile shell** (`HomeShell`): a `forui` `FBottomNavigationBar` hosts five tabs — History, Profile, Ask, Browse, Preference — with pure-Flutter animated Material icons (no native animation dependency). The header bar was removed (issue #6). History lists the recorded consultations (issue #8); Profile shows the agent memory (issue #3).
 - **Agent memory** (issues #3, #26, #27): after each explanation, and again after feedback, `LlmService.extractMemory` returns a JSON profile (`feeling` overall, `topic_feeling` for the current question type, `facts`, `preferences`) that `DatabaseService.mergeAgentMemory` accumulates (facts/preferences de-duplicated, the overall feeling replaced, per-topic feelings keyed by `QuestionType` name). Feedback is an emoji reaction (issue #27). The Profile tab reads `getAgentMemory()` + the latest consultation and shows the per-topic feelings. The personalized greeting is a deferred follow-up.
 
@@ -222,3 +222,11 @@ directly from JSON assets (`assets/hexagrams/gua_<n>.json`) via `HexagramLoader`
 Follow conventional commits format: `type: short description`
 
 Examples: `feat: add hexagram card with visual 6-line yao pattern`, `fix: hexagram broken lines now render as two segments`, `refactor: centralize model config into instance variables`
+
+---
+
+## 9. Architecture Decisions (ADRs)
+
+Accepted architecture decisions are recorded in [`docs/adr/`](docs/adr/README.md), using MADR-style records (Status / Context / Decision / Consequences).
+
+- [ADR 0001](docs/adr/0001-remote-llm-support.md) — allow remote LLM providers alongside on-device models.

@@ -1,7 +1,7 @@
 # 🀄 I-Ching Consultant
 
-A privacy-first, offline I-Ching consultation app powered by local LLM inference.  
-Built with **Flutter**, **SQLite**, and **Gemma / Qwen** on-device models — no internet required.
+An I-Ching consultation app powered by AI — on-device or a remote LLM provider.  
+Built with **Flutter**, **SQLite**, on-device **Gemma / Qwen** models, and optional remote providers; data handling is documented in [ADR 0001](docs/adr/0001-remote-llm-support.md).
 
 > *"Provide emotional support to those at a crossroads. Encourage reflection without judgment."*
 
@@ -13,19 +13,19 @@ Built with **Flutter**, **SQLite**, and **Gemma / Qwen** on-device models — no
 - **Mobile shell** — portrait-first UI with a `forui` bottom navigation bar (History, Profile, Ask, Browse, Preference) and Rive-animated icons; the header bar was removed
 - **Form-based consultation** — pick a question type (Career Achievement, Intellectual and moral cultivation, Timing, Attitude), enter your question, and submit
 - **I-Ching (Gua) casting** — six yao lines are cast with the traditional three-coin method (老陰/少陽/少陰/老陽) and resolved into a hexagram
-- **One-shot LLM explanation** — a single, token-light call connects the hexagram context to your question (no multi-turn chat, so it stays within the on-device model's context window)
+- **One-shot LLM explanation** — a single, token-light call connects the hexagram context to your question (no multi-turn chat, so it stays within the model's context window)
 - **Language preference** — choose English or Chinese (中文); the choice localizes the whole UI and is injected into the explanation prompt
 - **Editable system prompt** — view and customize the LLM instruction in Settings
 - **Hexagram browser** — browse all 64 hexagrams in a grid; tap any card for the full detail view (卦辭, 彖傳, 大象傳, 爻辭, 象徵意義, 不同人解讀)
-- **Local LLM integration** — runs a selectable on-device model via `flutter_gemma` (6 models available, e.g. Gemma 4, DeepSeek R1, Qwen3)
-- **Default model** — Qwen3-0.6B is auto-downloaded on first run (no selection); the model grid is a development-only option. Internet is used only to fetch the model — no personal data is uploaded.
+- **LLM integration** — runs a selectable on-device model via `flutter_gemma` (6 models available, e.g. Gemma 4, DeepSeek R1, Qwen3); remote providers are supported alongside on-device inference ([ADR 0001](docs/adr/0001-remote-llm-support.md))
+- **Default model** — Qwen3-0.6B is auto-downloaded on first run (no selection); the model grid is a development-only option. Internet is used to fetch the on-device model; when a remote provider is configured, the question and hexagram context are sent to that provider ([ADR 0001](docs/adr/0001-remote-llm-support.md)).
 - **Cross-platform** — runs on Android, Windows, macOS, Linux, and Web
 
 ### 🚧 Planned
 - [ ] Gua image / visual representation
 - [ ] Enriched gua content with full classical texts
 - [ ] Load hexagrams directly from JSON assets (remove the `gua` DB table)
-- [ ] Privacy validation test suite (no network calls)
+- [ ] Privacy validation test suite (guard against unintended network calls)
 - [ ] Android packaging & app store readiness
 
 ---
@@ -82,7 +82,7 @@ GuaGenerator (casts 6 yao lines via three-coin method)
 Cast Result (卦象 + per-line 老陰/少陽/少陰/老陽)
     │  (tap "Get Explanation")
     ▼
-LLM (local) — one-shot call
+LLM (on-device or remote) — one-shot call
     │  (hexagram context + question + language preference)
     ▼
 Explanation (解讀)
@@ -173,11 +173,11 @@ See [spec.md](./spec.md) for the detailed project specification and task trackin
 
 ## 🔒 Privacy
 
-This app is designed with **privacy as a core principle**:
-- All LLM inference runs **locally on-device**
-- **No internet connection required** after model download
-- All conversations are stored **only in local SQLite**
-- No telemetry, no analytics, no external API calls
+The app supports **on-device inference and remote LLM providers** (see [ADR 0001](docs/adr/0001-remote-llm-support.md)). How your data is handled:
+- On-device inference (`flutter_gemma`) keeps everything on your device (internet only to download the model).
+- When a remote provider is configured, the prompt — your question plus the hexagram context — is sent to that provider to generate the explanation.
+- Settings and consultations are stored **only in local SQLite**.
+- No telemetry or analytics beyond the configured provider's standard traffic; no other external API calls.
 
 ---
 
