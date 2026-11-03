@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
+import '../models/agent_memory.dart';
 import '../models/language_preference.dart';
 import '../models/question_type.dart';
+import '../services/agent_greeting.dart';
 import '../services/database_service.dart';
 import '../services/gua_generator.dart';
 import '../services/llm_service.dart';
@@ -45,6 +47,29 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
   QuestionType? _selectedType;
   CastMethod _method = CastMethod.quick;
   bool _isSubmitting = false;
+
+  AgentMemory? _memory;
+  bool _started = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+    _loadMemory();
+  }
+
+  /// Load the agent memory for the personalized greeting (issue #25).
+  Future<void> _loadMemory() async {
+    final db = widget.databaseService;
+    if (db == null) return;
+    try {
+      final memory = await db.getAgentMemory();
+      if (mounted) setState(() => _memory = memory);
+    } catch (_) {
+      // The greeting is optional; ignore memory-load failures.
+    }
+  }
 
   /// Champagne field border shared by the dropdown and question inputs.
   OutlineInputBorder _fieldBorder(Color color, {double width = 1}) =>
@@ -99,7 +124,10 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
               language: language,
             ),
           ),
-        );
+        ).then((_) {
+          // Refresh the greeting after the consultation (issue #25).
+          if (mounted) _loadMemory();
+        });
         return;
       }
 
@@ -118,7 +146,10 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
             language: language,
           ),
         ),
-      );
+      ).then((_) {
+        // Refresh the greeting after the consultation (issue #25).
+        if (mounted) _loadMemory();
+      });
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -132,6 +163,9 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
     final labelStyle = theme.textTheme.labelLarge?.copyWith(
       fontFamily: notoSerifFamily,
     );
+    final memory = _memory;
+    final greeting =
+        memory == null ? null : buildAgentGreeting(memory, l10n);
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
@@ -188,6 +222,16 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                       fontFamily: notoSerifFamily,
                     ),
                   ),
+                  if (greeting != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      greeting,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 24),
 
                   GlassCard(

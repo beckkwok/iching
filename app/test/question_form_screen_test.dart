@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:app/l10n/app_localizations.dart';
+import 'package:app/models/agent_memory.dart';
 import 'package:app/models/question_type.dart';
 import 'package:app/screens/cast_result_screen.dart';
 import 'package:app/screens/manual_cast_screen.dart';
@@ -35,6 +36,17 @@ String fixtureJson(int code) {
     "備註": ""
   }
   ''';
+}
+
+/// A [DatabaseService] that returns a fixed agent memory (no real DB I/O), so
+/// the greeting widget test does not depend on async sqflite-ffi.
+class _MemoryDb extends DatabaseService {
+  _MemoryDb(this._memory) : super(databasePath: ':memory:');
+
+  final AgentMemory? _memory;
+
+  @override
+  Future<AgentMemory?> getAgentMemory() async => _memory;
 }
 
 void main() {
@@ -92,6 +104,50 @@ void main() {
     expect(find.byType(DropdownButtonFormField<QuestionType>), findsOneWidget);
     expect(find.byKey(const ValueKey('method-quick')), findsOneWidget);
     expect(find.byKey(const ValueKey('method-manual')), findsOneWidget);
+  });
+
+  testWidgets('shows a personalized greeting from agent memory',
+      (tester) async {
+    final memory = AgentMemory(
+      feeling: 'hopeful about the new job',
+      facts: const [],
+      preferences: const [],
+      updatedAt: DateTime(2026, 11, 3),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: QuestionFormScreen(
+          databaseService: _MemoryDb(memory),
+          guaGenerator: generator,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(
+      find.textContaining(
+        'Welcome back. It sounds like you have been feeling hopeful about the '
+        'new job.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('shows no greeting without agent memory', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: QuestionFormScreen(
+          databaseService: _MemoryDb(null),
+          guaGenerator: generator,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.textContaining('Welcome back'), findsNothing);
   });
 
   testWidgets('casting method defaults to quick generate', (tester) async {
