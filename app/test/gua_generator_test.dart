@@ -57,6 +57,21 @@ String fixtureJson(int code) {
   });
 }
 
+/// Like [fixtureJson] but with six 爻辭/小象傳 entries so the changing-line
+/// context can be asserted.
+String fixtureWithLines(int code) {
+  final map = jsonDecode(fixtureJson(code)) as Map<String, dynamic>;
+  map['爻辭'] = [
+    for (var i = 0; i < 6; i++)
+      {
+        '爻位': 'pos ${i + 1}',
+        '爻辭': 'line ${i + 1} text',
+        '小象傳': 'xiao ${i + 1}',
+      },
+  ];
+  return jsonEncode(map);
+}
+
 void main() {
   late GuaGenerator generator;
 
@@ -246,6 +261,95 @@ void main() {
       expect(result.changedLines, [true, false, false, false, false, false]);
       expect(result.changedGua, isNotNull);
       expect(result.changedGua!.guaCode, isNot(result.gua.guaCode));
+    });
+
+    test('formatChangingLinesContext includes 爻辭/小象傳 for changing lines',
+        () async {
+      final gen = GuaGenerator(
+        HexagramLoader((code) async => fixtureWithLines(code)),
+      );
+      final result = await gen.resolveCast(
+        const [true, false, true, false, true, false],
+        lineTypes: const [
+          YaoLineType.oldYang,
+          YaoLineType.youngYin,
+          YaoLineType.youngYang,
+          YaoLineType.oldYin,
+          YaoLineType.youngYang,
+          YaoLineType.youngYin,
+        ],
+      );
+
+      final context = gen.formatChangingLinesContext(result);
+      expect(context, contains('Changing lines (變爻)'));
+      expect(context, contains('Line 1 (老陽)'));
+      expect(context, contains('pos 1'));
+      expect(context, contains('line 1 text'));
+      expect(context, contains('xiao 1'));
+      expect(context, contains('Line 4 (老陰)'));
+      expect(context, contains('line 4 text'));
+      expect(context, isNot(contains('line 2 text')));
+    });
+
+    test('formatChangingLinesContext is empty without changing lines',
+        () async {
+      final result = await generator.resolveCast(
+        const [true, true, true, true, true, true],
+        lineTypes: const [
+          YaoLineType.youngYang,
+          YaoLineType.youngYang,
+          YaoLineType.youngYang,
+          YaoLineType.youngYang,
+          YaoLineType.youngYang,
+          YaoLineType.youngYang,
+        ],
+      );
+
+      expect(generator.formatChangingLinesContext(result), isEmpty);
+    });
+
+    test('formatChangedHexagramContext includes the changed hexagram details',
+        () async {
+      final gen = GuaGenerator(
+        HexagramLoader((code) async => fixtureWithLines(code)),
+      );
+      final result = await gen.resolveCast(
+        const [false, false, false, false, false, false],
+        lineTypes: const [
+          YaoLineType.oldYin,
+          YaoLineType.youngYin,
+          YaoLineType.youngYin,
+          YaoLineType.youngYin,
+          YaoLineType.youngYin,
+          YaoLineType.youngYin,
+        ],
+      );
+
+      final context = gen.formatChangedHexagramContext(result);
+      expect(result.changedGua, isNotNull);
+      expect(context, contains('Changed hexagram (變卦)'));
+      expect(context, contains(result.changedGua!.guaName));
+      expect(context, contains('卦辭'));
+      expect(context, contains('彖傳'));
+      expect(context, contains('大象傳'));
+      expect(context, contains('象徵總結'));
+    });
+
+    test('formatChangedHexagramContext is empty without a changed hexagram',
+        () async {
+      final result = await generator.resolveCast(
+        const [true, true, true, true, true, true],
+        lineTypes: const [
+          YaoLineType.youngYang,
+          YaoLineType.youngYang,
+          YaoLineType.youngYang,
+          YaoLineType.youngYang,
+          YaoLineType.youngYang,
+          YaoLineType.youngYang,
+        ],
+      );
+
+      expect(generator.formatChangedHexagramContext(result), isEmpty);
     });
   });
 }
