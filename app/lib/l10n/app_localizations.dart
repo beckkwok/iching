@@ -80,6 +80,18 @@ class AppLocalizations {
   // --- Question form ----------------------------------------------------
   String get askPrompt =>
       _t('What would you like to ask the I-Ching?', '您想向易經請教什麼？');
+
+  /// Personalized greeting on the Ask tab (issue #25).
+  String get greetingWelcome => _t('Welcome back.', '歡迎回來。');
+  String greetingWithFeeling(String feeling) => _t(
+        'It sounds like you have been feeling $feeling.',
+        '聽起來您最近感到$feeling。',
+      );
+  String greetingRemember(String detail) => _t(
+        'I remember: $detail.',
+        '我記得：$detail。',
+      );
+
   String get questionType => _t('Question type', '問題類型');
   String get selectCategory => _t('Select a category', '選擇類別');
   String get yourQuestion => _t('Your question', '您的問題');
