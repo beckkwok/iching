@@ -97,6 +97,24 @@ void main() {
     expect(find.text('A gentle mirror for your question.'), findsOneWidget);
   });
 
+  testWidgets('uses the provided system prompt', (tester) async {
+    final llm = FakeLlmService();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ExplanationScreen(
+          question: 'q',
+          result: _result(),
+          llmService: llm,
+          systemPrompt: 'Custom interpreter prompt',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(llm.systemPrompt, 'Custom interpreter prompt');
+  });
+
   testWidgets('shows the yao loading animation while generating',
       (tester) async {
     final llm = FakeLlmService();

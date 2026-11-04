@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../data/interpreter_catalog.dart';
 import '../data/trigram_hexagram_data.dart';
 import '../l10n/app_localizations.dart';
 import '../models/hexagram_content.dart';
@@ -11,6 +12,7 @@ import '../services/hexagram_reading.dart';
 import '../services/llm_service.dart';
 import '../widgets/gradient_button.dart';
 import '../widgets/hexagram_view.dart';
+import '../widgets/interpreter_picker.dart';
 import 'explanation_screen.dart';
 import 'hexagram_detail_screen.dart';
 
@@ -225,29 +227,16 @@ class CastResultScreen extends StatelessWidget {
             const SizedBox(height: 16),
           ],
 
-          // Get explanation
+          // Interpreter picker + "Get Explanation" (issue #22).
           if (question != null && question!.isNotEmpty)
-            SizedBox(
-              height: 48,
-              child: GradientButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ExplanationScreen(
-                        question: question!,
-                        questionTypeLabel: questionTypeLabel,
-                        questionType: questionType,
-                        result: result,
-                        llmService: llmService,
-                        databaseService: databaseService,
-                        language: language,
-                      ),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.auto_awesome),
-                label: l10n.getExplanation,
-              ),
+            _ExplanationLauncher(
+              question: question!,
+              questionTypeLabel: questionTypeLabel,
+              questionType: questionType,
+              result: result,
+              llmService: llmService,
+              databaseService: databaseService,
+              language: language,
             ),
         ],
       ),
@@ -580,6 +569,125 @@ class _Highlighted extends StatelessWidget {
         ),
       ),
       child: child,
+    );
+  }
+}
+
+/// Interpreter picker + "Get Explanation" button (issue #22).
+///
+/// Loads the persisted interpreter and custom system prompt, then passes the
+/// effective system prompt to [ExplanationScreen].
+class _ExplanationLauncher extends StatefulWidget {
+  final String question;
+  final String? questionTypeLabel;
+  final QuestionType? questionType;
+  final GenerationResult result;
+  final LlmService? llmService;
+  final DatabaseService? databaseService;
+  final LanguagePreference language;
+
+  const _ExplanationLauncher({
+    required this.question,
+    required this.questionTypeLabel,
+    required this.questionType,
+    required this.result,
+    required this.llmService,
+    required this.databaseService,
+    required this.language,
+  });
+
+  @override
+  State<_ExplanationLauncher> createState() => _ExplanationLauncherState();
+}
+
+class _ExplanationLauncherState extends State<_ExplanationLauncher> {
+  String _selectedKey = InterpreterCatalog.defaultKey;
+  String? _customPrompt;
+  bool _started = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final db = widget.databaseService;
+    if (db == null) return;
+    try {
+      final key = await db.getSetting(InterpreterCatalog.settingsKey);
+      final custom = await db.getSetting(LlmService.systemPromptSettingsKey);
+      final interpreter = InterpreterCatalog.byKey(key);
+      if (!mounted) return;
+      setState(() {
+        if (interpreter != null) _selectedKey = interpreter.key;
+        _customPrompt = custom;
+      });
+    } catch (_) {
+      // Fall back to the default interpreter.
+    }
+  }
+
+  Future<void> _select(String key) async {
+    setState(() => _selectedKey = key);
+    await widget.databaseService?.setSetting(
+      InterpreterCatalog.settingsKey,
+      key,
+    );
+  }
+
+  void _openExplanation() {
+    final interpreter =
+        InterpreterCatalog.byKey(_selectedKey) ??
+            InterpreterCatalog.defaultInterpreter;
+    // A custom system prompt (developer mode) takes precedence; otherwise use
+    // the selected interpreter's prompt (issue #22 / #17).
+    final custom = _customPrompt;
+    final systemPrompt = (custom != null && custom.trim().isNotEmpty)
+        ? custom
+        : interpreter.systemPrompt;
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ExplanationScreen(
+          question: widget.question,
+          questionTypeLabel: widget.questionTypeLabel,
+          questionType: widget.questionType,
+          result: widget.result,
+          llmService: widget.llmService,
+          databaseService: widget.databaseService,
+          language: widget.language,
+          systemPrompt: systemPrompt,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(l10n.interpreter, style: theme.textTheme.labelLarge),
+        const SizedBox(height: 8),
+        InterpreterPicker(
+          selectedKey: _selectedKey,
+          onSelected: _select,
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 48,
+          child: GradientButton(
+            onPressed: _openExplanation,
+            icon: const Icon(Icons.auto_awesome),
+            label: l10n.getExplanation,
+          ),
+        ),
+      ],
     );
   }
 }
