@@ -35,6 +35,9 @@ class ExplanationScreen extends StatefulWidget {
   /// Language preference for the explanation response.
   final LanguagePreference language;
 
+  /// Optional system prompt (selected interpreter / custom prompt, issue #22).
+  final String? systemPrompt;
+
   const ExplanationScreen({
     super.key,
     required this.question,
@@ -44,6 +47,7 @@ class ExplanationScreen extends StatefulWidget {
     this.llmService,
     this.databaseService,
     this.language = LanguagePreference.english,
+    this.systemPrompt,
   });
 
   @override
@@ -88,6 +92,11 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
       return;
     }
     try {
+      // Use the selected interpreter / custom system prompt (issue #22).
+      final prompt = widget.systemPrompt;
+      if (prompt != null && prompt.trim().isNotEmpty) {
+        llm.systemPrompt = prompt;
+      }
       final text = await llm.generateExplanation(
         question: widget.question,
         questionTypeLabel: widget.questionTypeLabel,

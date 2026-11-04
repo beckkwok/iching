@@ -92,6 +92,9 @@ class AppLocalizations {
         '我記得：$detail。',
       );
 
+  /// Interpreter selector label (issue #22).
+  String get interpreter => _t('Interpreter', '解讀者');
+
   String get questionType => _t('Question type', '問題類型');
   String get selectCategory => _t('Select a category', '選擇類別');
   String get yourQuestion => _t('Your question', '您的問題');
