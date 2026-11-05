@@ -120,3 +120,8 @@ app.*.symbols
 app/models/Qwen3-0.6B.litertlm
 nul
 app/nul
+
+# Local Firebase config (never commit API keys)
+app/firebase.local.json
+app/android/app/google-services.json
+app/firebase.json

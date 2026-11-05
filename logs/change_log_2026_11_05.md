@@ -99,3 +99,22 @@ file, or log contains an API key, token, secret, or credential (e.g.
 secrets), the agent must stop and alert the user before reading/committing/
 pushing/sharing. Never commit secrets; recommend revoking/rotating exposed ones
 and removing them from the config (and history if needed).
+
+## Task: Secret-free Firebase config via --dart-define-from-file
+
+- `app/lib/firebase_options.dart` is now keyless and reads `FIREBASE_*` values
+  from the build environment.
+- Added git-ignored `app/firebase.local.json` (template:
+  `app/firebase.local.example.json`); run/build with
+  `--dart-define-from-file=firebase.local.json`.
+- Removed `app/firebase.json`; ignored `google-services.json` and
+  `firebase.local.json`.
+- Added `docs/firebase-setup.md`; updated AGENTS.md with the config rule.
+- No API key is committed; `google-services.json` / the Google services Gradle
+  plugin are not used.
+
+### Verification
+
+- `flutter analyze` — clean (3 pre-existing info lints)
+- `flutter test` — green (259 pass)
+- `flutter build apk --debug` — succeeds without the local file

@@ -216,6 +216,7 @@ directly from JSON assets (`assets/hexagrams/gua_<n>.json`) via `HexagramLoader`
 - **`.litertlm` platform support**: the **on-device** model requires an **arm64-v8a** Android device (or Windows desktop). The x86_64 Android emulator cannot run it.
 - **Mobile shell** (`HomeShell`): a `forui` `FBottomNavigationBar` hosts five tabs — History, Profile, Ask, Browse, Preference — with pure-Flutter animated Material icons (no native animation dependency). The header bar was removed (issue #6). History lists the recorded consultations (issue #8); Profile shows the agent memory (issue #3).
 - **Agent memory** (issues #3, #26, #27): after each explanation, and again after feedback, `LlmService.extractMemory` returns a JSON profile (`feeling` overall, `topic_feeling` for the current question type, `facts`, `preferences`) that `DatabaseService.mergeAgentMemory` accumulates (facts/preferences de-duplicated, the overall feeling replaced, per-topic feelings keyed by `QuestionType` name). Feedback is an emoji reaction (issue #27). The Profile tab reads `getAgentMemory()` + the latest consultation and shows the per-topic feelings. The personalized greeting is a deferred follow-up.
+- **Firebase config**: the API key lives in the git-ignored `app/firebase.local.json` and is passed with `--dart-define-from-file=firebase.local.json`; do not commit `google-services.json` or a generated `firebase_options.dart`. See `docs/firebase-setup.md`.
 
 ---
 
