@@ -45,10 +45,12 @@ class AppConfig {
 
   /// The Gemini model used by the remote backend (issue #85).
   ///
-  /// Override with `--dart-define=FIREBASE_AI_MODEL=...`.
+  /// The lite model is free-tier friendly and was more available than
+  /// `gemini-3.8-flash` during testing. Override with
+  /// `--dart-define=FIREBASE_AI_MODEL=...`.
   static const String firebaseModel = String.fromEnvironment(
     'FIREBASE_AI_MODEL',
-    defaultValue: 'gemini-3.8-flash',
+    defaultValue: 'gemini-3.5-flash-lite',
   );
 
   /// True on Android (the remote Gemini edition, issue #86).

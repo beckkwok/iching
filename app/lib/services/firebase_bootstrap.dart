@@ -16,9 +16,14 @@ Future<bool> initializeFirebase() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    // Optional fixed App Check debug token (useful for emulators/CI, where
+    // each install would otherwise generate a new token).
+    const debugToken = String.fromEnvironment('FIREBASE_APPCHECK_DEBUG_TOKEN');
     await FirebaseAppCheck.instance.activate(
       providerAndroid: kDebugMode
-          ? const AndroidDebugProvider()
+          ? AndroidDebugProvider(
+              debugToken: debugToken.isEmpty ? null : debugToken,
+            )
           : const AndroidPlayIntegrityProvider(),
       providerApple: kDebugMode
           ? const AppleDebugProvider()

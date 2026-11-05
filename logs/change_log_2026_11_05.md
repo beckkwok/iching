@@ -172,3 +172,12 @@ and removing them from the config (and history if needed).
 
 - `flutter analyze` — clean (3 pre-existing info lints)
 - `flutter test` — green (266 pass)
+
+### Remote smoke test
+
+- Pinned the App Check debug token via `FIREBASE_APPCHECK_DEBUG_TOKEN` (the
+  emulator/CI install otherwise generates a new token each run).
+- `integration_test/firebase_ai_smoke_test.dart` calls the real Gemini backend
+  on `emulator-5554`; it passed with `gemini-3.5-flash-lite` (the
+  `gemini-3.8-flash` default returned a transient 500 "high demand").
+- Default model changed to `gemini-3.5-flash-lite`.
