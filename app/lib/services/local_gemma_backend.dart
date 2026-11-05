@@ -35,7 +35,9 @@ class LocalGemmaBackend implements LlmBackend {
   }) : _prompts = promptStrategy ?? const DefaultLlmPromptStrategy();
 
   /// The system prompt used when opening a chat.
+  @override
   String get systemPrompt => _systemPrompt ?? _prompts.defaultSystemPrompt;
+  @override
   set systemPrompt(String value) => _systemPrompt = value;
 
   @override
@@ -51,6 +53,7 @@ class LocalGemmaBackend implements LlmBackend {
   String get modelDisplayName => modelInfo.modelFamily;
 
   /// Set the Gua generator used to format hexagram context for explanations.
+  @override
   set guaGenerator(GuaGenerator? g) => _guaGenerator = g;
 
   // ---------------------------------------------------------------------------

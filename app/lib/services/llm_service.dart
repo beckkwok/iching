@@ -46,8 +46,8 @@ class LlmService {
   static const String systemPromptSettingsKey = 'system_prompt';
 
   /// The system prompt used when opening a chat.
-  String get systemPrompt => _local.systemPrompt;
-  set systemPrompt(String value) => _local.systemPrompt = value;
+  String get systemPrompt => _active.systemPrompt;
+  set systemPrompt(String value) => _active.systemPrompt = value;
 
   bool get isReady => _active.isReady;
 
@@ -61,7 +61,10 @@ class LlmService {
   String get modelDisplayName => _local.modelDisplayName;
 
   /// Set the Gua generator used to format hexagram context for explanations.
-  set guaGenerator(GuaGenerator? g) => _local.guaGenerator = g;
+  set guaGenerator(GuaGenerator? g) {
+    _local.guaGenerator = g;
+    if (!identical(_active, _local)) _active.guaGenerator = g;
+  }
 
   Future<void> initialize({String? huggingFaceToken}) =>
       _local.initialize(huggingFaceToken: huggingFaceToken);

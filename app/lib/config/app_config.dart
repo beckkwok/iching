@@ -10,8 +10,10 @@ class AppConfig {
   /// Defaults to `true` in debug builds (development) and `false` in release
   /// builds (production, which auto-downloads [ModelCatalog.defaultModel]).
   /// Override with `--dart-define=ALLOW_MODEL_SELECTION=true|false`.
-  static const bool allowModelSelection =
-      bool.fromEnvironment('ALLOW_MODEL_SELECTION', defaultValue: kDebugMode);
+  static const bool allowModelSelection = bool.fromEnvironment(
+    'ALLOW_MODEL_SELECTION',
+    defaultValue: kDebugMode,
+  );
 
   /// Whether the app is running in production mode (release build without
   /// `--dart-define=ALLOW_MODEL_SELECTION=true`).
@@ -36,6 +38,16 @@ class AppConfig {
   /// Off until the Firebase project has been configured with
   /// `flutterfire configure`. Enable with
   /// `--dart-define=FIREBASE_ENABLED=true`.
-  static const bool firebaseEnabled =
-      bool.fromEnvironment('FIREBASE_ENABLED', defaultValue: false);
+  static const bool firebaseEnabled = bool.fromEnvironment(
+    'FIREBASE_ENABLED',
+    defaultValue: false,
+  );
+
+  /// The Gemini model used by the remote backend (issue #85).
+  ///
+  /// Override with `--dart-define=FIREBASE_AI_MODEL=...`.
+  static const String firebaseModel = String.fromEnvironment(
+    'FIREBASE_AI_MODEL',
+    defaultValue: 'gemini-3.8-flash',
+  );
 }
