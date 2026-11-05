@@ -77,7 +77,16 @@ precedence.
 - A “second opinion” / re-run flow is intentionally out of scope (the author
   marked it optional / separate).
 
+### Feature flag
+
+The picker is behind `AppConfig.interpreterSelectionEnabled`: **off by default**,
+enabled only on Windows (`!kIsWeb && defaultTargetPlatform ==
+TargetPlatform.windows`). Override with
+`--dart-define=ENABLE_INTERPRETER_SELECTION=true|false`. When off, the
+Interpreter label/picker are hidden and the explanation uses the custom prompt
+or the backend default.
+
 ### Verification
 
 - `flutter analyze` — clean (3 pre-existing info lints)
-- `flutter test` — green (254 pass)
+- `flutter test` — green (255 pass)
