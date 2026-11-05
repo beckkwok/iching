@@ -65,3 +65,28 @@ Play Integrity (requires the app to be registered with Google Play).
 - `flutter analyze` — clean (3 pre-existing info lints)
 - `flutter test` — green (259 pass)
 - `flutter build apk --debug --dart-define=FIREBASE_ENABLED=true` — succeeds
+
+## Task: Revoke exposed Firebase API key + remove config
+
+- Deleted the exposed Android API key (`Android key (auto created by
+  Firebase)`, ending `dgk4`) from project `iching-bb741` via the Cloud API Keys
+  API.
+- Removed `app/android/app/google-services.json`.
+- Reverted `app/lib/firebase_options.dart` to a keyless stub that throws until
+  reconfigured.
+- Removed the `com.google.gms.google-services` Gradle plugin from
+  `android/settings.gradle.kts` and `android/app/build.gradle.kts`.
+- Left `app/firebase.json` (project/app IDs only, no key) in place.
+
+### Notes
+
+- The old key remains in git history (PR #94) but is now revoked and invalid.
+  Purging it from history would require a destructive rewrite.
+- Firebase stays disabled (`FIREBASE_ENABLED` defaults to false) until a new,
+  restricted API key is created and `flutterfire configure` is run again.
+
+### Verification
+
+- `flutter analyze` — clean (3 pre-existing info lints)
+- `flutter test` — green (259 pass)
+- `flutter build apk --debug` — succeeds without the Firebase config
