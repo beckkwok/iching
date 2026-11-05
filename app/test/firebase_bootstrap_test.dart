@@ -27,8 +27,8 @@ void main() {
     }
   });
 
-  test('initializeFirebase degrades gracefully when unconfigured', () async {
-    // On the test platform (Android) the placeholder firebase_options throws;
+  test('initializeFirebase returns false when Firebase is unavailable', () async {
+    // On the test platform (Android) there is no Firebase plugin/binding;
     // initialization must be caught and reported as false.
     expect(defaultTargetPlatform, TargetPlatform.android);
     expect(await initializeFirebase(), isFalse);

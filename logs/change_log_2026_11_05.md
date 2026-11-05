@@ -39,3 +39,29 @@ to be created in the console and generated with `flutterfire configure`.
 - `flutter analyze` — clean (3 pre-existing info lints)
 - `flutter test` — green (259 pass)
 - `flutter build apk --debug` — succeeds
+
+## Task: Firebase project configuration (#84 follow-up)
+
+- Logged the Firebase CLI in as the account that owns **`iching-bb741`** (the
+  project was hidden under the previous CLI session).
+- Set the Android `applicationId` to **`com.beckkwok.iching`**.
+- Ran `flutterfire configure --project=iching-bb741 --platforms=android --yes`:
+  registered the Android app, generated `lib/firebase_options.dart`,
+  `android/app/google-services.json` and `firebase.json`, and applied the
+  `com.google.gms.google-services` Gradle plugin.
+- Renamed the bootstrap test to reflect that Firebase initialization is
+  unavailable in pure unit tests.
+- `flutter build apk --debug --dart-define=FIREBASE_ENABLED=true` succeeds.
+
+### App Check next step
+
+Run the app on an Android device with `FIREBASE_ENABLED=true`; copy the App
+Check **debug token** from the log and register it in Firebase Console →
+Security → App Check → Apps → *Manage debug tokens*. For release, configure
+Play Integrity (requires the app to be registered with Google Play).
+
+### Verification
+
+- `flutter analyze` — clean (3 pre-existing info lints)
+- `flutter test` — green (259 pass)
+- `flutter build apk --debug --dart-define=FIREBASE_ENABLED=true` — succeeds
