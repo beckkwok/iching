@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/app_config.dart';
 import '../data/interpreter_catalog.dart';
 import '../data/trigram_hexagram_data.dart';
 import '../l10n/app_localizations.dart';
@@ -639,15 +640,18 @@ class _ExplanationLauncherState extends State<_ExplanationLauncher> {
   }
 
   void _openExplanation() {
-    final interpreter =
-        InterpreterCatalog.byKey(_selectedKey) ??
-            InterpreterCatalog.defaultInterpreter;
-    // A custom system prompt (developer mode) takes precedence; otherwise use
-    // the selected interpreter's prompt (issue #22 / #17).
     final custom = _customPrompt;
-    final systemPrompt = (custom != null && custom.trim().isNotEmpty)
+    final hasCustomPrompt = custom != null && custom.trim().isNotEmpty;
+    // A custom system prompt (developer mode) takes precedence; otherwise use
+    // the selected interpreter's prompt when the feature is enabled, or leave
+    // the backend default (issue #22 / #17).
+    final String? systemPrompt = hasCustomPrompt
         ? custom
-        : interpreter.systemPrompt;
+        : AppConfig.interpreterSelectionEnabled
+            ? (InterpreterCatalog.byKey(_selectedKey) ??
+                    InterpreterCatalog.defaultInterpreter)
+                .systemPrompt
+            : null;
 
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -669,16 +673,19 @@ class _ExplanationLauncherState extends State<_ExplanationLauncher> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final showInterpreter = AppConfig.interpreterSelectionEnabled;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(l10n.interpreter, style: theme.textTheme.labelLarge),
-        const SizedBox(height: 8),
-        InterpreterPicker(
-          selectedKey: _selectedKey,
-          onSelected: _select,
-        ),
-        const SizedBox(height: 12),
+        if (showInterpreter) ...[
+          Text(l10n.interpreter, style: theme.textTheme.labelLarge),
+          const SizedBox(height: 8),
+          InterpreterPicker(
+            selectedKey: _selectedKey,
+            onSelected: _select,
+          ),
+          const SizedBox(height: 12),
+        ],
         SizedBox(
           height: 48,
           child: GradientButton(
