@@ -59,6 +59,11 @@ dependencies:
   # File picker for model selection
   file_picker: ^13.1.0
 
+  # Firebase AI Logic (remote Gemini) — issues #82/#84.
+  firebase_core: ^5.1.0
+  firebase_ai: ^5.1.0
+  firebase_app_check: ^0.5.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
