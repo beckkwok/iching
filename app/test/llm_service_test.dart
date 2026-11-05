@@ -322,6 +322,12 @@ class _RecordingBackend implements LlmBackend {
   bool closed = false;
 
   @override
+  String systemPrompt = '';
+
+  @override
+  set guaGenerator(GuaGenerator? generator) {}
+
+  @override
   bool get isReady => true;
 
   @override

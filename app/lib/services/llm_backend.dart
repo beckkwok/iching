@@ -10,6 +10,13 @@ abstract class LlmBackend {
   /// True once the backend is ready to generate responses.
   bool get isReady;
 
+  /// The system instruction used for generation.
+  String get systemPrompt;
+  set systemPrompt(String value);
+
+  /// Set the Gua generator used to format hexagram context.
+  set guaGenerator(GuaGenerator? generator);
+
   /// Generate a one-shot I-Ching explanation.
   Future<String> generateExplanation({
     required String question,

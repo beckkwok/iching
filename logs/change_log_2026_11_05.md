@@ -66,6 +66,39 @@ Play Integrity (requires the app to be registered with Google Play).
 - `flutter test` — green (259 pass)
 - `flutter build apk --debug --dart-define=FIREBASE_ENABLED=true` — succeeds
 
+## Task: FirebaseAiBackend (Gemini) (#85)
+
+Part of #82. Remote backend using Firebase AI Logic.
+
+### Changes
+
+- New `app/lib/services/firebase_ai_backend.dart` — `FirebaseAiBackend`:
+  - `generateExplanation` and `extractMemory` via
+    `FirebaseAI.googleAI().generativeModel(...).generateContent(...)`.
+  - Reuses `LlmPromptStrategy` (prompt building/cleaning) and
+    `GuaGenerator.formatContext` for the hexagram context.
+  - JSON response mode for memory extraction.
+  - Errors are caught (fallback explanation / null memory).
+  - Injectable `FirebaseContentGenerator` for tests (no network).
+- `LlmBackend` now exposes `systemPrompt` and `guaGenerator`, so local and
+  remote backends share the same facade.
+- `LlmService.systemPrompt` delegates to the active backend; `guaGenerator`
+  updates both the local and active backends.
+- `AppConfig.firebaseModel` (`--dart-define=FIREBASE_AI_MODEL`, default
+  `gemini-3.8-flash`).
+- Tests: `app/test/firebase_ai_backend_test.dart` — prompt/context, custom
+  system prompt, channel cleanup, JSON memory, failure fallbacks.
+
+### Verification
+
+- `flutter analyze` — clean (3 pre-existing info lints)
+- `flutter test` — green (264 pass)
+
+### Next
+
+#86 wires backend selection (Android remote / Windows local), skips the local
+model on Android, and adds the consent/error UX.
+
 ## Task: Revoke exposed Firebase API key + remove config
 
 - Deleted the exposed Android API key (`Android key (auto created by
@@ -77,11 +110,12 @@ Play Integrity (requires the app to be registered with Google Play).
 - Removed the `com.google.gms.google-services` Gradle plugin from
   `android/settings.gradle.kts` and `android/app/build.gradle.kts`.
 - Left `app/firebase.json` (project/app IDs only, no key) in place.
+- Purged the key from `main` and reachable branch history with
+  `git filter-repo`, then force-pushed. GitHub may still retain old PR
+  refs/caches; the key is revoked either way.
 
 ### Notes
 
-- The old key remains in git history (PR #94) but is now revoked and invalid.
-  Purging it from history would require a destructive rewrite.
 - Firebase stays disabled (`FIREBASE_ENABLED` defaults to false) until a new,
   restricted API key is created and `flutterfire configure` is run again.
 
