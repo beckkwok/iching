@@ -2,17 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:forui/forui.dart';
 
+import 'config/app_config.dart';
 import 'l10n/app_localizations.dart';
 import 'l10n/locale_controller.dart';
 import 'models/language_preference.dart';
 import 'models/theme_preference.dart';
 import 'screens/model_selection_screen.dart';
 import 'services/database_service.dart';
+import 'services/firebase_bootstrap.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Firebase AI Logic / App Check (issues #82/#84). Off until configured.
+  if (AppConfig.firebaseEnabled) {
+    await initializeFirebase();
+  }
 
   // Attempt database initialisation across platforms. The database only
   // stores settings now; hexagrams are loaded from JSON assets.

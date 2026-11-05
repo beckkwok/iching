@@ -30,4 +30,12 @@ class AppConfig {
     if (override == 'false') return false;
     return !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
   }
+
+  /// Whether to initialize Firebase (issues #82/#84).
+  ///
+  /// Off until the Firebase project has been configured with
+  /// `flutterfire configure`. Enable with
+  /// `--dart-define=FIREBASE_ENABLED=true`.
+  static const bool firebaseEnabled =
+      bool.fromEnvironment('FIREBASE_ENABLED', defaultValue: false);
 }
