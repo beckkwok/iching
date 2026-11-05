@@ -1,12 +1,16 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:app/config/app_config.dart';
+import 'package:app/data/interpreter_catalog.dart';
 import 'package:app/models/gua.dart';
 import 'package:app/models/question_type.dart';
 import 'package:app/models/yao_line_type.dart';
 import 'package:app/screens/cast_result_screen.dart';
 import 'package:app/screens/explanation_screen.dart';
 import 'package:app/screens/hexagram_detail_screen.dart';
+import 'package:app/services/database_service.dart';
 import 'package:app/services/gua_generator.dart';
 import 'package:app/widgets/hexagram_view.dart';
 
@@ -100,6 +104,25 @@ GenerationResult _richResult() {
       YaoLineType.youngYin,
     ],
   );
+}
+
+/// A settings-only [DatabaseService] for the interpreter picker (no DB I/O).
+class _FakeSettingsDb extends DatabaseService {
+  _FakeSettingsDb() : super(databasePath: ':memory:');
+
+  final Map<String, String> settings = {};
+
+  @override
+  Future<String?> getSetting(String key) async => settings[key];
+
+  @override
+  Future<void> setSetting(String key, String? value) async {
+    if (value == null) {
+      settings.remove(key);
+    } else {
+      settings[key] = value;
+    }
+  }
 }
 
 void main() {
@@ -235,6 +258,67 @@ void main() {
     );
 
     expect(find.text('Get Explanation'), findsNothing);
+  });
+
+  testWidgets('interpreter picker persists the selected interpreter',
+      (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+    try {
+      final db = _FakeSettingsDb();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CastResultScreen(
+            result: _result(),
+            question: 'q',
+            databaseService: db,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.text('Classical Scholar'),
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Interpreter'), findsOneWidget);
+      expect(find.text('Compassionate Counselor'), findsOneWidget);
+      expect(find.text('Practical Advisor'), findsOneWidget);
+
+      await tester.tap(find.text('Classical Scholar'));
+      await tester.pump();
+
+      expect(db.settings[InterpreterCatalog.settingsKey], 'classical');
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+
+  testWidgets('interpreter picker is hidden on Android by default',
+      (tester) async {
+    expect(AppConfig.interpreterSelectionEnabled, isFalse);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CastResultScreen(
+          result: _result(),
+          question: 'q',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Get Explanation'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+
+    expect(find.text('Get Explanation'), findsOneWidget);
+    expect(find.text('Interpreter'), findsNothing);
+    expect(find.text('Compassionate Counselor'), findsNothing);
   });
 
   testWidgets('back button pops back to the previous screen', (tester) async {

@@ -19,4 +19,15 @@ class AppConfig {
   /// In production the model path and the "remove model file" action are
   /// hidden and the system prompt is read-only (issue #17).
   static const bool isProduction = !allowModelSelection;
+
+  /// Whether the interpreter picker is shown (issue #22).
+  ///
+  /// Disabled by default and only enabled on the Windows build. Override with
+  /// `--dart-define=ENABLE_INTERPRETER_SELECTION=true|false`.
+  static bool get interpreterSelectionEnabled {
+    const override = String.fromEnvironment('ENABLE_INTERPRETER_SELECTION');
+    if (override == 'true') return true;
+    if (override == 'false') return false;
+    return !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
+  }
 }
