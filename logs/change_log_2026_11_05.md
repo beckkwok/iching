@@ -90,3 +90,12 @@ Play Integrity (requires the app to be registered with Google Play).
 - `flutter analyze` — clean (3 pre-existing info lints)
 - `flutter test` — green (259 pass)
 - `flutter build apk --debug` — succeeds without the Firebase config
+
+## Task: Mandatory secret-handling rule in AGENTS.md
+
+Added rule 5 to **Design Approach**: if any configuration, asset, generated
+file, or log contains an API key, token, secret, or credential (e.g.
+`google-services.json`, `firebase_options.dart`, `.env`, `key.properties`, CI
+secrets), the agent must stop and alert the user before reading/committing/
+pushing/sharing. Never commit secrets; recommend revoking/rotating exposed ones
+and removing them from the config (and history if needed).

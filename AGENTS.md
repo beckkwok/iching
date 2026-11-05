@@ -27,6 +27,8 @@
 
 4. **Log changes.** Write the prompt, thinking process, and all file changes into `logs/change_log_yyyy_mm_dd.md`.
 
+5. **Alert on secrets — no exceptions.** If any configuration, asset, generated file, or log contains an API key, token, secret, or credential (e.g. `google-services.json`, `firebase_options.dart`, `.env`, `key.properties`, CI secrets), **stop and alert the user immediately** before reading it into docs, committing, pushing, or sharing it. Never commit secrets. If a secret is exposed, recommend revoking/rotating it and removing it from the config (and history if needed).
+
 ---
 
 ## 3. Project Structure
