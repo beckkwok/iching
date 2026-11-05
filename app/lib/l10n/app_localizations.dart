@@ -173,6 +173,18 @@ class AppLocalizations {
             '除服務商的標準流量外，不含任何遙測或分析。',
       );
 
+  // --- Firebase remote consent (issue #86) -------------------------------
+  String get firebaseConsentTitle => _t('Before we begin', '開始之前');
+  String get firebaseConsentBody => _t(
+        'To generate an explanation, your question and hexagram details are '
+            'sent to Google\'s Gemini API through Firebase. Your consultation '
+            'history stays on this device. No telemetry or analytics beyond '
+            'the provider\'s traffic.',
+        '為產生解讀，您的問題與卦象內容將透過 Firebase 傳送至 Google Gemini API。'
+            '您的諮詢紀錄仍保留在裝置本機。除服務商的標準流量外，不含任何遙測或分析。',
+      );
+  String get firebaseConsentAgree => _t('Agree & continue', '同意並繼續');
+
   String get about => _t('About', '關於');
   String get version => _t('Version', '版本');
 

@@ -149,6 +149,26 @@ and removing them from the config (and history if needed).
 
 ### Verification
 
-- `flutter analyze` — clean (3 pre-existing info lints)
-- `flutter test` — green (259 pass)
-- `flutter build apk --debug` — succeeds without the local file
+- `flutter analyze` â€” clean (3 pre-existing info lints)
+- `flutter test` â€” green (259 pass)
+- `flutter build apk --debug` â€” succeeds without the local file
+
+## Task: Android remote backend selection + consent (#86)
+
+- `AppConfig.useRemoteBackend` (Firebase enabled + Android);
+  `isAndroidPlatform` / `isDesktopLocal`.
+- `main.dart`: Android remote edition builds `LlmService` with
+  `FirebaseAiBackend` and **skips `ModelSelectionScreen`** (no local model
+  download); Windows/Linux keep the local-model flow.
+- New `FirebaseConsentScreen` (first run; stored in
+  `settings.firebase_consent`) before the remote home shell.
+- l10n: `firebaseConsentTitle` / `firebaseConsentBody` /
+  `firebaseConsentAgree` (EN + zh-TC).
+- `MyApp` accepts an optional `home` (defaults to `ModelSelectionScreen`), so
+  existing tests/entry points are unaffected.
+- Tests: consent persists + opens `HomeShell`; AppConfig platform selection.
+
+### Verification
+
+- `flutter analyze` â€” clean (3 pre-existing info lints)
+- `flutter test` â€” green (266 pass)

@@ -50,4 +50,23 @@ class AppConfig {
     'FIREBASE_AI_MODEL',
     defaultValue: 'gemini-3.8-flash',
   );
+
+  /// True on Android (the remote Gemini edition, issue #86).
+  static bool get isAndroidPlatform =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
+  /// True on Windows/Linux (the local on-device edition, issue #86).
+  static bool get isDesktopLocal =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.windows ||
+          defaultTargetPlatform == TargetPlatform.linux);
+
+  /// Whether the app uses the remote Gemini backend (issue #86).
+  ///
+  /// Android + Firebase enabled → remote; Windows/Linux and unconfigured
+  /// builds → local model.
+  static bool get useRemoteBackend => firebaseEnabled && isAndroidPlatform;
+
+  /// Settings key recording the remote-data consent (issue #86).
+  static const String firebaseConsentKey = 'firebase_consent';
 }
