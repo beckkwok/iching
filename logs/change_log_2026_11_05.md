@@ -149,6 +149,46 @@ and removing them from the config (and history if needed).
 
 ### Verification
 
-- `flutter analyze` — clean (3 pre-existing info lints)
-- `flutter test` — green (259 pass)
-- `flutter build apk --debug` — succeeds without the local file
+- `flutter analyze` â€” clean (3 pre-existing info lints)
+- `flutter test` â€” green (259 pass)
+- `flutter build apk --debug` â€” succeeds without the local file
+
+## Task: Android remote backend selection + consent (#86)
+
+- `AppConfig.useRemoteBackend` (Firebase enabled + Android);
+  `isAndroidPlatform` / `isDesktopLocal`.
+- `main.dart`: Android remote edition builds `LlmService` with
+  `FirebaseAiBackend` and **skips `ModelSelectionScreen`** (no local model
+  download); Windows/Linux keep the local-model flow.
+- New `FirebaseConsentScreen` (first run; stored in
+  `settings.firebase_consent`) before the remote home shell.
+- l10n: `firebaseConsentTitle` / `firebaseConsentBody` /
+  `firebaseConsentAgree` (EN + zh-TC).
+- `MyApp` accepts an optional `home` (defaults to `ModelSelectionScreen`), so
+  existing tests/entry points are unaffected.
+- Tests: consent persists + opens `HomeShell`; AppConfig platform selection.
+
+### Verification
+
+- `flutter analyze` â€” clean (3 pre-existing info lints)
+- `flutter test` â€” green (266 pass)
+
+### Remote smoke test
+
+- Pinned the App Check debug token via `FIREBASE_APPCHECK_DEBUG_TOKEN` (the
+  emulator/CI install otherwise generates a new token each run).
+- `integration_test/firebase_ai_smoke_test.dart` calls the real Gemini backend
+  on `emulator-5554`; it passed with `gemini-3.5-flash-lite` (the
+  `gemini-3.8-flash` default returned a transient 500 "high demand").
+- Default model changed to `gemini-3.5-flash-lite`.
+
+## Task: Mock FirebaseAiBackend tests (no live E2E)
+
+- Moved the live Gemini smoke test to `integration_test/manual/` (manual-only;
+  `flutter test`/CI does not run it). It still depends on network/model/App
+  Check, so it is not a repeatable test.
+- `FirebaseAiBackend` stays covered by `test/firebase_ai_backend_test.dart`,
+  which injects a mock `FirebaseContentGenerator` (prompt/context, memory JSON,
+  channel cleanup, failure fallbacks).
+- `FIREBASE_APPCHECK_DEBUG_TOKEN` remains available for manual emulator runs.
+- Default model remains `gemini-3.5-flash-lite`.

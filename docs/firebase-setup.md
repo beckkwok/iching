@@ -52,3 +52,30 @@ pass the values with individual `--dart-define` flags.
   keyless and reads the environment.
 - The Firebase API key is technically a public project identifier, but the
   local-file approach keeps it out of git regardless.
+
+## Optional environment keys
+
+- `FIREBASE_AI_MODEL` — Gemini model name (default `gemini-3.5-flash-lite`). `gemini-3.8-flash` may be overloaded.
+- `FIREBASE_APPCHECK_DEBUG_TOKEN` — a fixed App Check debug token for emulators/CI (register it once; otherwise every install generates a new token).
+
+## Tests
+
+`FirebaseAiBackend` is covered by `test/firebase_ai_backend_test.dart`, which
+injects a mock `FirebaseContentGenerator` — no network, no model download, no
+App Check. Run the normal suite:
+
+```bash
+cd app
+flutter test
+```
+
+## Manual smoke test (optional)
+
+A real Gemini call on a device/emulator — **not** part of `flutter test`/CI:
+
+```bash
+cd app
+flutter test -d emulator-5554 --dart-define-from-file=firebase.local.json integration_test/manual/firebase_ai_smoke_test.dart
+```
+
+See `app/integration_test/manual/README.md`.
