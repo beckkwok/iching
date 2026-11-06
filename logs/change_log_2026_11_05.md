@@ -181,3 +181,14 @@ and removing them from the config (and history if needed).
   on `emulator-5554`; it passed with `gemini-3.5-flash-lite` (the
   `gemini-3.8-flash` default returned a transient 500 "high demand").
 - Default model changed to `gemini-3.5-flash-lite`.
+
+## Task: Mock FirebaseAiBackend tests (no live E2E)
+
+- Removed `integration_test/firebase_ai_smoke_test.dart` — it depends on the
+  network, model availability, and App Check, so it is not a reliable
+  repeatable test.
+- `FirebaseAiBackend` stays covered by `test/firebase_ai_backend_test.dart`,
+  which injects a mock `FirebaseContentGenerator` (prompt/context, memory JSON,
+  channel cleanup, failure fallbacks).
+- `FIREBASE_APPCHECK_DEBUG_TOKEN` remains available for manual emulator runs.
+- Default model remains `gemini-3.5-flash-lite`.
