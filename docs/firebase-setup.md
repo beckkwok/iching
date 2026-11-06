@@ -58,6 +58,18 @@ pass the values with individual `--dart-define` flags.
 - `FIREBASE_AI_MODEL` — Gemini model name (default `gemini-3.5-flash-lite`). `gemini-3.8-flash` may be overloaded.
 - `FIREBASE_APPCHECK_DEBUG_TOKEN` — a fixed App Check debug token for emulators/CI (register it once; otherwise every install generates a new token).
 
+## Debug logging
+
+Debug builds print the Firebase AI request (model, `maxOutputTokens`, system
+prompt, full prompt) and the raw response to the device log:
+
+```bash
+adb logcat -s flutter   # or: flutter logs
+```
+
+The prompt contains the user's question and hexagram details; release builds do
+not log it. Long prompts wrap across multiple log lines.
+
 ## Tests
 
 `FirebaseAiBackend` is covered by `test/firebase_ai_backend_test.dart`, which

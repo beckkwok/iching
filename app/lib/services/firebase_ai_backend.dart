@@ -129,12 +129,40 @@ class FirebaseAiBackend implements LlmBackend {
   @override
   Future<void> close() async {}
 
-  Future<String?> _call(String prompt, {required bool json}) {
+  Future<String?> _call(String prompt, {required bool json}) async {
     final generator = _generateContent;
     if (generator != null) {
       return generator(prompt: prompt, systemPrompt: systemPrompt, json: json);
     }
-    return _generateWithFirebase(prompt, json: json);
+    _logRequest(prompt, json: json);
+    final text = await _generateWithFirebase(prompt, json: json);
+    _logResponse(text);
+    return text;
+  }
+
+  /// Debug-only diagnostics: show exactly what is sent to Firebase AI.
+  ///
+  /// The prompt includes the user's question and the cast hexagram, so this is
+  /// intentionally limited to debug builds and skipped for injected test
+  /// generators. Use `flutter logs` / `adb logcat -s flutter` to view it.
+  void _logRequest(String prompt, {required bool json}) {
+    if (!kDebugMode) return;
+    debugPrint('===== Firebase AI request =====');
+    debugPrint('model: $model');
+    debugPrint('json: $json');
+    debugPrint('maxOutputTokens: $_maxOutputTokens');
+    debugPrint('--- system prompt ---');
+    debugPrint(systemPrompt);
+    debugPrint('--- prompt ---');
+    debugPrint(prompt);
+    debugPrint('===== /Firebase AI request =====');
+  }
+
+  void _logResponse(String? text) {
+    if (!kDebugMode) return;
+    debugPrint('===== Firebase AI response =====');
+    debugPrint(text ?? '(null)');
+    debugPrint('===== /Firebase AI response =====');
   }
 
   Future<String?> _generateWithFirebase(

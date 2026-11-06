@@ -19,3 +19,13 @@
 
 - `flutter analyze` — clean (3 pre-existing info lints)
 - `flutter test` — green (273 pass)
+
+## Task: Hide the Android custom prompt and log Firebase prompts
+
+- Preference hides the Prompts / System Prompt section in the remote edition;
+  `showPromptsSection` defaults to `!AppConfig.useRemoteBackend`.
+- Android ignores a saved custom system prompt and uses the backend prompt.
+- `FirebaseAiBackend` logs the model, `maxOutputTokens`, system prompt, full
+  prompt and raw response in debug builds (skipped for release and injected test
+  generators); see docs/firebase-setup.md.
+- Tests: remote Preference hides the custom prompt; 274 passing.

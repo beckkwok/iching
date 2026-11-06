@@ -20,11 +20,17 @@ class SettingsScreen extends StatefulWidget {
   /// prompt read-only (issue #17). Defaults to [AppConfig.isProduction].
   final bool isProduction;
 
+  /// Whether to show the custom system-prompt section. Defaults to the local
+  /// edition (`!AppConfig.useRemoteBackend`); the Android remote edition uses
+  /// the backend's fixed prompt, so the editor is hidden there.
+  final bool? showPromptsSection;
+
   const SettingsScreen({
     super.key,
     this.llmService,
     required this.databaseService,
     this.isProduction = AppConfig.isProduction,
+    this.showPromptsSection,
   });
 
   @override
@@ -40,6 +46,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   ThemePreference _theme = ThemePreference.dark;
 
   bool _modelInfoLoaded = false;
+
+  bool get _showPromptsSection =>
+      widget.showPromptsSection ?? !AppConfig.useRemoteBackend;
 
   @override
   void initState() {
@@ -294,25 +303,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const Divider(),
 
                 // --- Prompts ---
-                _buildSectionHeader(context, l10n.prompts),
-                ListTile(
-                  leading: const Icon(Icons.psychology),
-                  title: Text(l10n.systemPrompt),
-                  subtitle: Text(l10n.systemPromptSubtitle),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => PromptEditorScreen(
-                          llmService: widget.llmService,
-                          databaseService: widget.databaseService,
-                          readOnly: widget.isProduction,
+                if (_showPromptsSection) ...[
+                  _buildSectionHeader(context, l10n.prompts),
+                  ListTile(
+                    leading: const Icon(Icons.psychology),
+                    title: Text(l10n.systemPrompt),
+                    subtitle: Text(l10n.systemPromptSubtitle),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => PromptEditorScreen(
+                            llmService: widget.llmService,
+                            databaseService: widget.databaseService,
+                            readOnly: widget.isProduction,
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-                const Divider(),
+                      );
+                    },
+                  ),
+                  const Divider(),
+                ],
 
                 // --- Privacy ---
                 _buildSectionHeader(context, l10n.privacy),
