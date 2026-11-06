@@ -32,6 +32,12 @@ key, `google-services.json`, or generated `firebase_options.dart` is committed.
 
 `app/firebase.local.json` is **git-ignored**. Never commit it.
 
+Android always uses the remote edition. If you build/run without the file, the
+app shows a **"Firebase is not configured"** screen (not the local model
+picker); desktop builds still use the local model. When launching from an IDE,
+add `--dart-define-from-file=firebase.local.json` to the run configuration's
+additional arguments.
+
 ## CI
 
 Write `app/firebase.local.json` from a repository secret before building, or

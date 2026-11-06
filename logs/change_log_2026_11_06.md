@@ -19,3 +19,17 @@
 
 - `flutter analyze` — clean (3 pre-existing info lints)
 - `flutter test` — green (273 pass)
+
+## Task: Android must not show the local model picker (#86 follow-up)
+
+- AppConfig.firebaseEnabled now defaults to **true on Android** (and false
+  elsewhere); FIREBASE_ENABLED=true|false still overrides it. useRemoteBackend
+  therefore stays true on Android even when the build omits the local config.
+- Added FirebaseConfigErrorScreen (EN/ZH) shown when the remote edition cannot
+  initialize Firebase; Android never falls back to ModelSelectionScreen.
+- main.dart records the bootstrap result and routes to the error screen instead
+  of the consent/home flow when Firebase is unavailable.
+- Rebuilt and verified on emulator-5554: with the local file -> consent/Ask;
+  without it -> "Firebase is not configured" (no local model picker).
+- Tests: new error-screen widget test; updated config/bootstrap expectations;
+  full suite 274 passing.

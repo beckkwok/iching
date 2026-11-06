@@ -14,7 +14,8 @@ void main() {
   test('Android is the remote platform; desktop is local', () {
     expect(AppConfig.isAndroidPlatform, isTrue);
     expect(AppConfig.isDesktopLocal, isFalse);
-    // Firebase is disabled in tests, so the remote backend stays off.
-    expect(AppConfig.useRemoteBackend, isFalse);
+    // Android defaults to the remote edition (Firebase enabled).
+    expect(AppConfig.firebaseEnabled, isTrue);
+    expect(AppConfig.useRemoteBackend, isTrue);
   });
 }
