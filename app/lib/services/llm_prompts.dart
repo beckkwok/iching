@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:app/models/agent_memory.dart';
 import 'package:app/models/language_preference.dart';
 import 'package:app/services/llm_backend.dart';
 
@@ -32,6 +33,9 @@ abstract class LlmPromptStrategy {
     String? reaction,
     String? topicLabel,
   });
+
+  /// Build the prompt that asks for a compressed version of [memory].
+  String summarizeMemoryPrompt(AgentMemory memory);
 
   /// Clean a raw explanation response.
   String cleanExplanation(String raw);
@@ -178,10 +182,12 @@ class DefaultLlmPromptStrategy extends LlmPromptStrategy {
           jsonDecode(raw.substring(start, end + 1)) as Map<String, dynamic>;
       final feeling = (decoded['feeling'] as String? ?? '').trim();
       final topicFeeling = (decoded['topic_feeling'] as String? ?? '').trim();
+      final feelings = _stringMap(decoded['feelings']);
       final facts = _stringList(decoded['facts']);
       final preferences = _stringList(decoded['preferences']);
       if (feeling.isEmpty &&
           topicFeeling.isEmpty &&
+          feelings.isEmpty &&
           facts.isEmpty &&
           preferences.isEmpty) {
         return null;
@@ -189,12 +195,38 @@ class DefaultLlmPromptStrategy extends LlmPromptStrategy {
       return MemoryExtraction(
         feeling: feeling,
         topicFeeling: topicFeeling,
+        feelings: feelings,
         facts: facts,
         preferences: preferences,
       );
     } catch (_) {
       return null;
     }
+  }
+
+  @override
+  String summarizeMemoryPrompt(AgentMemory memory) {
+    final payload = jsonEncode({
+      'feeling': memory.feeling,
+      'feelings': memory.feelings,
+      'facts': memory.facts,
+      'preferences': memory.preferences,
+    });
+    return 'Here is the user\'s accumulated profile:\n$payload\n\n'
+        'Summarize it into a compact profile. Merge duplicates, drop minor '
+        'details, and keep it under ~300 words. Respond in JSON only with this '
+        'exact shape:\n'
+        '{"feeling": "...", "feelings": {"<topic>": "..."}, '
+        '"facts": ["..."], "preferences": ["..."]}';
+  }
+
+  static Map<String, String> _stringMap(dynamic v) {
+    if (v is! Map) return const {};
+    return {
+      for (final entry in v.entries)
+        if (entry.key is String && entry.value is String)
+          entry.key as String: entry.value as String,
+    };
   }
 
   static List<String> _stringList(dynamic v) {
@@ -251,4 +283,7 @@ class LlmPrompts {
 
   static MemoryExtraction? parseMemoryExtraction(String text) =>
       _default.parseMemory(text);
+
+  static String summarizeMemoryPrompt(AgentMemory memory) =>
+      _default.summarizeMemoryPrompt(memory);
 }

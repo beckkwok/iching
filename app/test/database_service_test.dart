@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'package:app/models/agent_memory.dart';
 import 'package:app/models/consultation.dart';
 import 'package:app/models/yao_line_type.dart';
 import 'package:app/services/database_service.dart';
@@ -275,6 +276,28 @@ void main() {
       expect(memory!.feeling, 'reflective');
       expect(memory.feelingFor('careerAchievement'), 'eager but cautious');
       expect(memory.feelingFor('timing'), 'waiting patiently');
+    });
+
+    test('replaceAgentMemory overwrites the profile', () async {
+      await service.mergeAgentMemory(
+        feeling: 'old',
+        facts: const ['a'],
+        preferences: const [],
+      );
+
+      await service.replaceAgentMemory(AgentMemory(
+        feeling: 'new',
+        feelings: const {'careerAchievement': 'calm'},
+        facts: const ['b'],
+        preferences: const ['c'],
+        updatedAt: DateTime(2026, 11, 6),
+      ));
+
+      final memory = await service.getAgentMemory();
+      expect(memory!.feeling, 'new');
+      expect(memory.facts, ['b']);
+      expect(memory.preferences, ['c']);
+      expect(memory.feelings, {'careerAchievement': 'calm'});
     });
   });
 }

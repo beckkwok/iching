@@ -39,6 +39,21 @@ class AgentMemory {
       facts.isEmpty &&
       preferences.isEmpty;
 
+  /// When the stored profile exceeds this rough token count, summarize it
+  /// (issue #49).
+  static const int maxApproximateTokens = 1000;
+
+  /// Rough token estimate (~3 characters per token for mixed EN/CJK).
+  int get approximateTokens => (toSummaryText.length / 3).ceil();
+
+  /// A plain-text view used for the token estimate and the summarize prompt.
+  String get toSummaryText => [
+        feeling,
+        for (final entry in feelings.entries) '${entry.key}: ${entry.value}',
+        ...facts,
+        ...preferences,
+      ].join('\n');
+
   Map<String, dynamic> toMap() {
     final map = <String, dynamic>{
       'feeling': feeling,

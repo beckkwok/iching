@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:app/data/model_catalog.dart';
+import 'package:app/models/agent_memory.dart';
 import 'package:app/models/gua.dart';
 import 'package:app/models/language_preference.dart';
 import 'package:app/services/gua_generator.dart';
@@ -273,6 +274,17 @@ void main() {
         expect(memory?.feeling, 'calm');
         expect(backend.memoryCalls, 1);
 
+        final summary = await service.summarizeMemory(
+          AgentMemory(
+            feeling: 'calm',
+            facts: const [],
+            preferences: const [],
+            updatedAt: DateTime(2026, 11, 6),
+          ),
+        );
+        expect(summary, isNull);
+        expect(backend.summarizeCalls, 1);
+
         await service.closeChat();
         expect(backend.closed, isTrue);
       },
@@ -319,6 +331,7 @@ GenerationResult _result() {
 class _RecordingBackend implements LlmBackend {
   int explanationCalls = 0;
   int memoryCalls = 0;
+  int summarizeCalls = 0;
   bool closed = false;
 
   @override
@@ -355,6 +368,12 @@ class _RecordingBackend implements LlmBackend {
   }
 
   @override
+  Future<MemoryExtraction?> summarizeMemory(AgentMemory memory) async {
+    summarizeCalls++;
+    return null;
+  }
+
+  @override
   Future<void> close() async {
     closed = true;
   }
@@ -384,6 +403,9 @@ class _FakePromptStrategy extends LlmPromptStrategy {
     String? reaction,
     String? topicLabel,
   }) => 'fake-memory';
+
+  @override
+  String summarizeMemoryPrompt(AgentMemory memory) => 'fake-summary';
 
   @override
   String cleanExplanation(String raw) => raw.trim();

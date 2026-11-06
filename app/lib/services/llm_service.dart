@@ -1,3 +1,4 @@
+import 'package:app/models/agent_memory.dart';
 import 'package:app/models/language_preference.dart';
 import 'package:app/models/model_info.dart';
 import 'package:app/services/gua_generator.dart';
@@ -105,6 +106,10 @@ class LlmService {
     reaction: reaction,
     topicLabel: topicLabel,
   );
+
+  /// Compress an over-long profile through the active backend (issue #49).
+  Future<MemoryExtraction?> summarizeMemory(AgentMemory memory) =>
+      _active.summarizeMemory(memory);
 
   /// Release the active backend and the local model resources.
   Future<void> closeChat() async {

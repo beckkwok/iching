@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
+import '../models/agent_memory.dart';
 import '../models/consultation.dart';
 import '../models/language_preference.dart';
 import '../models/question_type.dart';
@@ -190,6 +191,21 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
         facts: extraction.facts,
         preferences: extraction.preferences,
       );
+      // Keep the stored profile under the token budget (issue #49).
+      final memory = await db.getAgentMemory();
+      if (memory != null &&
+          memory.approximateTokens > AgentMemory.maxApproximateTokens) {
+        final summary = await llm.summarizeMemory(memory);
+        if (summary != null) {
+          await db.replaceAgentMemory(AgentMemory(
+            feeling: summary.feeling,
+            feelings: summary.feelings,
+            facts: summary.facts,
+            preferences: summary.preferences,
+            updatedAt: DateTime.now(),
+          ));
+        }
+      }
     } catch (_) {
       // Memory is best-effort; ignore failures.
     }
