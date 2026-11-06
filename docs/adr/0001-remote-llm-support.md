@@ -26,6 +26,25 @@ remains supported as an option, but it is not required. Which provider is used,
 how it is configured, and whether local/remote can be selected by the user are
 implementation follow-ups.
 
+### Firebase AI Logic implementation (2026-11-05)
+
+- **Android** is the remote edition: `firebase_ai` (Gemini Developer API, free
+  tier) + `firebase_app_check`, with a first-run consent screen
+  (`FirebaseConsentScreen`).
+- **Windows/Linux** are the local edition (`flutter_gemma`); `firebase_ai` has
+  no Windows/Linux support.
+- Config comes from a git-ignored `app/firebase.local.json` via
+  `--dart-define-from-file`; `google-services.json` and committed API keys are
+  **not** used.
+- **App Check is mandatory** for Firebase AI Logic (enforcement began
+  2026-11-02): debug provider in development (a fixed token can be pinned),
+  Play Integrity in release.
+- Cost controls: default to a free-tier Flash-Lite model,
+  `maxOutputTokens: 512`, and budget alerts/spend caps in Google Cloud.
+- Real provider calls are covered by a **manual smoke test**
+  (`integration_test/manual/`); unit tests inject a mock
+  `FirebaseContentGenerator`.
+
 ## Consequences
 
 **Positive**
@@ -47,21 +66,22 @@ implementation follow-ups.
 
 ## Follow-ups
 
-Done with this decision:
+Done:
 
-- ✅ Updated `spec.md`, `README.md` and the in-app privacy copy (EN + zh-TC) to
-  describe on-device **and** remote inference.
-- ✅ Re-scoped `app/test/privacy_test.dart` from "no network at all" to "no
-  **unintended** network": the static allowlist now permits the LLM services
-  (`llm_service.dart` + planned `remote_llm_service.dart`), and the runtime guard
-  is explicitly limited to the on-device flow.
+- ✅ Pluggable `LlmBackend` with `LocalGemmaBackend` + `FirebaseAiBackend`
+  (#83/#85).
+- ✅ Android remote / Windows-local selection + first-run consent (#86).
+- ✅ Secret-free config via a git-ignored `app/firebase.local.json` and
+  `--dart-define-from-file` (#97).
+- ✅ Docs/privacy copy and the "no unintended network" guard (#87).
 
 Still open:
 
-- Abstract the LLM behind the existing `LlmService` interface so on-device and
-  remote backends are interchangeable.
-- Design provider selection/configuration and secure key storage.
-- Add a clear privacy notice/consent before sending data to a remote provider.
+- Restrict the Google API key to the Android app + the Firebase/Gemini APIs
+  (currently Android-app restriction only).
+- Play signing + Play Integrity for release (debug cert/token used today).
+- Configure macOS/iOS/web Firebase apps if those platforms get remote inference.
+- Set Cloud budget alerts/spend caps (documented, not yet configured).
 
 ## Alternatives considered
 

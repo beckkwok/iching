@@ -192,3 +192,24 @@ and removing them from the config (and history if needed).
   channel cleanup, failure fallbacks).
 - `FIREBASE_APPCHECK_DEBUG_TOKEN` remains available for manual emulator runs.
 - Default model remains `gemini-3.5-flash-lite`.
+
+## Task: Firebase privacy/docs + test guard + verification (#87)
+
+- README/spec/in-app privacy copy now describe the actual split: **Android =
+  Firebase AI Logic (Gemini)**, **Windows/Linux = local `flutter_gemma`**;
+  prompts leave the device on Android.
+- ADR 0001 records the Firebase AI Logic implementation: Gemini Developer API
+  (free tier), App Check (mandatory), git-ignored `firebase.local.json` config,
+  platform limits, and cost controls.
+- `privacy_test.dart`:
+  - static allowlist now permits `firebase_ai_backend.dart` for
+    `package:firebase_ai` / `FirebaseAI`;
+  - added secret guards: no `AIza` key in `firebase_options.dart`, and
+    `firebase.local.json` / `google-services.json` are git-ignored.
+- `docs/firebase-setup.md`: cost controls + manual verification checklist.
+- Manual smoke test recorded under `integration_test/manual/`.
+
+### Verification
+
+- `flutter analyze` — clean (3 pre-existing info lints)
+- `flutter test` — green (268 pass)

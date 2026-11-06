@@ -1,7 +1,10 @@
 # 🀄 I-Ching Consultant
 
-An I-Ching consultation app powered by AI — on-device or a remote LLM provider.  
-Built with **Flutter**, **SQLite**, on-device **Gemma / Qwen** models, and optional remote providers; data handling is documented in [ADR 0001](docs/adr/0001-remote-llm-support.md).
+An I-Ching consultation app powered by AI — **Firebase AI Logic (Gemini) on
+Android** and a local `flutter_gemma` model on Windows/Linux.  
+Built with **Flutter**, **SQLite**, and optional remote providers; data handling
+and key setup are documented in [ADR 0001](docs/adr/0001-remote-llm-support.md)
+and [Firebase setup](docs/firebase-setup.md).
 
 > *"Provide emotional support to those at a crossroads. Encourage reflection without judgment."*
 
@@ -17,15 +20,14 @@ Built with **Flutter**, **SQLite**, on-device **Gemma / Qwen** models, and optio
 - **Language preference** — choose English or Chinese (中文); the choice localizes the whole UI and is injected into the explanation prompt
 - **Editable system prompt** — view and customize the LLM instruction in Settings
 - **Hexagram browser** — browse all 64 hexagrams in a grid; tap any card for the full detail view (卦辭, 彖傳, 大象傳, 爻辭, 象徵意義, 不同人解讀)
-- **LLM integration** — runs a selectable on-device model via `flutter_gemma` (6 models available, e.g. Gemma 4, DeepSeek R1, Qwen3); remote providers are supported alongside on-device inference ([ADR 0001](docs/adr/0001-remote-llm-support.md))
-- **Default model** — Qwen3-0.6B is auto-downloaded on first run (no selection); the model grid is a development-only option. Internet is used to fetch the on-device model; when a remote provider is configured, the question and hexagram context are sent to that provider ([ADR 0001](docs/adr/0001-remote-llm-support.md)).
-- **Cross-platform** — runs on Android, Windows, macOS, Linux, and Web
+- **LLM integration** — Android uses **Firebase AI Logic (Gemini)**; Windows/Linux run a selectable on-device `flutter_gemma` model (6 models available, e.g. Gemma 4, DeepSeek R1, Qwen3). See [ADR 0001](docs/adr/0001-remote-llm-support.md) and [Firebase setup](docs/firebase-setup.md).
+- **Android remote / desktop local** — Android sends the prompt to Gemini via Firebase (App Check protects the API; no API key is committed). Windows/Linux auto-download Qwen3-0.6B on first run. Internet is needed for remote inference or the model download.
+- **Cross-platform** — Android (remote Gemini), Windows/Linux (local model); macOS/web are not configured for Firebase.
 
 ### 🚧 Planned
 - [ ] Gua image / visual representation
 - [ ] Enriched gua content with full classical texts
 - [ ] Load hexagrams directly from JSON assets (remove the `gua` DB table)
-- [ ] Privacy validation test suite (guard against unintended network calls)
 - [ ] Android packaging & app store readiness
 
 ---
@@ -174,8 +176,8 @@ See [spec.md](./spec.md) for the detailed project specification and task trackin
 ## 🔒 Privacy
 
 The app supports **on-device inference and remote LLM providers** (see [ADR 0001](docs/adr/0001-remote-llm-support.md)). How your data is handled:
-- On-device inference (`flutter_gemma`) keeps everything on your device (internet only to download the model).
-- When a remote provider is configured, the prompt — your question plus the hexagram context — is sent to that provider to generate the explanation.
+- On **Android**, explanations use **Firebase AI Logic (Gemini)** — your question and hexagram context are sent to Google through Firebase to generate the explanation. App Check protects the endpoint; no API key is committed to the repo.
+- On **Windows/Linux**, inference runs on-device (`flutter_gemma`); the internet is only used to download the model.
 - Settings and consultations are stored **only in local SQLite**.
 - No telemetry or analytics beyond the configured provider's standard traffic; no other external API calls.
 

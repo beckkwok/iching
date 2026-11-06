@@ -79,3 +79,19 @@ flutter test -d emulator-5554 --dart-define-from-file=firebase.local.json integr
 ```
 
 See `app/integration_test/manual/README.md`.
+
+## Cost controls
+
+- Default model: `gemini-3.5-flash-lite` (free-tier friendly); override with `FIREBASE_AI_MODEL`.
+- Explanations cap output at `maxOutputTokens: 512` (`FirebaseAiBackend`).
+- Set **budget alerts** and **spend caps** in Google Cloud for the project.
+- Monitor usage in the Firebase/Google Cloud console.
+- App Check + the default per-instance rate limits protect against abuse.
+
+## Verification checklist (manual)
+
+- [ ] Android device/emulator with `app/firebase.local.json`.
+- [ ] App Check debug token registered (or pinned via `FIREBASE_APPCHECK_DEBUG_TOKEN`).
+- [ ] `integration_test/manual/firebase_ai_smoke_test.dart` passes (real Gemini call, no channel/control tags).
+- [ ] In-app: consent → Ask → "Get Explanation" returns a Gemini explanation; the consultation appears in History with the full record.
+- [ ] Windows: `flutter run` uses the local model (no Firebase).
