@@ -86,6 +86,7 @@ class FirebaseAiBackend implements LlmBackend {
     String? comment,
     String? reaction,
     String? topicLabel,
+    LanguagePreference language = LanguagePreference.english,
   }) async {
     final prompt = _prompts.memoryPrompt(
       question: question,
@@ -94,6 +95,7 @@ class FirebaseAiBackend implements LlmBackend {
       comment: comment,
       reaction: reaction,
       topicLabel: topicLabel,
+      language: language,
     );
 
     try {
@@ -111,8 +113,11 @@ class FirebaseAiBackend implements LlmBackend {
 
   /// Compress an over-long profile (issue #49).
   @override
-  Future<MemoryExtraction?> summarizeMemory(AgentMemory memory) async {
-    final prompt = _prompts.summarizeMemoryPrompt(memory);
+  Future<MemoryExtraction?> summarizeMemory(
+    AgentMemory memory, {
+    LanguagePreference language = LanguagePreference.english,
+  }) async {
+    final prompt = _prompts.summarizeMemoryPrompt(memory, language: language);
     try {
       final text = await _call(prompt, json: true);
       if (text == null) return null;

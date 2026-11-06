@@ -270,9 +270,11 @@ void main() {
           question: 'q',
           hexagramName: 'h',
           explanation: 'e',
+          language: LanguagePreference.chinese,
         );
         expect(memory?.feeling, 'calm');
         expect(backend.memoryCalls, 1);
+        expect(backend.lastMemoryLanguage, LanguagePreference.chinese);
 
         final summary = await service.summarizeMemory(
           AgentMemory(
@@ -281,9 +283,11 @@ void main() {
             preferences: const [],
             updatedAt: DateTime(2026, 11, 6),
           ),
+          language: LanguagePreference.chinese,
         );
         expect(summary, isNull);
         expect(backend.summarizeCalls, 1);
+        expect(backend.lastSummarizeLanguage, LanguagePreference.chinese);
 
         await service.closeChat();
         expect(backend.closed, isTrue);
@@ -315,6 +319,35 @@ void main() {
       );
       expect(strategy.cleanExplanation('<think>x</think>ok'), 'ok');
     });
+
+    test('memory prompts follow the selected language', () {
+      const strategy = DefaultLlmPromptStrategy();
+      final english = strategy.memoryPrompt(
+        question: 'q',
+        hexagramName: 'h',
+        explanation: 'e',
+      );
+      expect(english, contains('in English'));
+
+      final chinese = strategy.memoryPrompt(
+        question: 'q',
+        hexagramName: 'h',
+        explanation: 'e',
+        language: LanguagePreference.chinese,
+      );
+      expect(chinese, contains('Traditional Chinese'));
+
+      final summary = strategy.summarizeMemoryPrompt(
+        AgentMemory(
+          feeling: 'calm',
+          facts: const [],
+          preferences: const [],
+          updatedAt: DateTime(2026, 11, 6),
+        ),
+        language: LanguagePreference.chinese,
+      );
+      expect(summary, contains('Traditional Chinese'));
+    });
   });
 }
 
@@ -333,6 +366,8 @@ class _RecordingBackend implements LlmBackend {
   int memoryCalls = 0;
   int summarizeCalls = 0;
   bool closed = false;
+  LanguagePreference? lastMemoryLanguage;
+  LanguagePreference? lastSummarizeLanguage;
 
   @override
   String systemPrompt = '';
@@ -362,14 +397,20 @@ class _RecordingBackend implements LlmBackend {
     String? comment,
     String? reaction,
     String? topicLabel,
+    LanguagePreference language = LanguagePreference.english,
   }) async {
     memoryCalls++;
+    lastMemoryLanguage = language;
     return const MemoryExtraction(feeling: 'calm', facts: [], preferences: []);
   }
 
   @override
-  Future<MemoryExtraction?> summarizeMemory(AgentMemory memory) async {
+  Future<MemoryExtraction?> summarizeMemory(
+    AgentMemory memory, {
+    LanguagePreference language = LanguagePreference.english,
+  }) async {
     summarizeCalls++;
+    lastSummarizeLanguage = language;
     return null;
   }
 
@@ -402,10 +443,14 @@ class _FakePromptStrategy extends LlmPromptStrategy {
     String? comment,
     String? reaction,
     String? topicLabel,
+    LanguagePreference language = LanguagePreference.english,
   }) => 'fake-memory';
 
   @override
-  String summarizeMemoryPrompt(AgentMemory memory) => 'fake-summary';
+  String summarizeMemoryPrompt(
+    AgentMemory memory, {
+    LanguagePreference language = LanguagePreference.english,
+  }) => 'fake-summary';
 
   @override
   String cleanExplanation(String raw) => raw.trim();

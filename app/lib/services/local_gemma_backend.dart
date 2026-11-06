@@ -263,6 +263,7 @@ class LocalGemmaBackend implements LlmBackend {
     String? comment,
     String? reaction,
     String? topicLabel,
+    LanguagePreference language = LanguagePreference.english,
   }) async {
     if (_chat == null) {
       await openExplanationChat();
@@ -275,6 +276,7 @@ class LocalGemmaBackend implements LlmBackend {
       comment: comment,
       reaction: reaction,
       topicLabel: topicLabel,
+      language: language,
     );
 
     await _chat!.addQuery(Message(text: prompt, isUser: true));
@@ -294,12 +296,15 @@ class LocalGemmaBackend implements LlmBackend {
 
   /// Compress an over-long profile (issue #49), reusing the open chat.
   @override
-  Future<MemoryExtraction?> summarizeMemory(AgentMemory memory) async {
+  Future<MemoryExtraction?> summarizeMemory(
+    AgentMemory memory, {
+    LanguagePreference language = LanguagePreference.english,
+  }) async {
     if (_chat == null) {
       await openExplanationChat();
     }
 
-    final prompt = _prompts.summarizeMemoryPrompt(memory);
+    final prompt = _prompts.summarizeMemoryPrompt(memory, language: language);
     await _chat!.addQuery(Message(text: prompt, isUser: true));
 
     try {

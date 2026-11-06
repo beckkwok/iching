@@ -98,6 +98,7 @@ class LlmService {
     String? comment,
     String? reaction,
     String? topicLabel,
+    LanguagePreference language = LanguagePreference.english,
   }) => _active.extractMemory(
     question: question,
     hexagramName: hexagramName,
@@ -105,11 +106,14 @@ class LlmService {
     comment: comment,
     reaction: reaction,
     topicLabel: topicLabel,
+    language: language,
   );
 
   /// Compress an over-long profile through the active backend (issue #49).
-  Future<MemoryExtraction?> summarizeMemory(AgentMemory memory) =>
-      _active.summarizeMemory(memory);
+  Future<MemoryExtraction?> summarizeMemory(
+    AgentMemory memory, {
+    LanguagePreference language = LanguagePreference.english,
+  }) => _active.summarizeMemory(memory, language: language);
 
   /// Release the active backend and the local model resources.
   Future<void> closeChat() async {
@@ -145,6 +149,7 @@ class LlmService {
     String? comment,
     String? reaction,
     String? topicLabel,
+    LanguagePreference language = LanguagePreference.english,
   }) => LlmPrompts.buildMemoryPrompt(
     question: question,
     hexagramName: hexagramName,
@@ -152,6 +157,7 @@ class LlmService {
     comment: comment,
     reaction: reaction,
     topicLabel: topicLabel,
+    language: language,
   );
 
   static MemoryExtraction? parseMemoryExtraction(String text) =>

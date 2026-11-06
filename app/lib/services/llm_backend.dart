@@ -27,6 +27,8 @@ abstract class LlmBackend {
   });
 
   /// Extract the user's profile (agent memory) from a consultation.
+  ///
+  /// [language] controls the language of the extracted profile values.
   Future<MemoryExtraction?> extractMemory({
     required String question,
     required String hexagramName,
@@ -34,10 +36,14 @@ abstract class LlmBackend {
     String? comment,
     String? reaction,
     String? topicLabel,
+    LanguagePreference language = LanguagePreference.english,
   });
 
   /// Compress an over-long profile into a compact one (issue #49).
-  Future<MemoryExtraction?> summarizeMemory(AgentMemory memory);
+  Future<MemoryExtraction?> summarizeMemory(
+    AgentMemory memory, {
+    LanguagePreference language = LanguagePreference.english,
+  });
 
   /// Release any backend resources.
   Future<void> close();

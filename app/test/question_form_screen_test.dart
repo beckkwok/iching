@@ -10,8 +10,10 @@ import 'package:app/screens/cast_result_screen.dart';
 import 'package:app/screens/manual_cast_screen.dart';
 import 'package:app/screens/question_form_screen.dart';
 import 'package:app/services/database_service.dart';
+import 'package:app/services/fake_llm_service.dart';
 import 'package:app/services/gua_generator.dart';
 import 'package:app/services/hexagram_loader.dart';
+import 'package:app/services/llm_service.dart';
 import 'package:app/theme/app_theme.dart';
 import 'package:app/widgets/glass_card.dart';
 
@@ -44,9 +46,15 @@ class _MemoryDb extends DatabaseService {
   _MemoryDb(this._memory) : super(databasePath: ':memory:');
 
   final AgentMemory? _memory;
+  AgentMemory? replaced;
 
   @override
   Future<AgentMemory?> getAgentMemory() async => _memory;
+
+  @override
+  Future<void> replaceAgentMemory(AgentMemory memory) async {
+    replaced = memory;
+  }
 }
 
 void main() {
@@ -72,12 +80,12 @@ void main() {
     } catch (_) {}
   });
 
-  final generator = GuaGenerator(HexagramLoader((code) async => fixtureJson(code)));
+  final generator = GuaGenerator(
+    HexagramLoader((code) async => fixtureJson(code)),
+  );
 
-  QuestionFormScreen buildForm() => QuestionFormScreen(
-        databaseService: db,
-        guaGenerator: generator,
-      );
+  QuestionFormScreen buildForm() =>
+      QuestionFormScreen(databaseService: db, guaGenerator: generator);
 
   /// The medallion made the form taller than the test viewport, so the
   /// submit button must be scrolled into view before tapping.
@@ -87,13 +95,15 @@ void main() {
     await tester.tap(find.text(label));
   }
 
-  testWidgets('question form shows type selector, text box and submit button',
-      (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(home: buildForm()),
-    );
+  testWidgets('question form shows type selector, text box and submit button', (
+    tester,
+  ) async {
+    await tester.pumpWidget(MaterialApp(home: buildForm()));
 
-    expect(find.text('What would you like to ask the I-Ching?'), findsOneWidget);
+    expect(
+      find.text('What would you like to ask the I-Ching?'),
+      findsOneWidget,
+    );
     expect(find.text('Question type'), findsOneWidget);
     expect(find.text('Your question'), findsOneWidget);
     expect(find.text('Submit Question'), findsOneWidget);
@@ -106,8 +116,9 @@ void main() {
     expect(find.byKey(const ValueKey('method-manual')), findsOneWidget);
   });
 
-  testWidgets('shows a personalized greeting from agent memory',
-      (tester) async {
+  testWidgets('shows a personalized greeting from agent memory', (
+    tester,
+  ) async {
     final memory = AgentMemory(
       feeling: 'hopeful about the new job',
       facts: const [],
@@ -129,10 +140,86 @@ void main() {
     expect(
       find.textContaining(
         'Welcome back. It sounds like you have been feeling hopeful about the '
-        'new job.',
+        'new job. What would you like to ask the I-Ching?',
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('localized greeting is merged with the Chinese prompt', (
+    tester,
+  ) async {
+    final memory = AgentMemory(
+      feeling: '對新工作充滿希望',
+      facts: const [],
+      preferences: const [],
+      updatedAt: DateTime(2026, 11, 3),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('zh'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: QuestionFormScreen(
+          databaseService: _MemoryDb(memory),
+          guaGenerator: generator,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.textContaining('歡迎回來。'), findsOneWidget);
+    expect(find.textContaining('聽起來您最近感到對新工作充滿希望。'), findsOneWidget);
+    expect(find.textContaining('您想向易經請教什麼？'), findsOneWidget);
+  });
+
+  testWidgets('re-localizes an English profile for the Chinese greeting', (
+    tester,
+  ) async {
+    final memory = AgentMemory(
+      feeling: 'hopeful',
+      facts: const [],
+      preferences: const [],
+      updatedAt: DateTime(2026, 11, 3),
+    );
+    final db = _MemoryDb(memory);
+    final llm = FakeLlmService()
+      ..summaryResponse = const MemoryExtraction(
+        feeling: '充滿希望',
+        facts: [],
+        preferences: [],
+      );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('zh'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: QuestionFormScreen(
+          databaseService: db,
+          llmService: llm,
+          guaGenerator: generator,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('歡迎回來。'), findsOneWidget);
+    expect(find.textContaining('感到充滿希望'), findsOneWidget);
+    expect(find.textContaining('hopeful'), findsNothing);
+    expect(db.replaced?.feeling, '充滿希望');
   });
 
   testWidgets('shows no greeting without agent memory', (tester) async {
@@ -151,9 +238,7 @@ void main() {
   });
 
   testWidgets('casting method defaults to quick generate', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(home: buildForm()),
-    );
+    await tester.pumpWidget(MaterialApp(home: buildForm()));
 
     expect(
       find.descendant(
@@ -172,9 +257,7 @@ void main() {
   });
 
   testWidgets('casting pills use gold styling', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(home: buildForm()),
-    );
+    await tester.pumpWidget(MaterialApp(home: buildForm()));
 
     final quick = tester.widget<AnimatedContainer>(
       find.descendant(
@@ -201,9 +284,7 @@ void main() {
   });
 
   testWidgets('form fields sit inside a glass card', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(home: buildForm()),
-    );
+    await tester.pumpWidget(MaterialApp(home: buildForm()));
 
     expect(find.byType(GlassCard), findsOneWidget);
     expect(
@@ -223,26 +304,25 @@ void main() {
   });
 
   testWidgets('shows the medallion emblem', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(home: buildForm()),
-    );
+    await tester.pumpWidget(MaterialApp(home: buildForm()));
 
     expect(find.byType(Image), findsOneWidget);
   });
 
   testWidgets('headers use the Noto Serif family', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(home: buildForm()),
-    );
+    await tester.pumpWidget(MaterialApp(home: buildForm()));
 
-    final title = tester.widget<Text>(find.text('What would you like to ask the I-Ching?'));
+    final title = tester.widget<Text>(
+      find.text('What would you like to ask the I-Ching?'),
+    );
     expect(title.style?.fontFamily, notoSerifFamily);
     final label = tester.widget<Text>(find.text('Question type').first);
     expect(label.style?.fontFamily, notoSerifFamily);
   });
 
-  testWidgets('glass card uses obsidian gradient fill in dark mode',
-      (tester) async {
+  testWidgets('glass card uses obsidian gradient fill in dark mode', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: ThemeData(brightness: Brightness.dark),
@@ -254,16 +334,17 @@ void main() {
       of: find.byType(GlassCard),
       matching: find.byType(Container),
     );
-    final card = matches.evaluate().map((e) => e.widget as Container).singleWhere(
-      (c) {
-        final decoration = c.decoration;
-        return decoration is BoxDecoration &&
-            decoration.gradient is LinearGradient &&
-            (decoration.gradient! as LinearGradient).colors.contains(
-              const Color(0xFF13131A).withValues(alpha: 0.6),
-            );
-      },
-    );
+    final card = matches
+        .evaluate()
+        .map((e) => e.widget as Container)
+        .singleWhere((c) {
+          final decoration = c.decoration;
+          return decoration is BoxDecoration &&
+              decoration.gradient is LinearGradient &&
+              (decoration.gradient! as LinearGradient).colors.contains(
+                const Color(0xFF13131A).withValues(alpha: 0.6),
+              );
+        });
     final decoration = card.decoration! as BoxDecoration;
     final gradient = decoration.gradient! as LinearGradient;
     expect(gradient.colors, [
@@ -278,9 +359,7 @@ void main() {
   });
 
   testWidgets('submit without input shows validation errors', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(home: buildForm()),
-    );
+    await tester.pumpWidget(MaterialApp(home: buildForm()));
 
     await tapSubmit(tester, 'Submit Question');
     await tester.pumpAndSettle();
@@ -289,11 +368,10 @@ void main() {
     expect(find.text('Please enter your question'), findsOneWidget);
   });
 
-  testWidgets('submitting with hexagram enabled opens the cast result screen',
-      (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(home: buildForm()),
-    );
+  testWidgets('submitting with hexagram enabled opens the cast result screen', (
+    tester,
+  ) async {
+    await tester.pumpWidget(MaterialApp(home: buildForm()));
 
     await tester.tap(find.byType(DropdownButtonFormField<QuestionType>));
     await tester.pumpAndSettle();
@@ -318,11 +396,10 @@ void main() {
     expect(find.textContaining('卦'), findsWidgets);
   });
 
-  testWidgets('submitting with manual method opens the manual cast screen',
-      (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(home: buildForm()),
-    );
+  testWidgets('submitting with manual method opens the manual cast screen', (
+    tester,
+  ) async {
+    await tester.pumpWidget(MaterialApp(home: buildForm()));
 
     await tester.tap(find.byType(DropdownButtonFormField<QuestionType>));
     await tester.pumpAndSettle();
@@ -349,8 +426,9 @@ void main() {
     expect(find.text('Choose the six lines'), findsOneWidget);
   });
 
-  testWidgets('first page renders Chinese when the locale is zh',
-      (tester) async {
+  testWidgets('first page renders Chinese when the locale is zh', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('zh'),
@@ -372,8 +450,9 @@ void main() {
     expect(find.text('Submit Question'), findsNothing);
   });
 
-  testWidgets('question category is localized through the consultation flow',
-      (tester) async {
+  testWidgets('question category is localized through the consultation flow', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('zh'),
@@ -408,5 +487,4 @@ void main() {
     final cast = tester.widget<CastResultScreen>(find.byType(CastResultScreen));
     expect(cast.questionTypeLabel, '事業成就');
   });
-
 }
