@@ -33,3 +33,14 @@
   without it -> "Firebase is not configured" (no local model picker).
 - Tests: new error-screen widget test; updated config/bootstrap expectations;
   full suite 274 passing.
+
+## Task: Hide the local model section on Android (#86)
+
+- `SettingsScreen` hides the Model section by default in the remote edition
+  (`AppConfig.useRemoteBackend`); desktop still shows it. Added an optional
+  `showModelSection` override for tests.
+- The local model-path/remove-file load is skipped when the section is hidden.
+- Tests: new remote-hidden test; model-section tests opt in explicitly; full
+  suite 275 passing.
+- Verified on `emulator-5554` (Chinese UI): Preference shows Language, Theme,
+  Prompts, Privacy, About - no Model section.

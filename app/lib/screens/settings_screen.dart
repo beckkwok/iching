@@ -20,11 +20,17 @@ class SettingsScreen extends StatefulWidget {
   /// prompt read-only (issue #17). Defaults to [AppConfig.isProduction].
   final bool isProduction;
 
+  /// Whether to show the local-model section. Defaults to the local edition
+  /// (`!AppConfig.useRemoteBackend`); Android's remote edition has no local
+  /// model file, so the section is hidden there.
+  final bool? showModelSection;
+
   const SettingsScreen({
     super.key,
     this.llmService,
     required this.databaseService,
     this.isProduction = AppConfig.isProduction,
+    this.showModelSection,
   });
 
   @override
@@ -40,6 +46,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   ThemePreference _theme = ThemePreference.dark;
 
   bool _modelInfoLoaded = false;
+
+  bool get _showModelSection =>
+      widget.showModelSection ?? !AppConfig.useRemoteBackend;
 
   @override
   void initState() {
@@ -96,6 +105,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadModelInfo() async {
+    if (!_showModelSection) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
     final l10n = AppLocalizations.of(context);
     final svc = widget.llmService;
     if (svc == null) {
@@ -195,59 +208,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               children: [
-                // --- Model ---
-                _buildSectionHeader(context, l10n.model),
-                ListTile(
-                  leading: const Icon(Icons.storage),
-                  title: Text(l10n.model),
-                  subtitle: Text(
-                    _modelDisplayName,
-                    style: const TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.description),
-                  title: Text(l10n.fileName),
-                  subtitle: Text(
-                    _modelFilename,
-                    style: const TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-                if (!widget.isProduction)
+                if (_showModelSection) ...[
+                  // --- Model ---
+                  _buildSectionHeader(context, l10n.model),
                   ListTile(
-                    leading: const Icon(Icons.folder_open),
-                    title: Text(l10n.fullPath),
+                    leading: const Icon(Icons.storage),
+                    title: Text(l10n.model),
                     subtitle: Text(
-                      _modelFullPath,
+                      _modelDisplayName,
                       style: const TextStyle(
                         fontFamily: 'monospace',
-                        fontSize: 11,
+                        fontSize: 12,
                       ),
                     ),
                   ),
-                if (!widget.isProduction)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: OutlinedButton.icon(
-                      onPressed: _removeModelFile,
-                      icon: const Icon(Icons.delete_outline),
-                      label: Text(l10n.removeModelFile),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        side: const BorderSide(color: Colors.red),
+                  ListTile(
+                    leading: const Icon(Icons.description),
+                    title: Text(l10n.fileName),
+                    subtitle: Text(
+                      _modelFilename,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12,
                       ),
                     ),
                   ),
-                const Divider(),
+                  if (!widget.isProduction)
+                    ListTile(
+                      leading: const Icon(Icons.folder_open),
+                      title: Text(l10n.fullPath),
+                      subtitle: Text(
+                        _modelFullPath,
+                        style: const TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  if (!widget.isProduction)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: OutlinedButton.icon(
+                        onPressed: _removeModelFile,
+                        icon: const Icon(Icons.delete_outline),
+                        label: Text(l10n.removeModelFile),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                        ),
+                      ),
+                    ),
+                  const Divider(),
+                ],
 
                 // --- Language ---
                 _buildSectionHeader(context, l10n.language),
