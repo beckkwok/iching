@@ -50,13 +50,25 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
 
   AgentMemory? _memory;
   bool _started = false;
+  LanguagePreference _language = LanguagePreference.english;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_started) return;
-    _started = true;
-    _loadMemory();
+    final l10n = AppLocalizations.of(context);
+    final language = l10n.isChinese
+        ? LanguagePreference.chinese
+        : LanguagePreference.english;
+    if (!_started) {
+      _started = true;
+      _language = language;
+      _loadMemory();
+    } else if (language != _language) {
+      _language = language;
+      // Hide the old-language greeting while the profile is re-localized.
+      _memory = null;
+      _loadMemory();
+    }
   }
 
   /// Load the agent memory for the personalized greeting (issue #25).
@@ -65,9 +77,46 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
     if (db == null) return;
     try {
       final memory = await db.getAgentMemory();
-      if (mounted) setState(() => _memory = memory);
+      if (!mounted || memory == null) return;
+      final l10n = AppLocalizations.of(context);
+      if (memoryGreetingMatchesLocale(memory, l10n)) {
+        setState(() => _memory = memory);
+        return;
+      }
+      final localized = await _localizeMemory(memory, l10n);
+      if (!mounted) return;
+      setState(() => _memory = localized ?? memory);
     } catch (_) {
       // The greeting is optional; ignore memory-load failures.
+    }
+  }
+
+  /// Re-summarize a profile stored in the other language so the greeting and
+  /// the app language agree. One LLM call, only when the profile mismatches.
+  Future<AgentMemory?> _localizeMemory(
+    AgentMemory memory,
+    AppLocalizations l10n,
+  ) async {
+    final llm = widget.llmService;
+    final db = widget.databaseService;
+    if (llm == null || db == null) return null;
+    try {
+      final language = l10n.isChinese
+          ? LanguagePreference.chinese
+          : LanguagePreference.english;
+      final summary = await llm.summarizeMemory(memory, language: language);
+      if (summary == null) return null;
+      final localized = AgentMemory(
+        feeling: summary.feeling,
+        feelings: summary.feelings,
+        facts: summary.facts,
+        preferences: summary.preferences,
+        updatedAt: DateTime.now(),
+      );
+      await db.replaceAgentMemory(localized);
+      return localized;
+    } catch (_) {
+      return null;
     }
   }
 
@@ -112,44 +161,48 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
 
       if (_method == CastMethod.manual) {
         // Build the hexagram line by line (issue #20).
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ManualCastScreen(
-              question: question,
-              questionTypeLabel: typeLabel,
-              questionType: type,
-              generator: generator,
-              llmService: widget.llmService,
-              databaseService: widget.databaseService,
-              language: language,
-            ),
-          ),
-        ).then((_) {
-          // Refresh the greeting after the consultation (issue #25).
-          if (mounted) _loadMemory();
-        });
+        Navigator.of(context)
+            .push(
+              MaterialPageRoute(
+                builder: (_) => ManualCastScreen(
+                  question: question,
+                  questionTypeLabel: typeLabel,
+                  questionType: type,
+                  generator: generator,
+                  llmService: widget.llmService,
+                  databaseService: widget.databaseService,
+                  language: language,
+                ),
+              ),
+            )
+            .then((_) {
+              // Refresh the greeting after the consultation (issue #25).
+              if (mounted) _loadMemory();
+            });
         return;
       }
 
       // Quick generate: cast a random hexagram and show the result.
       final result = await generator.generateRandom();
       if (!mounted) return;
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => CastResultScreen(
-            result: result,
-            question: question,
-            questionTypeLabel: typeLabel,
-            questionType: type,
-            llmService: widget.llmService,
-            databaseService: widget.databaseService,
-            language: language,
-          ),
-        ),
-      ).then((_) {
-        // Refresh the greeting after the consultation (issue #25).
-        if (mounted) _loadMemory();
-      });
+      Navigator.of(context)
+          .push(
+            MaterialPageRoute(
+              builder: (_) => CastResultScreen(
+                result: result,
+                question: question,
+                questionTypeLabel: typeLabel,
+                questionType: type,
+                llmService: widget.llmService,
+                databaseService: widget.databaseService,
+                language: language,
+              ),
+            ),
+          )
+          .then((_) {
+            // Refresh the greeting after the consultation (issue #25).
+            if (mounted) _loadMemory();
+          });
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -164,8 +217,10 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
       fontFamily: notoSerifFamily,
     );
     final memory = _memory;
-    final greeting =
-        memory == null ? null : buildAgentGreeting(memory, l10n);
+    final greeting = memory == null ? null : buildAgentGreeting(memory, l10n);
+    final askText = greeting == null
+        ? l10n.askPrompt
+        : '$greeting ${l10n.askPrompt}';
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
@@ -197,41 +252,31 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                           ),
                         ],
                       ),
-                          child: ClipOval(
-                            // The artwork has white margins around the coin:
-                            // zoom slightly so the coin edge bleeds past the
-                            // circular clip and no white ring shows.
-                            child: Transform.scale(
-                              scale: 1.06,
-                              child: Image.asset(
-                                'assets/images/medallion.png',
-                                width: 110,
-                                height: 110,
-                                fit: BoxFit.cover,
-                                alignment: Alignment.topCenter,
-                              ),
-                            ),
+                      child: ClipOval(
+                        // The artwork has white margins around the coin:
+                        // zoom slightly so the coin edge bleeds past the
+                        // circular clip and no white ring shows.
+                        child: Transform.scale(
+                          scale: 1.06,
+                          child: Image.asset(
+                            'assets/images/medallion.png',
+                            width: 110,
+                            height: 110,
+                            fit: BoxFit.cover,
+                            alignment: Alignment.topCenter,
                           ),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    l10n.askPrompt,
+                    askText,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontFamily: notoSerifFamily,
                     ),
                   ),
-                  if (greeting != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      greeting,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
                   const SizedBox(height: 24),
 
                   GlassCard(
@@ -240,10 +285,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         // Question type selector
-                        Text(
-                          l10n.questionType,
-                          style: labelStyle,
-                        ),
+                        Text(l10n.questionType, style: labelStyle),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<QuestionType>(
                           initialValue: _selectedType,
@@ -294,10 +336,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                         const SizedBox(height: 20),
 
                         // Exact question
-                        Text(
-                          l10n.yourQuestion,
-                          style: labelStyle,
-                        ),
+                        Text(l10n.yourQuestion, style: labelStyle),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _questionController,
@@ -341,10 +380,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
 
                         // Casting method — two separated pills, each fully
                         // oval on both sides.
-                        Text(
-                          l10n.castingMethod,
-                          style: labelStyle,
-                        ),
+                        Text(l10n.castingMethod, style: labelStyle),
                         const SizedBox(height: 8),
                         Row(
                           children: [
@@ -361,8 +397,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                                   label: method == CastMethod.quick
                                       ? l10n.quickGenerate
                                       : l10n.manualGenerate,
-                                  onTap: () =>
-                                      setState(() => _method = method),
+                                  onTap: () => setState(() => _method = method),
                                 ),
                               ),
                             ],
@@ -449,18 +484,11 @@ class _MethodPill extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              selected ? Icons.check : icon,
-              color: foreground,
-              size: 18,
-            ),
+            Icon(selected ? Icons.check : icon, color: foreground, size: 18),
             const SizedBox(width: 8),
             Text(
               label,
-              style: TextStyle(
-                color: foreground,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(color: foreground, fontWeight: FontWeight.w600),
             ),
           ],
         ),

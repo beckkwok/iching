@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:app/models/agent_memory.dart';
 import 'package:app/models/consultation.dart';
 import 'package:app/models/gua.dart';
+import 'package:app/models/language_preference.dart';
 import 'package:app/models/yao_line_type.dart';
 import 'package:app/screens/explanation_screen.dart';
 import 'package:app/screens/hexagram_detail_screen.dart';
@@ -34,11 +35,7 @@ const _guaJson = '''
 ''';
 
 GenerationResult _result() {
-  final gua = Gua(
-    guaCode: 46,
-    guaName: '地風升',
-    guaContent: _guaJson,
-  );
+  final gua = Gua(guaCode: 46, guaName: '地風升', guaContent: _guaJson);
   final lines = [true, false, true, false, true, false];
   final lineTypes = [
     YaoLineType.oldYang,
@@ -116,8 +113,9 @@ void main() {
     expect(llm.systemPrompt, 'Custom interpreter prompt');
   });
 
-  testWidgets('shows the yao loading animation while generating',
-      (tester) async {
+  testWidgets('shows the yao loading animation while generating', (
+    tester,
+  ) async {
     final llm = FakeLlmService();
 
     await tester.pumpWidget(
@@ -140,8 +138,9 @@ void main() {
     expect(find.byType(YaoLoadingAnimation), findsNothing);
   });
 
-  testWidgets('tapping the hexagram card opens the detail screen',
-      (tester) async {
+  testWidgets('tapping the hexagram card opens the detail screen', (
+    tester,
+  ) async {
     final llm = FakeLlmService();
     llm.explanationResponse = 'A gentle mirror for your question.';
 
@@ -177,8 +176,9 @@ void main() {
     expect(find.textContaining('No model available'), findsOneWidget);
   });
 
-  testWidgets('saves a consultation after generating the explanation',
-      (tester) async {
+  testWidgets('saves a consultation after generating the explanation', (
+    tester,
+  ) async {
     final llm = FakeLlmService();
     llm.explanationResponse = 'A gentle mirror for your question.';
     final db = _RecordingDb();
@@ -206,8 +206,9 @@ void main() {
     expect(c.explanation, 'A gentle mirror for your question.');
   });
 
-  testWidgets('saves the full cast including the changed hexagram',
-      (tester) async {
+  testWidgets('saves the full cast including the changed hexagram', (
+    tester,
+  ) async {
     final llm = FakeLlmService();
     llm.explanationResponse = 'A gentle mirror for your question.';
     final db = _RecordingDb();
@@ -277,11 +278,13 @@ void main() {
           result: _result(),
           llmService: llm,
           databaseService: db,
+          language: LanguagePreference.chinese,
         ),
       ),
     );
     await tester.pumpAndSettle();
 
+    expect(llm.lastMemoryLanguage, LanguagePreference.chinese);
     expect(db.merges, hasLength(1));
     expect(db.merges.first.$2, contains('considering a job change'));
     expect(db.merges.first.$3, contains('values stability'));
@@ -305,11 +308,13 @@ void main() {
           result: _result(),
           llmService: llm,
           databaseService: db,
+          language: LanguagePreference.chinese,
         ),
       ),
     );
     await tester.pumpAndSettle();
 
+    expect(llm.lastSummarizeLanguage, LanguagePreference.chinese);
     expect(llm.summarizeCalls, 1);
     expect(db.replaced?.feeling, 'summary');
   });
@@ -372,6 +377,9 @@ class _RecordingDb extends DatabaseService {
 
 /// A [FakeLlmService] that also returns a fixed memory extraction.
 class _MemoryLlm extends FakeLlmService {
+  LanguagePreference? lastMemoryLanguage;
+  LanguagePreference? lastSummarizeLanguage;
+
   @override
   Future<MemoryExtraction?> extractMemory({
     required String question,
@@ -380,7 +388,9 @@ class _MemoryLlm extends FakeLlmService {
     String? comment,
     String? reaction,
     String? topicLabel,
+    LanguagePreference language = LanguagePreference.english,
   }) async {
+    lastMemoryLanguage = language;
     return MemoryExtraction(
       feeling: comment == null ? 'hopeful' : 'hopeful and reflective',
       topicFeeling: 'both eager and cautious',
@@ -395,8 +405,12 @@ class _SummarizingLlm extends _MemoryLlm {
   int summarizeCalls = 0;
 
   @override
-  Future<MemoryExtraction?> summarizeMemory(AgentMemory memory) async {
+  Future<MemoryExtraction?> summarizeMemory(
+    AgentMemory memory, {
+    LanguagePreference language = LanguagePreference.english,
+  }) async {
     summarizeCalls++;
+    lastSummarizeLanguage = language;
     return const MemoryExtraction(
       feeling: 'summary',
       feelings: {'careerAchievement': 'calm'},

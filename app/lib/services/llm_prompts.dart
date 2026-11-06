@@ -32,10 +32,14 @@ abstract class LlmPromptStrategy {
     String? comment,
     String? reaction,
     String? topicLabel,
+    LanguagePreference language = LanguagePreference.english,
   });
 
   /// Build the prompt that asks for a compressed version of [memory].
-  String summarizeMemoryPrompt(AgentMemory memory);
+  String summarizeMemoryPrompt(
+    AgentMemory memory, {
+    LanguagePreference language = LanguagePreference.english,
+  });
 
   /// Clean a raw explanation response.
   String cleanExplanation(String raw);
@@ -141,6 +145,7 @@ class DefaultLlmPromptStrategy extends LlmPromptStrategy {
     String? comment,
     String? reaction,
     String? topicLabel,
+    LanguagePreference language = LanguagePreference.english,
   }) {
     final commentLine = (comment != null && comment.isNotEmpty)
         ? 'User\'s comment: "$comment"\n'
@@ -151,6 +156,11 @@ class DefaultLlmPromptStrategy extends LlmPromptStrategy {
     final topicLine = (topicLabel != null && topicLabel.isNotEmpty)
         ? 'Question topic: $topicLabel\n'
         : '';
+    final languageInstruction = switch (language) {
+      LanguagePreference.english => 'Write all JSON string values in English.',
+      LanguagePreference.chinese =>
+        'Write all JSON string values in Traditional Chinese.',
+    };
     return 'A user asked an I-Ching question and received a hexagram and an '
         'explanation.\n\n'
         'Question: "$question"\n'
@@ -169,7 +179,7 @@ class DefaultLlmPromptStrategy extends LlmPromptStrategy {
         '"facts": ["a fact about the user"], '
         '"preferences": ["a preference or value the user expressed"]}\n'
         'Keep each fact and preference to a few words. Use empty arrays when '
-        'nothing applies.';
+        'nothing applies. $languageInstruction';
   }
 
   @override
@@ -205,17 +215,25 @@ class DefaultLlmPromptStrategy extends LlmPromptStrategy {
   }
 
   @override
-  String summarizeMemoryPrompt(AgentMemory memory) {
+  String summarizeMemoryPrompt(
+    AgentMemory memory, {
+    LanguagePreference language = LanguagePreference.english,
+  }) {
     final payload = jsonEncode({
       'feeling': memory.feeling,
       'feelings': memory.feelings,
       'facts': memory.facts,
       'preferences': memory.preferences,
     });
+    final languageInstruction = switch (language) {
+      LanguagePreference.english => 'Write all JSON string values in English.',
+      LanguagePreference.chinese =>
+        'Write all JSON string values in Traditional Chinese.',
+    };
     return 'Here is the user\'s accumulated profile:\n$payload\n\n'
         'Summarize it into a compact profile. Merge duplicates, drop minor '
-        'details, and keep it under ~300 words. Respond in JSON only with this '
-        'exact shape:\n'
+        'details, and keep it under ~300 words. $languageInstruction '
+        'Respond in JSON only with this exact shape:\n'
         '{"feeling": "...", "feelings": {"<topic>": "..."}, '
         '"facts": ["..."], "preferences": ["..."]}';
   }
@@ -272,6 +290,7 @@ class LlmPrompts {
     String? comment,
     String? reaction,
     String? topicLabel,
+    LanguagePreference language = LanguagePreference.english,
   }) => _default.memoryPrompt(
     question: question,
     hexagramName: hexagramName,
@@ -279,11 +298,14 @@ class LlmPrompts {
     comment: comment,
     reaction: reaction,
     topicLabel: topicLabel,
+    language: language,
   );
 
   static MemoryExtraction? parseMemoryExtraction(String text) =>
       _default.parseMemory(text);
 
-  static String summarizeMemoryPrompt(AgentMemory memory) =>
-      _default.summarizeMemoryPrompt(memory);
+  static String summarizeMemoryPrompt(
+    AgentMemory memory, {
+    LanguagePreference language = LanguagePreference.english,
+  }) => _default.summarizeMemoryPrompt(memory, language: language);
 }

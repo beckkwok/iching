@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:app/models/agent_memory.dart';
 import 'package:app/models/gua.dart';
+import 'package:app/models/language_preference.dart';
 import 'package:app/models/yao_line_type.dart';
 import 'package:app/services/firebase_ai_backend.dart';
 import 'package:app/services/gua_generator.dart';
@@ -125,6 +126,7 @@ void main() {
       question: 'Should I move?',
       hexagramName: '地風升',
       explanation: 'A gentle reflection.',
+      language: LanguagePreference.chinese,
     );
 
     expect(memory, isNotNull);
@@ -132,6 +134,7 @@ void main() {
     expect(memory.facts, ['job change']);
     expect(memory.preferences, ['stability']);
     expect(generator.calls.single.json, isTrue);
+    expect(generator.calls.single.prompt, contains('Traditional Chinese'));
   });
 
   test('extractMemory returns null when the call fails', () async {
@@ -150,29 +153,36 @@ void main() {
     expect(memory, isNull);
   });
 
-  test('summarizeMemory sends the profile and parses the compact result',
-      () async {
-    final generator = _RecordingGenerator()
-      ..response = '{"feeling":"calm","feelings":{"career":"hopeful"},'
-          '"facts":["x"],"preferences":[]}';
-    final backend = FirebaseAiBackend(
-      guaGenerator: GuaGenerator(),
-      generateContent: generator.call,
-    );
+  test(
+    'summarizeMemory sends the profile and parses the compact result',
+    () async {
+      final generator = _RecordingGenerator()
+        ..response =
+            '{"feeling":"calm","feelings":{"career":"hopeful"},'
+            '"facts":["x"],"preferences":[]}';
+      final backend = FirebaseAiBackend(
+        guaGenerator: GuaGenerator(),
+        generateContent: generator.call,
+      );
 
-    final summary = await backend.summarizeMemory(AgentMemory(
-      feeling: 'long feeling',
-      facts: const ['a'],
-      preferences: const ['b'],
-      updatedAt: DateTime(2026, 11, 6),
-    ));
+      final summary = await backend.summarizeMemory(
+        AgentMemory(
+          feeling: 'long feeling',
+          facts: const ['a'],
+          preferences: const ['b'],
+          updatedAt: DateTime(2026, 11, 6),
+        ),
+        language: LanguagePreference.chinese,
+      );
 
-    expect(summary, isNotNull);
-    expect(summary!.feeling, 'calm');
-    expect(summary.feelings, {'career': 'hopeful'});
-    expect(summary.facts, ['x']);
-    final call = generator.calls.single;
-    expect(call.json, isTrue);
-    expect(call.prompt, contains('long feeling'));
-  });
+      expect(summary, isNotNull);
+      expect(summary!.feeling, 'calm');
+      expect(summary.feelings, {'career': 'hopeful'});
+      expect(summary.facts, ['x']);
+      final call = generator.calls.single;
+      expect(call.json, isTrue);
+      expect(call.prompt, contains('long feeling'));
+      expect(call.prompt, contains('Traditional Chinese'));
+    },
+  );
 }

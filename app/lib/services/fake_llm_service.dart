@@ -37,6 +37,8 @@ class FakeLlmService extends LlmService {
   }
 
   @override
-  Future<MemoryExtraction?> summarizeMemory(AgentMemory memory) async =>
-      summaryResponse;
+  Future<MemoryExtraction?> summarizeMemory(
+    AgentMemory memory, {
+    LanguagePreference language = LanguagePreference.english,
+  }) async => summaryResponse;
 }

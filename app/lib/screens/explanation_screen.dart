@@ -109,19 +109,21 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
       if (db != null) {
         final gua = widget.result.gua;
         final changed = widget.result.changedGua;
-        final saved = await db.createConsultation(Consultation(
-          question: widget.question,
-          questionTypeLabel: widget.questionTypeLabel,
-          hexagramCode: gua.guaCode,
-          hexagramName: gua.guaName,
-          hexagramContent: gua.guaContent,
-          explanation: text,
-          lineTypes: widget.result.lineTypes,
-          changedHexagramCode: changed?.guaCode,
-          changedHexagramName: changed?.guaName,
-          changedHexagramContent: changed?.guaContent,
-          createdAt: DateTime.now(),
-        ));
+        final saved = await db.createConsultation(
+          Consultation(
+            question: widget.question,
+            questionTypeLabel: widget.questionTypeLabel,
+            hexagramCode: gua.guaCode,
+            hexagramName: gua.guaName,
+            hexagramContent: gua.guaContent,
+            explanation: text,
+            lineTypes: widget.result.lineTypes,
+            changedHexagramCode: changed?.guaCode,
+            changedHexagramName: changed?.guaName,
+            changedHexagramContent: changed?.guaContent,
+            createdAt: DateTime.now(),
+          ),
+        );
         _consultationId = saved.id;
       }
       if (mounted) {
@@ -161,10 +163,12 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
       });
     }
     // Refine the agent memory with the reaction and comment (issue #3 / #27).
-    unawaited(_updateMemory(
-      comment: comment.isEmpty ? null : comment,
-      reaction: reaction,
-    ));
+    unawaited(
+      _updateMemory(
+        comment: comment.isEmpty ? null : comment,
+        reaction: reaction,
+      ),
+    );
   }
 
   /// Update the agent memory from this consultation (and optionally the user's
@@ -182,6 +186,7 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
         comment: comment,
         reaction: reaction?.emoji,
         topicLabel: widget.questionTypeLabel,
+        language: widget.language,
       );
       if (extraction == null) return;
       await db.mergeAgentMemory(
@@ -195,15 +200,20 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
       final memory = await db.getAgentMemory();
       if (memory != null &&
           memory.approximateTokens > AgentMemory.maxApproximateTokens) {
-        final summary = await llm.summarizeMemory(memory);
+        final summary = await llm.summarizeMemory(
+          memory,
+          language: widget.language,
+        );
         if (summary != null) {
-          await db.replaceAgentMemory(AgentMemory(
-            feeling: summary.feeling,
-            feelings: summary.feelings,
-            facts: summary.facts,
-            preferences: summary.preferences,
-            updatedAt: DateTime.now(),
-          ));
+          await db.replaceAgentMemory(
+            AgentMemory(
+              feeling: summary.feeling,
+              feelings: summary.feelings,
+              facts: summary.facts,
+              preferences: summary.preferences,
+              updatedAt: DateTime.now(),
+            ),
+          );
         }
       }
     } catch (_) {

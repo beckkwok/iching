@@ -67,4 +67,17 @@ void main() {
     expect(greeting, contains('歡迎回來'));
     expect(greeting, contains('hopeful'));
   });
+
+  test('detects when the profile matches the locale script', () {
+    expect(
+      memoryGreetingMatchesLocale(_memory(feeling: 'hopeful'), en),
+      isTrue,
+    );
+    expect(memoryGreetingMatchesLocale(_memory(feeling: '充滿希望'), zh), isTrue);
+    expect(
+      memoryGreetingMatchesLocale(_memory(feeling: 'hopeful'), zh),
+      isFalse,
+    );
+    expect(memoryGreetingMatchesLocale(_memory(feeling: '充滿希望'), en), isFalse);
+  });
 }

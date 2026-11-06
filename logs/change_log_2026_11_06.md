@@ -19,3 +19,19 @@
 
 - `flutter analyze` — clean (3 pre-existing info lints)
 - `flutter test` — green (273 pass)
+
+## Task: Localize and merge the Ask greeting
+
+- The Ask screen merges the personalized greeting with the question prompt into
+  one text (greeting + prompt) instead of two separate labels.
+- Memory extraction and summarization now take a `LanguagePreference` and
+  instruct the LLM to write profile values in the selected language. The
+  explanation flow passes the active language for both.
+- If an existing profile was stored in the other script, `QuestionFormScreen`
+  re-summarizes it once in the selected language and replaces the row, so the
+  greeting is localized immediately (no mixed-language greeting).
+- Added `memoryGreetingMatchesLocale`; tests for prompt language, delegation,
+  the screen's language pass-through, localized/merged greeting, and profile
+  re-localization. 277 tests passing.
+- Verified on `emulator-5554`: the stored English profile was re-localized and
+  the Ask screen shows one Chinese greeting + prompt paragraph.
