@@ -405,7 +405,9 @@ class _ResultSection extends StatelessWidget {
             const SizedBox(height: 8),
             _SymbolicMeaningView(
               meaning: content.symbolicMeaning,
-              highlightKey: HexagramReading.lifeKeyForQuestionType(questionType),
+              highlightKey: HexagramReading.lifeKeyForQuestionType(
+                questionType,
+              ),
             ),
             if (modern != null) ...[
               const SizedBox(height: 20),
@@ -419,7 +421,9 @@ class _ResultSection extends StatelessWidget {
               const SizedBox(height: 8),
               _ModernInterpretationView(
                 interpretation: modern,
-                highlightPositions: HexagramReading.changingPositions(lineTypes),
+                highlightPositions: HexagramReading.changingPositions(
+                  lineTypes,
+                ),
               ),
             ],
           ],
@@ -619,7 +623,9 @@ class _ExplanationLauncherState extends State<_ExplanationLauncher> {
     if (db == null) return;
     try {
       final key = await db.getSetting(InterpreterCatalog.settingsKey);
-      final custom = await db.getSetting(LlmService.systemPromptSettingsKey);
+      final custom = AppConfig.useRemoteBackend
+          ? null
+          : await db.getSetting(LlmService.systemPromptSettingsKey);
       final interpreter = InterpreterCatalog.byKey(key);
       if (!mounted) return;
       setState(() {
@@ -640,7 +646,9 @@ class _ExplanationLauncherState extends State<_ExplanationLauncher> {
   }
 
   void _openExplanation() {
-    final custom = _customPrompt;
+    // A custom system prompt (developer mode) takes precedence on the local
+    // edition; the remote edition uses the backend's fixed prompt.
+    final custom = AppConfig.useRemoteBackend ? null : _customPrompt;
     final hasCustomPrompt = custom != null && custom.trim().isNotEmpty;
     // A custom system prompt (developer mode) takes precedence; otherwise use
     // the selected interpreter's prompt when the feature is enabled, or leave
@@ -648,10 +656,10 @@ class _ExplanationLauncherState extends State<_ExplanationLauncher> {
     final String? systemPrompt = hasCustomPrompt
         ? custom
         : AppConfig.interpreterSelectionEnabled
-            ? (InterpreterCatalog.byKey(_selectedKey) ??
-                    InterpreterCatalog.defaultInterpreter)
-                .systemPrompt
-            : null;
+        ? (InterpreterCatalog.byKey(_selectedKey) ??
+                  InterpreterCatalog.defaultInterpreter)
+              .systemPrompt
+        : null;
 
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -680,10 +688,7 @@ class _ExplanationLauncherState extends State<_ExplanationLauncher> {
         if (showInterpreter) ...[
           Text(l10n.interpreter, style: theme.textTheme.labelLarge),
           const SizedBox(height: 8),
-          InterpreterPicker(
-            selectedKey: _selectedKey,
-            onSelected: _select,
-          ),
+          InterpreterPicker(selectedKey: _selectedKey, onSelected: _select),
           const SizedBox(height: 12),
         ],
         SizedBox(
@@ -698,4 +703,3 @@ class _ExplanationLauncherState extends State<_ExplanationLauncher> {
     );
   }
 }
-

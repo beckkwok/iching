@@ -33,10 +33,15 @@ void main() {
   Future<void> _pumpSettings(
     WidgetTester tester, {
     bool isProduction = false,
+    bool? showPromptsSection,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        home: SettingsScreen(databaseService: db, isProduction: isProduction),
+        home: SettingsScreen(
+          databaseService: db,
+          isProduction: isProduction,
+          showPromptsSection: showPromptsSection,
+        ),
       ),
     );
     // Let the async DB reads (model info + language) complete.
@@ -55,8 +60,9 @@ void main() {
     expect(find.text('中文 (Chinese)'), findsOneWidget);
   });
 
-  testWidgets('selecting Chinese persists the language setting',
-      (tester) async {
+  testWidgets('selecting Chinese persists the language setting', (
+    tester,
+  ) async {
     await _pumpSettings(tester);
 
     await tester.tap(find.text('中文 (Chinese)'));
@@ -142,17 +148,28 @@ void main() {
     expect(group.groupValue, ThemePreference.light);
   });
 
-  testWidgets('development shows model path and remove-file action',
-      (tester) async {
+  testWidgets('remote edition hides the custom prompt', (tester) async {
+    await _pumpSettings(tester, showPromptsSection: false);
+
+    expect(find.text('Prompts'), findsNothing);
+    expect(find.text('System Prompt'), findsNothing);
+    expect(find.text('Language'), findsOneWidget);
+    expect(find.text('Theme'), findsOneWidget);
+  });
+
+  testWidgets('development shows model path and remove-file action', (
+    tester,
+  ) async {
     await _pumpSettings(tester, isProduction: false);
 
     expect(find.text('Full Path'), findsOneWidget);
     expect(find.text('Remove Model File'), findsOneWidget);
   });
 
-  testWidgets('production hides model path and remove-file action',
-      (tester) async {
-    await _pumpSettings(tester, isProduction: true);
+  testWidgets('production hides model path and remove-file action', (
+    tester,
+  ) async {
+    await _pumpSettings(tester, isProduction: true, showPromptsSection: true);
 
     expect(find.text('Full Path'), findsNothing);
     expect(find.text('Remove Model File'), findsNothing);
