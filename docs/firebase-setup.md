@@ -68,3 +68,14 @@ App Check. Run the normal suite:
 cd app
 flutter test
 ```
+
+## Manual smoke test (optional)
+
+A real Gemini call on a device/emulator — **not** part of `flutter test`/CI:
+
+```bash
+cd app
+flutter test -d emulator-5554 --dart-define-from-file=firebase.local.json integration_test/manual/firebase_ai_smoke_test.dart
+```
+
+See `app/integration_test/manual/README.md`.

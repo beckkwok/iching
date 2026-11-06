@@ -184,9 +184,9 @@ and removing them from the config (and history if needed).
 
 ## Task: Mock FirebaseAiBackend tests (no live E2E)
 
-- Removed `integration_test/firebase_ai_smoke_test.dart` — it depends on the
-  network, model availability, and App Check, so it is not a reliable
-  repeatable test.
+- Moved the live Gemini smoke test to `integration_test/manual/` (manual-only;
+  `flutter test`/CI does not run it). It still depends on network/model/App
+  Check, so it is not a repeatable test.
 - `FirebaseAiBackend` stays covered by `test/firebase_ai_backend_test.dart`,
   which injects a mock `FirebaseContentGenerator` (prompt/context, memory JSON,
   channel cleanup, failure fallbacks).
