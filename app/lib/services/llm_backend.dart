@@ -1,3 +1,4 @@
+import 'package:app/models/agent_memory.dart';
 import 'package:app/models/language_preference.dart';
 import 'package:app/services/gua_generator.dart';
 
@@ -35,6 +36,9 @@ abstract class LlmBackend {
     String? topicLabel,
   });
 
+  /// Compress an over-long profile into a compact one (issue #49).
+  Future<MemoryExtraction?> summarizeMemory(AgentMemory memory);
+
   /// Release any backend resources.
   Future<void> close();
 }
@@ -47,12 +51,16 @@ class MemoryExtraction {
   /// How the user seems to feel about the current consultation's topic.
   final String topicFeeling;
 
+  /// Per-topic feelings (used when summarizing the whole profile).
+  final Map<String, String> feelings;
+
   final List<String> facts;
   final List<String> preferences;
 
   const MemoryExtraction({
     required this.feeling,
     this.topicFeeling = '',
+    this.feelings = const {},
     required this.facts,
     required this.preferences,
   });

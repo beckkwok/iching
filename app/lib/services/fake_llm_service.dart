@@ -1,4 +1,5 @@
 import 'package:app/data/model_catalog.dart';
+import 'package:app/models/agent_memory.dart';
 import 'package:app/models/language_preference.dart';
 import 'package:app/services/gua_generator.dart';
 import 'package:app/services/llm_service.dart';
@@ -18,6 +19,9 @@ class FakeLlmService extends LlmService {
       'The hexagram offers a gentle mirror for your '
       'question. Reflect on how its energy applies to what you carry.';
 
+  /// Canned response for [summarizeMemory] (`null` = no summary).
+  MemoryExtraction? summaryResponse;
+
   @override
   Future<String> generateExplanation({
     required String question,
@@ -31,4 +35,8 @@ class FakeLlmService extends LlmService {
     }
     return explanationResponse;
   }
+
+  @override
+  Future<MemoryExtraction?> summarizeMemory(AgentMemory memory) async =>
+      summaryResponse;
 }

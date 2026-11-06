@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:app/models/agent_memory.dart';
 import 'package:app/models/language_preference.dart';
 import 'package:app/models/model_info.dart';
 import 'package:app/services/gua_generator.dart';
@@ -276,6 +277,29 @@ class LocalGemmaBackend implements LlmBackend {
       topicLabel: topicLabel,
     );
 
+    await _chat!.addQuery(Message(text: prompt, isUser: true));
+
+    try {
+      final response = await Future(
+        () => _chat!.generateChatResponse(),
+      ).timeout(_responseTimeout);
+      if (response is TextResponse) {
+        return _prompts.parseMemory(_prompts.cleanExplanation(response.token));
+      }
+    } on TimeoutException {
+      await _chat!.stopGeneration();
+    }
+    return null;
+  }
+
+  /// Compress an over-long profile (issue #49), reusing the open chat.
+  @override
+  Future<MemoryExtraction?> summarizeMemory(AgentMemory memory) async {
+    if (_chat == null) {
+      await openExplanationChat();
+    }
+
+    final prompt = _prompts.summarizeMemoryPrompt(memory);
     await _chat!.addQuery(Message(text: prompt, isUser: true));
 
     try {

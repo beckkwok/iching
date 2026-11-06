@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:app/config/app_config.dart';
+import 'package:app/models/agent_memory.dart';
 import 'package:app/models/language_preference.dart';
 import 'package:app/services/gua_generator.dart';
 import 'package:app/services/llm_backend.dart';
@@ -103,6 +104,23 @@ class FirebaseAiBackend implements LlmBackend {
       if (kDebugMode) {
         // ignore: avoid_print
         print('⚠️ Firebase AI memory extraction failed: $error');
+      }
+      return null;
+    }
+  }
+
+  /// Compress an over-long profile (issue #49).
+  @override
+  Future<MemoryExtraction?> summarizeMemory(AgentMemory memory) async {
+    final prompt = _prompts.summarizeMemoryPrompt(memory);
+    try {
+      final text = await _call(prompt, json: true);
+      if (text == null) return null;
+      return _prompts.parseMemory(_prompts.cleanExplanation(text));
+    } catch (error) {
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('⚠️ Firebase AI memory summary failed: $error');
       }
       return null;
     }

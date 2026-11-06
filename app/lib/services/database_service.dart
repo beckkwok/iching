@@ -404,4 +404,23 @@ class DatabaseService {
       );
     }
   }
+
+  /// Replace the single agent-memory row with a summarized profile
+  /// (issue #49).
+  Future<void> replaceAgentMemory(AgentMemory memory) async {
+    final db = await database;
+    final existing = await getAgentMemory();
+    final map = memory.toMap();
+    map.remove('id');
+    if (existing == null) {
+      await db.insert(_agentMemoryTable, map);
+    } else {
+      await db.update(
+        _agentMemoryTable,
+        map,
+        where: 'id = ?',
+        whereArgs: [existing.id],
+      );
+    }
+  }
 }

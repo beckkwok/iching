@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:app/models/agent_memory.dart';
 import 'package:app/models/consultation.dart';
 import 'package:app/models/gua.dart';
 import 'package:app/models/yao_line_type.dart';
@@ -285,6 +286,33 @@ void main() {
     expect(db.merges.first.$2, contains('considering a job change'));
     expect(db.merges.first.$3, contains('values stability'));
   });
+
+  testWidgets('summarizes an over-long agent memory', (tester) async {
+    final llm = _SummarizingLlm();
+    llm.explanationResponse = 'A gentle mirror for your question.';
+    final db = _RecordingDb();
+    db.memory = AgentMemory(
+      feeling: List.filled(4000, 'a').join(),
+      facts: const [],
+      preferences: const [],
+      updatedAt: DateTime(2026, 11, 6),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ExplanationScreen(
+          question: 'Should I take the new job?',
+          result: _result(),
+          llmService: llm,
+          databaseService: db,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(llm.summarizeCalls, 1);
+    expect(db.replaced?.feeling, 'summary');
+  });
 }
 
 /// A [DatabaseService] that records consultations and feedback instead of
@@ -316,6 +344,20 @@ class _RecordingDb extends DatabaseService {
 
   final List<(String, List<String>, List<String>)> merges = [];
 
+  /// Optional stored profile (used by the summarize test).
+  AgentMemory? memory;
+
+  /// The profile written by [replaceAgentMemory], if any.
+  AgentMemory? replaced;
+
+  @override
+  Future<AgentMemory?> getAgentMemory() async => memory;
+
+  @override
+  Future<void> replaceAgentMemory(AgentMemory memory) async {
+    replaced = memory;
+  }
+
   @override
   Future<void> mergeAgentMemory({
     required String feeling,
@@ -344,6 +386,22 @@ class _MemoryLlm extends FakeLlmService {
       topicFeeling: 'both eager and cautious',
       facts: const ['considering a job change'],
       preferences: const ['values stability'],
+    );
+  }
+}
+
+/// A [_MemoryLlm] that also returns a compact profile when asked to summarize.
+class _SummarizingLlm extends _MemoryLlm {
+  int summarizeCalls = 0;
+
+  @override
+  Future<MemoryExtraction?> summarizeMemory(AgentMemory memory) async {
+    summarizeCalls++;
+    return const MemoryExtraction(
+      feeling: 'summary',
+      feelings: {'careerAchievement': 'calm'},
+      facts: ['short'],
+      preferences: [],
     );
   }
 }
