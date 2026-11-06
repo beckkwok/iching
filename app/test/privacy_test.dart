@@ -98,11 +98,14 @@ void main() {
     final allowed = {
       p.join('lib', 'services', 'llm_service.dart'),
       p.join('lib', 'services', 'local_gemma_backend.dart'),
+      p.join('lib', 'services', 'firebase_ai_backend.dart'),
       p.join('lib', 'services', 'remote_llm_service.dart'),
     };
 
     final patterns = <String, RegExp>{
       'package:http': RegExp(r'package:http/'),
+      'package:firebase_ai': RegExp(r'package:firebase_ai/'),
+      'FirebaseAI': RegExp(r'\bFirebaseAI\b'),
       'HttpClient': RegExp(r'\bHttpClient\b'),
       'WebSocket': RegExp(r'\bWebSocket\b'),
       'RawDatagramSocket': RegExp(r'\bRawDatagramSocket\b'),
@@ -133,9 +136,35 @@ void main() {
         isEmpty,
         reason: 'Network APIs must only be used by the LLM/model-download '
             'services (llm_service.dart, local_gemma_backend.dart, '
-            'remote_llm_service.dart):\n'
+            'firebase_ai_backend.dart, remote_llm_service.dart):\n'
             '${offenders.join('\n')}',
       );
+    });
+  });
+
+  group('secret guard', () {
+    test('the committed firebase_options.dart contains no API key', () {
+      final root = _packageRoot();
+      final source = File(
+        p.join(root.path, 'lib', 'firebase_options.dart'),
+      ).readAsStringSync();
+
+      expect(
+        RegExp(r'AIza[0-9A-Za-z_-]{35}').hasMatch(source),
+        isFalse,
+        reason: 'Do not commit Firebase API keys; use '
+            '--dart-define-from-file=firebase.local.json.',
+      );
+    });
+
+    test('local Firebase config files are git-ignored', () {
+      final root = _packageRoot();
+      final ignore = File(
+        p.join(root.path, '..', '.gitignore'),
+      ).readAsStringSync();
+
+      expect(ignore, contains('app/firebase.local.json'));
+      expect(ignore, contains('app/android/app/google-services.json'));
     });
   });
 

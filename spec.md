@@ -18,12 +18,12 @@ User Story
     - A text box to allow user to type the things that bother him
     - A button to submit the query
 2. The system casts a 'gua' (六爻, three-coin method) and shows the hexagram (卦象) with per-line yao types.
-3. The user taps "Get Explanation" and the LLM (on-device or a configured remote provider) generates a reflection/explanation combining the hexagram context, the question, and the language preference (one-shot, no chat history, tool-free).
+3. The user taps "Get Explanation" and the LLM generates a reflection/explanation combining the hexagram context, the question, and the language preference (one-shot, no chat history, tool-free). Android uses Firebase AI Logic (Gemini); Windows/Linux use the on-device `flutter_gemma` model.
 
 Architecture Overview
 ---------------------
 1. The project build as android application. Flutter is the framework.
-2. The system can use Gemma-compatible **on-device** models (via `flutter_gemma`) and/or a **remote LLM provider**. On-device inference needs the internet only to download the model; remote inference sends the prompt (question + hexagram context) to the configured provider, which requires a privacy notice and secure key handling. See [ADR 0001](docs/adr/0001-remote-llm-support.md).
+2. **Android** uses **Firebase AI Logic (Gemini Developer API)** via `firebase_ai`, guarded by **Firebase App Check**; the prompt (question + hexagram context) is sent to Google through Firebase, so a first-run consent and secure key handling are required. **Windows/Linux** use the on-device `flutter_gemma` model (internet only to download it). The API key is provided at build time from a git-ignored `firebase.local.json`; no key is committed. See [ADR 0001](docs/adr/0001-remote-llm-support.md) and [docs/firebase-setup.md](docs/firebase-setup.md).
 3. The following will be stored:
     - Gua content — as JSON asset files (`assets/hexagrams/gua_<n>.json`) and seeded into the `gua` SQLite table
     - Settings (language preference, custom system prompt, selected model) — `settings` SQLite table
@@ -41,7 +41,7 @@ Project Plan
 -------------
 1. Define project scope
     - Confirm target platform and framework (Android app, Flutter)
-    - Define privacy requirements: on-device inference and/or remote providers — data handling, consent, and key storage (ADR 0001)
+    - Define privacy requirements: Android remote (Firebase AI Logic) + Windows local — data handling, consent, and key storage (ADR 0001)
     - Clarify main user flow: question form -> cast gua -> one-shot LLM explanation
 2. Design data model
     - Gua
@@ -84,6 +84,9 @@ Project Plan
         - flutter_gemma plugin integrated
         - Default model (Qwen3-0.6B) auto-downloaded on first run; selection is development-only
         - openExplanationChat() tool-free session
+    - Firebase AI Logic remote backend (Android) + App Check + first-run consent (issues #82/#84/#85/#86)
+        - `firebase_ai` Gemini calls via `FirebaseAiBackend`
+        - `--dart-define-from-file=firebase.local.json` (key never committed)
     - customize server prompt design
         - I-Ching consultant system prompt with reflection guidelines
     - build gua generator
