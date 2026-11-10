@@ -43,6 +43,16 @@ class AppConfig {
     defaultValue: false,
   );
 
+  /// Whether the memory-based greeting is shown on the Ask tab (issue #25).
+  ///
+  /// Hidden by default so the greeting can be bundled with other features
+  /// later. Enable with
+  /// `--dart-define=ENABLE_PERSONALIZED_GREETING=true`.
+  static const bool personalizedGreetingEnabled = bool.fromEnvironment(
+    'ENABLE_PERSONALIZED_GREETING',
+    defaultValue: false,
+  );
+
   /// The Gemini model used by the remote backend (issue #85).
   ///
   /// The lite model is free-tier friendly and was more available than
