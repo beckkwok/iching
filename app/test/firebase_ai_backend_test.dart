@@ -79,6 +79,8 @@ void main() {
       final call = generator.calls.single;
       expect(call.prompt, contains('Should I take the new job?'));
       expect(call.prompt, contains('地風升'));
+      expect(call.prompt, contains('Interpretation rule'));
+      expect(call.prompt, contains('Changing line'));
       expect(call.systemPrompt, LlmPrompts.systemPrompt);
       expect(call.json, isFalse);
     },
