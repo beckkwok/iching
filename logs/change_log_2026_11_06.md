@@ -19,3 +19,12 @@
 
 - `flutter analyze` — clean (3 pre-existing info lints)
 - `flutter test` — green (273 pass)
+
+## Task: Hide the personalized greeting
+
+- Added `AppConfig.personalizedGreetingEnabled` (default false; enable with
+  `--dart-define=ENABLE_PERSONALIZED_GREETING=true` when bundling).
+- The Ask screen no longer loads or displays the memory-based greeting by
+  default; the static prompt is unchanged. Tests inject `showGreeting: true`
+  to cover the enabled path.
+- Tests: 274 passing (main + new test).
