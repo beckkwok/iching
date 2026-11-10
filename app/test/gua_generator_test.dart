@@ -452,18 +452,25 @@ void main() {
 
       expect(context, contains('Original judgment'));
       expect(context, contains('original judgment'));
+      expect(context, contains('Transformed hexagram (變卦): None'));
       expect(context, isNot(contains('Line text')));
       expect(context, isNot(contains('Changed')));
     });
 
     test('1 changing line reads only that original line', () {
       final context = generator.formatInterpretationContext(
-        resultWithChangingLines(original: original, count: 1),
+        resultWithChangingLines(
+          original: original,
+          count: 1,
+          changed: changed,
+        ),
       );
 
       expect(context, contains('Changing line'));
       expect(context, contains('line 1 text'));
       expect(context, contains('xiao 1'));
+      expect(context, contains('Original hexagram (本卦): Test Original'));
+      expect(context, contains('Transformed hexagram (變卦): Test Changed'));
       expect(context, isNot(contains('line 2 text')));
       expect(context, isNot(contains('xiao 2')));
     });
@@ -507,6 +514,7 @@ void main() {
       expect(context, contains('Stable line'));
       expect(context, contains('changed line 5 text'));
       expect(context, contains('changed line 6 text'));
+      expect(context, contains('Original hexagram (本卦): Test Original'));
       expect(context, isNot(contains('changed line 1 text')));
       expect(context, isNot(contains('original judgment')));
     });
@@ -566,6 +574,7 @@ void main() {
       expect(context, contains('用九'));
       expect(context, contains('use nine text'));
       expect(context, contains('use nine xiao'));
+      expect(context, contains('Transformed hexagram (變卦): Test Changed'));
       expect(context, isNot(contains('Changed judgment')));
     });
 

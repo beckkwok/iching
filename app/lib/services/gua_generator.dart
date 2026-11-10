@@ -296,17 +296,16 @@ class GuaGenerator {
   String formatInterpretationContext(GenerationResult result) {
     final changing = _changingLineIndices(result);
     final count = changing.length;
-    final buffer = StringBuffer()
-      ..writeln(_methodHeader(result.method))
-      ..writeln('Changing lines (變爻): $count')
+    final buffer = StringBuffer()..writeln(_methodHeader(result.method));
+    _writeReadingInput(buffer, result);
+    buffer
+      ..writeln('Changing-line count (變爻數): $count')
       ..writeln('Interpretation rule (變爻規則): '
           '${_interpretationRuleSummaries[count]}');
 
     if (count == 0) {
       _writeJudgment(buffer, 'Original', '本卦', result.gua);
     } else if (count == 1 || count == 2) {
-      buffer.writeln('Original hexagram (本卦): ${result.gua.guaName} '
-          '(gua code ${result.gua.guaCode})');
       for (var i = 0; i < changing.length; i++) {
         final role = count == 2
             ? (i == changing.length - 1
@@ -332,10 +331,8 @@ class GuaGenerator {
     } else if (count == 4 || count == 5) {
       final changed = result.changedGua;
       if (changed == null) {
-        buffer.writeln('Changed hexagram (變卦): (not available)');
+        buffer.writeln('Stable lines (不變爻): (changed hexagram not available)');
       } else {
-        buffer.writeln('Changed hexagram (變卦): ${changed.guaName} '
-            '(gua code ${changed.guaCode})');
         for (final i in _stableLineIndices(result)) {
           _writeLine(
             buffer,
@@ -348,8 +345,6 @@ class GuaGenerator {
     } else {
       final special = _specialLine(result.gua);
       if (special != null) {
-        buffer.writeln('Original hexagram (本卦): ${result.gua.guaName} '
-            '(gua code ${result.gua.guaCode})');
         buffer.writeln('Special line (${special.position}, 六爻皆變):');
         if (special.text.isNotEmpty) {
           buffer.writeln('  Line text (爻辭): ${special.text}');
@@ -367,6 +362,54 @@ class GuaGenerator {
       }
     }
     return buffer.toString().trim();
+  }
+
+  /// Write the input block expected by the decision-advisor system prompt.
+  void _writeReadingInput(StringBuffer buffer, GenerationResult result) {
+    buffer.writeln('Reading input (解卦輸入):');
+    buffer.writeln('- Original hexagram (本卦): ${_guaLabel(result.gua)}');
+    buffer.writeln('- Changing lines (變爻): '
+        '${_changingLineDescription(result)}');
+    final changed = result.changedGua;
+    buffer.writeln('- Transformed hexagram (變卦): '
+        '${changed == null ? 'None' : _guaLabel(changed)}');
+  }
+
+  /// A hexagram's name, code, and trigram structure when available.
+  String _guaLabel(Gua gua) {
+    final structure = _structure(gua);
+    final suffix = structure.isEmpty ? '' : ' — $structure';
+    return '${gua.guaName} (gua code ${gua.guaCode})$suffix';
+  }
+
+  /// The upper/lower trigram composition, or the symbol as a fallback.
+  String _structure(Gua gua) {
+    final content = gua.content;
+    if (content == null) return '';
+    final composition = content.symbolicMeaning.basicSymbol.composition;
+    if (composition.isNotEmpty) return composition;
+    return content.guaSymbol;
+  }
+
+  /// The changing line positions, e.g. `九三 (老陽), 六五 (老陰)`.
+  String _changingLineDescription(GenerationResult result) {
+    final changing = _changingLineIndices(result);
+    if (changing.isEmpty) return 'None';
+    return [
+      for (final i in changing)
+        '${_linePosition(result.gua, i)} (${result.lineTypes[i].label})',
+    ].join(', ');
+  }
+
+  /// A line's position, falling back to its 1-based index.
+  String _linePosition(Gua gua, int index) {
+    final content = gua.content;
+    if (content != null &&
+        index < content.lines.length &&
+        content.lines[index].position.isNotEmpty) {
+      return content.lines[index].position;
+    }
+    return 'Line ${index + 1}';
   }
 
   /// Indices of the changing lines, bottom (0) to top (5).
@@ -397,15 +440,13 @@ class GuaGenerator {
     return null;
   }
 
-  /// Write a hexagram name and its judgment (卦辭).
+  /// Write a hexagram's judgment (卦辭).
   void _writeJudgment(
     StringBuffer buffer,
     String english,
     String chinese,
     Gua gua,
   ) {
-    buffer.writeln('$english hexagram ($chinese): ${gua.guaName} '
-        '(gua code ${gua.guaCode})');
     final content = gua.content;
     if (content != null && content.guaCi.isNotEmpty) {
       buffer.writeln('$english judgment ($chinese卦辭): ${content.guaCi}');

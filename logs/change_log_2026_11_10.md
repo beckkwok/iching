@@ -59,3 +59,5 @@ is kept for callers/tests that need the full hexagram.
 - Tests: default prompt content + no 3-5 sentence instruction; 284 passing.
 - Raised the explanation output cap from 512 to 1024 tokens (local and Firebase)
   so the 500-word template is not truncated.
+- Added a compact reading-input block (本卦 / 變爻 / 變卦 with trigram
+  structure) so the decision-advisor prompt receives the fields it expects.
