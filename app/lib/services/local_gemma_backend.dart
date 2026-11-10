@@ -218,7 +218,7 @@ class LocalGemmaBackend implements LlmBackend {
     // Fresh, tool-free session dedicated to the single-shot explanation.
     await openExplanationChat();
 
-    final context = _guaGenerator!.formatContext(result);
+    final context = _guaGenerator!.formatInterpretationContext(result);
     final prompt = _prompts.explanationPrompt(
       question: question,
       questionTypeLabel: questionTypeLabel,

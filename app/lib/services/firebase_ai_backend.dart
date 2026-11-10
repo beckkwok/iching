@@ -57,7 +57,7 @@ class FirebaseAiBackend implements LlmBackend {
     required GenerationResult result,
     LanguagePreference language = LanguagePreference.english,
   }) async {
-    final context = _guaGenerator.formatContext(result);
+    final context = _guaGenerator.formatInterpretationContext(result);
     final prompt = _prompts.explanationPrompt(
       question: question,
       questionTypeLabel: questionTypeLabel,

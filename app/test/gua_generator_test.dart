@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:app/data/trigram_hexagram_data.dart';
+import 'package:app/models/gua.dart';
+import 'package:app/models/hexagram_content.dart';
 import 'package:app/models/yao_line_type.dart';
 import 'package:app/services/gua_generator.dart';
 import 'package:app/services/hexagram_loader.dart';
@@ -70,6 +72,79 @@ String fixtureWithLines(int code) {
       },
   ];
   return jsonEncode(map);
+}
+
+/// Build a [Gua] whose content is parseable by [HexagramContent], with
+/// controlled line texts for the interpretation-rule tests.
+Gua interpretationGua({
+  required int code,
+  required String name,
+  required String judgment,
+  List<HexagramLine> lines = const [],
+}) {
+  return Gua(
+    guaCode: code,
+    guaName: name,
+    guaContent: jsonEncode({
+      '卦名': name,
+      '卦序': code,
+      '卦象': '',
+      '卦辭': judgment,
+      '彖傳': '',
+      '大象傳': '',
+      '爻辭': [
+        for (final line in lines)
+          {
+            '爻位': line.position,
+            '爻辭': line.text,
+            '小象傳': line.xiaoXiangZhuan,
+          },
+      ],
+      '象徵意義': {
+        '基本卦象': <String, String>{},
+        '主要象徵': <Map<String, String>>[],
+        '生活與占事常見象徵': <String, String>{},
+        '總結': '',
+      },
+      '不同人解讀': <Map<String, Object?>>[],
+      '備註': '',
+    }),
+  );
+}
+
+HexagramLine testLine(
+  int i, {
+  String? position,
+  String? text,
+  String? xiao,
+}) {
+  return HexagramLine(
+    position: position ?? 'pos $i',
+    text: text ?? 'line $i text',
+    xiaoXiangZhuan: xiao ?? 'xiao $i',
+  );
+}
+
+GenerationResult resultWithChangingLines({
+  required Gua original,
+  required int count,
+  Gua? changed,
+  bool yin = false,
+}) {
+  final changingType = yin ? YaoLineType.oldYin : YaoLineType.oldYang;
+  final stableType = yin ? YaoLineType.youngYin : YaoLineType.youngYang;
+  final types = [
+    for (var i = 0; i < 6; i++) i < count ? changingType : stableType,
+  ];
+  final lines = [for (final type in types) type.isYang];
+  return GenerationResult(
+    gua: original,
+    method: GeneratorMethod.systemGenerated,
+    lines: lines,
+    lineTypes: types,
+    changedLines: lines,
+    changedGua: changed,
+  );
 }
 
 void main() {
@@ -350,6 +425,180 @@ void main() {
       );
 
       expect(generator.formatChangedHexagramContext(result), isEmpty);
+    });
+  });
+
+  group('interpretation rules by changing-line count', () {
+    final original = interpretationGua(
+      code: 46,
+      name: 'Test Original',
+      judgment: 'original judgment',
+      lines: [for (var i = 1; i <= 6; i++) testLine(i)],
+    );
+    final changed = interpretationGua(
+      code: 47,
+      name: 'Test Changed',
+      judgment: 'changed judgment',
+      lines: [
+        for (var i = 1; i <= 6; i++)
+          testLine(i, text: 'changed line $i text', xiao: 'changed xiao $i'),
+      ],
+    );
+
+    test('0 changing lines reads the original judgment', () {
+      final context = generator.formatInterpretationContext(
+        resultWithChangingLines(original: original, count: 0),
+      );
+
+      expect(context, contains('Original judgment'));
+      expect(context, contains('original judgment'));
+      expect(context, isNot(contains('Line text')));
+      expect(context, isNot(contains('Changed')));
+    });
+
+    test('1 changing line reads only that original line', () {
+      final context = generator.formatInterpretationContext(
+        resultWithChangingLines(original: original, count: 1),
+      );
+
+      expect(context, contains('Changing line'));
+      expect(context, contains('line 1 text'));
+      expect(context, contains('xiao 1'));
+      expect(context, isNot(contains('line 2 text')));
+      expect(context, isNot(contains('xiao 2')));
+    });
+
+    test('2 changing lines reads both, with the upper line primary', () {
+      final context = generator.formatInterpretationContext(
+        resultWithChangingLines(original: original, count: 2),
+      );
+
+      expect(context, contains('line 1 text'));
+      expect(context, contains('line 2 text'));
+      expect(context, contains('secondary'));
+      expect(context, contains('primary — upper changing line'));
+    });
+
+    test('3 changing lines reads both judgments', () {
+      final context = generator.formatInterpretationContext(
+        resultWithChangingLines(
+          original: original,
+          count: 3,
+          changed: changed,
+        ),
+      );
+
+      expect(context, contains('Original judgment'));
+      expect(context, contains('original judgment'));
+      expect(context, contains('Changed judgment'));
+      expect(context, contains('changed judgment'));
+      expect(context, isNot(contains('Line text')));
+    });
+
+    test('4 changing lines reads the two stable lines of the changed gua', () {
+      final context = generator.formatInterpretationContext(
+        resultWithChangingLines(
+          original: original,
+          count: 4,
+          changed: changed,
+        ),
+      );
+
+      expect(context, contains('Stable line'));
+      expect(context, contains('changed line 5 text'));
+      expect(context, contains('changed line 6 text'));
+      expect(context, isNot(contains('changed line 1 text')));
+      expect(context, isNot(contains('original judgment')));
+    });
+
+    test('5 changing lines reads the one stable line of the changed gua', () {
+      final context = generator.formatInterpretationContext(
+        resultWithChangingLines(
+          original: original,
+          count: 5,
+          changed: changed,
+        ),
+      );
+
+      expect(context, contains('changed line 6 text'));
+      expect(context, isNot(contains('changed line 5 text')));
+    });
+
+    test('6 changing lines reads the changed judgment for other gua', () {
+      final context = generator.formatInterpretationContext(
+        resultWithChangingLines(
+          original: original,
+          count: 6,
+          changed: changed,
+        ),
+      );
+
+      expect(context, contains('Changed judgment'));
+      expect(context, contains('changed judgment'));
+      expect(context, isNot(contains('Special line')));
+    });
+
+    test('6 changing lines reads 用九 for 乾', () {
+      final qian = interpretationGua(
+        code: 1,
+        name: 'Qian',
+        judgment: 'qian judgment',
+        lines: [
+          for (var i = 1; i <= 6; i++)
+            testLine(i, text: 'qian line $i text'),
+          testLine(
+            7,
+            position: '用九',
+            text: 'use nine text',
+            xiao: 'use nine xiao',
+          ),
+        ],
+      );
+      final context = generator.formatInterpretationContext(
+        resultWithChangingLines(
+          original: qian,
+          count: 6,
+          changed: changed,
+        ),
+      );
+
+      expect(context, contains('Special line'));
+      expect(context, contains('用九'));
+      expect(context, contains('use nine text'));
+      expect(context, contains('use nine xiao'));
+      expect(context, isNot(contains('Changed judgment')));
+    });
+
+    test('6 changing lines reads 用六 for 坤', () {
+      final kun = interpretationGua(
+        code: 2,
+        name: 'Kun',
+        judgment: 'kun judgment',
+        lines: [
+          for (var i = 1; i <= 6; i++)
+            testLine(i, text: 'kun line $i text'),
+          testLine(
+            7,
+            position: '用六',
+            text: 'use six text',
+            xiao: 'use six xiao',
+          ),
+        ],
+      );
+      final context = generator.formatInterpretationContext(
+        resultWithChangingLines(
+          original: kun,
+          count: 6,
+          changed: changed,
+          yin: true,
+        ),
+      );
+
+      expect(context, contains('Special line'));
+      expect(context, contains('用六'));
+      expect(context, contains('use six text'));
+      expect(context, contains('use six xiao'));
+      expect(context, isNot(contains('Changed judgment')));
     });
   });
 }
