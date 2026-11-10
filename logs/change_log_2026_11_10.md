@@ -47,3 +47,13 @@ is kept for callers/tests that need the full hexagram.
 
 - `flutter analyze`: 3 pre-existing infos only.
 - `flutter test`: 282 passing.
+
+## Task: decision-advisor system instruction
+
+- Replaced the default system prompt with the expert I-Ching consultant /
+  decision-making advisor instruction, including the 6 question-validation
+  principles, 朱熹 changing-line priorities, and the 4-part Markdown output
+  template with a strict 500-word limit.
+- Updated the explanation prompt to follow the system instruction and the
+  500-word limit; removed the conflicting 3-5 sentence instruction.
+- Tests: default prompt content + no 3-5 sentence instruction; 284 passing.

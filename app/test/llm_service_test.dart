@@ -5,6 +5,7 @@ import 'package:app/models/agent_memory.dart';
 import 'package:app/models/gua.dart';
 import 'package:app/models/language_preference.dart';
 import 'package:app/services/gua_generator.dart';
+import 'package:app/services/llm_prompts.dart';
 import 'package:app/services/llm_service.dart';
 
 void main() {
@@ -74,6 +75,23 @@ void main() {
       );
 
       expect(prompt, isNot(contains('JSON')));
+    });
+
+    test('uses the decision-advisor system instruction', () {
+      expect(LlmPrompts.systemPrompt, contains('expert I-Ching'));
+      expect(LlmPrompts.systemPrompt, contains('QUESTION VALIDATION'));
+      expect(LlmPrompts.systemPrompt, contains('under 500 words'));
+    });
+
+    test('asks for the system instruction and word limit', () {
+      final prompt = LlmService.buildExplanationPrompt(
+        question: 'q',
+        hexagramContext: 'ctx',
+      );
+
+      expect(prompt, contains('system instruction'));
+      expect(prompt, contains('under 500 words'));
+      expect(prompt, isNot(contains('3-5 sentences')));
     });
   });
 
