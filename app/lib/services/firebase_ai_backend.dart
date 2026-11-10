@@ -156,5 +156,5 @@ class FirebaseAiBackend implements LlmBackend {
     return response.text;
   }
 
-  static const int _maxOutputTokens = 512;
+  static const int _maxOutputTokens = 1024;
 }

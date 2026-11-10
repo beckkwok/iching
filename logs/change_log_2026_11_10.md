@@ -57,3 +57,5 @@ is kept for callers/tests that need the full hexagram.
 - Updated the explanation prompt to follow the system instruction and the
   500-word limit; removed the conflicting 3-5 sentence instruction.
 - Tests: default prompt content + no 3-5 sentence instruction; 284 passing.
+- Raised the explanation output cap from 512 to 1024 tokens (local and Firebase)
+  so the 500-word template is not truncated.
