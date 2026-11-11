@@ -19,3 +19,28 @@
 
 - `flutter analyze` — clean (3 pre-existing info lints)
 - `flutter test` — green (273 pass)
+
+## Task: Android must not show the local model picker (#86 follow-up)
+
+- AppConfig.firebaseEnabled now defaults to **true on Android** (and false
+  elsewhere); FIREBASE_ENABLED=true|false still overrides it. useRemoteBackend
+  therefore stays true on Android even when the build omits the local config.
+- Added FirebaseConfigErrorScreen (EN/ZH) shown when the remote edition cannot
+  initialize Firebase; Android never falls back to ModelSelectionScreen.
+- main.dart records the bootstrap result and routes to the error screen instead
+  of the consent/home flow when Firebase is unavailable.
+- Rebuilt and verified on emulator-5554: with the local file -> consent/Ask;
+  without it -> "Firebase is not configured" (no local model picker).
+- Tests: new error-screen widget test; updated config/bootstrap expectations;
+  full suite 274 passing.
+
+## Task: Hide the local model section on Android (#86)
+
+- `SettingsScreen` hides the Model section by default in the remote edition
+  (`AppConfig.useRemoteBackend`); desktop still shows it. Added an optional
+  `showModelSection` override for tests.
+- The local model-path/remove-file load is skipped when the section is hidden.
+- Tests: new remote-hidden test; model-section tests opt in explicitly; full
+  suite 275 passing.
+- Verified on `emulator-5554` (Chinese UI): Preference shows Language, Theme,
+  Prompts, Privacy, About - no Model section.

@@ -5,8 +5,9 @@ import 'package:app/config/app_config.dart';
 import 'package:app/services/firebase_bootstrap.dart';
 
 void main() {
-  test('Firebase is disabled by default', () {
-    expect(AppConfig.firebaseEnabled, isFalse);
+  test('Firebase is enabled on Android by default', () {
+    expect(AppConfig.isAndroidPlatform, isTrue);
+    expect(AppConfig.firebaseEnabled, isTrue);
   });
 
   test('is not supported on Windows', () {
