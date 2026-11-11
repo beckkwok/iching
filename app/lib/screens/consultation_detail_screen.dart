@@ -5,6 +5,7 @@ import '../models/consultation.dart';
 import '../models/gua.dart';
 import '../models/reaction.dart';
 import '../widgets/hexagram_view.dart';
+import '../widgets/markdown_text.dart';
 import 'hexagram_detail_screen.dart';
 
 /// Shows the complete saved record for a consultation (issue #47):
@@ -158,10 +159,7 @@ class ConsultationDetailScreen extends StatelessWidget {
             // 4. LLM interpretation.
             _Section(
               title: l10n.explanation,
-              child: Text(
-                consultation.explanation,
-                style: theme.textTheme.bodyMedium,
-              ),
+              child: MarkdownText(consultation.explanation),
             ),
 
             // 5. User feedback.

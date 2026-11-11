@@ -8,6 +8,7 @@ import 'package:app/screens/hexagram_detail_screen.dart';
 import 'package:app/screens/history_screen.dart';
 import 'package:app/services/database_service.dart';
 import 'package:app/widgets/hexagram_view.dart';
+import 'package:app/widgets/markdown_text.dart';
 
 /// A [DatabaseService] that returns a fixed list of consultations, avoiding
 /// the real sqflite-ffi DB in widget tests.
@@ -47,14 +48,14 @@ const _content46 = '''
 }
 ''';
 
-Consultation _consultation() => Consultation(
+Consultation _consultation({String? explanation}) => Consultation(
   id: 1,
   question: 'Should I move?',
   questionTypeLabel: 'Timing',
   hexagramCode: 46,
   hexagramName: '地風升',
   hexagramContent: _content46,
-  explanation: 'A gentle reflection.',
+  explanation: explanation ?? 'A gentle reflection.',
   lineTypes: const [
     YaoLineType.oldYang,
     YaoLineType.youngYin,
@@ -101,6 +102,22 @@ void main() {
     // Feedback: the love reaction + the user's comment.
     expect(find.text('❤️'), findsOneWidget);
     expect(find.text('I feel hopeful about the move.'), findsOneWidget);
+  });
+
+  testWidgets('shows the full explanation without truncation', (tester) async {
+    final long = '${List.filled(80, 'A gentle reflection.').join(' ')} END';
+    final db = _FakeDb([_consultation(explanation: long)]);
+
+    await tester.pumpWidget(
+      MaterialApp(home: HistoryScreen(databaseService: db)),
+    );
+    await tester.pumpAndSettle();
+
+    final markdown = tester.widget<MarkdownText>(find.byType(MarkdownText));
+    expect(markdown.data, long);
+    expect(markdown.selectable, isFalse);
+    expect(markdown.compact, isTrue);
+    expect(find.textContaining('END', findRichText: true), findsOneWidget);
   });
 
   testWidgets('deleting a consultation removes it after confirmation', (

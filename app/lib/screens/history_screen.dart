@@ -5,6 +5,7 @@ import '../models/consultation.dart';
 import '../models/reaction.dart';
 import '../services/database_service.dart';
 import '../widgets/hexagram_view.dart';
+import '../widgets/markdown_text.dart';
 import 'consultation_detail_screen.dart';
 
 /// Lists the recorded consultations (question, hexagram, explanation).
@@ -236,13 +237,10 @@ class _ConsultationCard extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 8),
-              Text(
+              MarkdownText(
                 consultation.explanation,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+                selectable: false,
+                compact: true,
               ),
               if (Reaction.fromKey(consultation.reaction) != null) ...[
                 const SizedBox(height: 8),
