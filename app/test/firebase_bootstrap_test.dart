@@ -19,6 +19,12 @@ void main() {
     }
   });
 
+  test('debug builds use the App Check debug provider', () {
+    expect(useAppCheckDebugProvider(isDebugMode: true), isTrue);
+    // APP_CHECK_DEBUG is not set in tests, so release-mode selection is off.
+    expect(useAppCheckDebugProvider(isDebugMode: false), isFalse);
+  });
+
   test('initializeFirebase returns false on unsupported platforms', () async {
     debugDefaultTargetPlatformOverride = TargetPlatform.windows;
     try {
