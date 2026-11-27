@@ -147,6 +147,13 @@ void main() {
     expect(group.groupValue, ThemePreference.light);
   });
 
+  testWidgets('shows the app version', (tester) async {
+    await _pumpSettings(tester);
+
+    await tester.scrollUntilVisible(find.text('Version'), 300);
+    expect(find.text('1.1.0'), findsOneWidget);
+  });
+
   testWidgets('remote edition hides the model section by default',
       (tester) async {
     // On Android (tests) AppConfig.useRemoteBackend is true, so the local
