@@ -5,8 +5,9 @@ import 'package:app/config/app_config.dart';
 import 'package:app/services/firebase_bootstrap.dart';
 
 void main() {
-  test('Firebase is disabled by default', () {
-    expect(AppConfig.firebaseEnabled, isFalse);
+  test('Firebase is enabled on Android by default', () {
+    expect(AppConfig.isAndroidPlatform, isTrue);
+    expect(AppConfig.firebaseEnabled, isTrue);
   });
 
   test('is not supported on Windows', () {
@@ -16,6 +17,12 @@ void main() {
     } finally {
       debugDefaultTargetPlatformOverride = null;
     }
+  });
+
+  test('debug builds use the App Check debug provider', () {
+    expect(useAppCheckDebugProvider(isDebugMode: true), isTrue);
+    // APP_CHECK_DEBUG is not set in tests, so release-mode selection is off.
+    expect(useAppCheckDebugProvider(isDebugMode: false), isFalse);
   });
 
   test('initializeFirebase returns false on unsupported platforms', () async {

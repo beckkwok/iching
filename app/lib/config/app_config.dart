@@ -35,13 +35,14 @@ class AppConfig {
 
   /// Whether to initialize Firebase (issues #82/#84).
   ///
-  /// Off until the Firebase project has been configured with
-  /// `flutterfire configure`. Enable with
-  /// `--dart-define=FIREBASE_ENABLED=true`.
-  static const bool firebaseEnabled = bool.fromEnvironment(
-    'FIREBASE_ENABLED',
-    defaultValue: false,
-  );
+  /// Enabled by default on Android (the remote edition); disabled elsewhere.
+  /// Override with `--dart-define=FIREBASE_ENABLED=true|false`.
+  static bool get firebaseEnabled {
+    const override = String.fromEnvironment('FIREBASE_ENABLED');
+    if (override == 'true') return true;
+    if (override == 'false') return false;
+    return !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+  }
 
   /// Whether the memory-based greeting is shown on the Ask tab (issue #25).
   ///

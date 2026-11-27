@@ -11,6 +11,7 @@ import '../services/database_service.dart';
 import '../services/gua_generator.dart';
 import '../services/llm_service.dart';
 import '../widgets/gradient_button.dart';
+import '../widgets/markdown_text.dart';
 import '../widgets/yao_loading_animation.dart';
 import 'hexagram_detail_screen.dart';
 
@@ -352,9 +353,8 @@ class _ExplanationScreenState extends State<ExplanationScreen> {
                       style: TextStyle(color: theme.colorScheme.error),
                     )
                   else
-                    Text(
+                    MarkdownText(
                       _explanation ?? '',
-                      style: theme.textTheme.bodyMedium?.copyWith(height: 1.6),
                     ),
                 ],
               ),

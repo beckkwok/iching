@@ -206,7 +206,9 @@ class LocalGemmaBackend implements LlmBackend {
 
   /// Upper bound on tokens generated per response. CPU inference is used to
   /// keep memory low, so the output is capped to keep latency reasonable.
-  static const int _maxOutputTokens = 512;
+  /// The 500-word decision-advisor template needs more than the old 512-token
+  /// cap; 1024 leaves room for the four sections without truncation.
+  static const int _maxOutputTokens = 1024;
 
   @override
   Future<String> generateExplanation({
@@ -218,7 +220,7 @@ class LocalGemmaBackend implements LlmBackend {
     // Fresh, tool-free session dedicated to the single-shot explanation.
     await openExplanationChat();
 
-    final context = _guaGenerator!.formatContext(result);
+    final context = _guaGenerator!.formatInterpretationContext(result);
     final prompt = _prompts.explanationPrompt(
       question: question,
       questionTypeLabel: questionTypeLabel,

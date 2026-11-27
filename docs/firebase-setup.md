@@ -32,6 +32,12 @@ key, `google-services.json`, or generated `firebase_options.dart` is committed.
 
 `app/firebase.local.json` is **git-ignored**. Never commit it.
 
+Android always uses the remote edition. If you build/run without the file, the
+app shows a **"Firebase is not configured"** screen (not the local model
+picker); desktop builds still use the local model. When launching from an IDE,
+add `--dart-define-from-file=firebase.local.json` to the run configuration's
+additional arguments.
+
 ## CI
 
 Write `app/firebase.local.json` from a repository secret before building, or
@@ -44,6 +50,11 @@ pass the values with individual `--dart-define` flags.
   tokens*.
 - **Release:** enable Play Integrity (the app must be registered with Google
   Play).
+- **Sideloaded release builds:** Play Integrity cannot attest an APK signed with
+  the local debug key and not distributed by Play. Build local release APKs
+  with `--dart-define=APP_CHECK_DEBUG=true` (and the pinned
+  `FIREBASE_APPCHECK_DEBUG_TOKEN`) so they use the App Check debug provider.
+  Leave the flag off for Play Store builds.
 
 ## Notes
 

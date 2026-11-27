@@ -11,6 +11,7 @@ import 'package:app/services/database_service.dart';
 import 'package:app/services/fake_llm_service.dart';
 import 'package:app/services/gua_generator.dart';
 import 'package:app/services/llm_service.dart';
+import 'package:app/widgets/markdown_text.dart';
 import 'package:app/widgets/yao_loading_animation.dart';
 
 const _guaJson = '''
@@ -96,6 +97,28 @@ void main() {
     expect(find.textContaining('Hexagram 46'), findsOneWidget);
     expect(find.text('Interpretation'), findsOneWidget);
     expect(find.text('A gentle mirror for your question.'), findsOneWidget);
+    final markdown = tester.widget<MarkdownText>(find.byType(MarkdownText));
+    expect(markdown.data, 'A gentle mirror for your question.');
+  });
+
+  testWidgets('renders Markdown in the explanation', (tester) async {
+    final llm = FakeLlmService();
+    llm.explanationResponse = '#### Heading\n\n**Bold** text.';
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ExplanationScreen(
+          question: 'q',
+          result: _result(),
+          llmService: llm,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MarkdownText), findsOneWidget);
+    expect(find.text('Heading', findRichText: true), findsOneWidget);
+    expect(find.textContaining('Bold', findRichText: true), findsOneWidget);
   });
 
   testWidgets('uses the provided system prompt', (tester) async {

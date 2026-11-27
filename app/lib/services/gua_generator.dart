@@ -267,6 +267,219 @@ class GuaGenerator {
     return buffer.toString().trim();
   }
 
+  /// Conventional (朱熹) rule table for 0–6 changing lines (issue #90).
+  ///
+  /// Keep this table as the single source of truth when the reading rules
+  /// change. [formatInterpretationContext] uses the same count to select text.
+  static const Map<int, String> _interpretationRuleSummaries = {
+    0: 'No changing lines: read the original judgment (本卦卦辭).',
+    1: 'One changing line: read that line in the original hexagram '
+        '(本卦變爻的爻辭).',
+    2: 'Two changing lines: read both lines in the original hexagram; '
+        'the upper changing line is primary (以上爻為主).',
+    3: 'Three changing lines: read the original and changed judgments '
+        '(本卦卦辭 + 變卦卦辭).',
+    4: 'Four changing lines: read the two stable lines in the changed '
+        'hexagram (變卦中兩個不變爻的爻辭).',
+    5: 'Five changing lines: read the one stable line in the changed '
+        'hexagram (變卦中唯一不變爻的爻辭).',
+    6: 'Six changing lines: read the changed judgment (變卦卦辭); '
+        'for 乾/坤 use 用九/用六.',
+  };
+
+  /// Format only the text(s) selected by the conventional changing-line rule
+  /// (issue #90).
+  ///
+  /// Unlike [formatContext], this sends the text(s) the reader should consult
+  /// rather than the whole hexagram. Labels make the 本卦 / 變卦 / 變爻
+  /// relationship explicit. Reuses the line formatting added for #79.
+  String formatInterpretationContext(GenerationResult result) {
+    final changing = _changingLineIndices(result);
+    final count = changing.length;
+    final buffer = StringBuffer()..writeln(_methodHeader(result.method));
+    _writeReadingInput(buffer, result);
+    buffer
+      ..writeln('Changing-line count (變爻數): $count')
+      ..writeln('Interpretation rule (變爻規則): '
+          '${_interpretationRuleSummaries[count]}');
+
+    if (count == 0) {
+      _writeJudgment(buffer, 'Original', '本卦', result.gua);
+    } else if (count == 1 || count == 2) {
+      for (var i = 0; i < changing.length; i++) {
+        final role = count == 2
+            ? (i == changing.length - 1
+                ? 'primary — upper changing line'
+                : 'secondary')
+            : null;
+        _writeLine(
+          buffer,
+          result.gua,
+          changing[i],
+          label: 'Changing line (變爻, 本卦第 ${changing[i] + 1} 爻',
+          role: role,
+        );
+      }
+    } else if (count == 3) {
+      _writeJudgment(buffer, 'Original', '本卦', result.gua);
+      final changed = result.changedGua;
+      if (changed != null) {
+        _writeJudgment(buffer, 'Changed', '變卦', changed);
+      } else {
+        buffer.writeln('Changed judgment (變卦卦辭): (not available)');
+      }
+    } else if (count == 4 || count == 5) {
+      final changed = result.changedGua;
+      if (changed == null) {
+        buffer.writeln('Stable lines (不變爻): (changed hexagram not available)');
+      } else {
+        for (final i in _stableLineIndices(result)) {
+          _writeLine(
+            buffer,
+            changed,
+            i,
+            label: 'Stable line (不變爻, 變卦第 ${i + 1} 爻',
+          );
+        }
+      }
+    } else {
+      final special = _specialLine(result.gua);
+      if (special != null) {
+        buffer.writeln('Special line (${special.position}, 六爻皆變):');
+        if (special.text.isNotEmpty) {
+          buffer.writeln('  Line text (爻辭): ${special.text}');
+        }
+        if (special.xiaoXiangZhuan.isNotEmpty) {
+          buffer.writeln('  Small Image (小象傳): ${special.xiaoXiangZhuan}');
+        }
+      } else {
+        final changed = result.changedGua;
+        if (changed != null) {
+          _writeJudgment(buffer, 'Changed', '變卦', changed);
+        } else {
+          buffer.writeln('Changed judgment (變卦卦辭): (not available)');
+        }
+      }
+    }
+    return buffer.toString().trim();
+  }
+
+  /// Write the input block expected by the decision-advisor system prompt.
+  void _writeReadingInput(StringBuffer buffer, GenerationResult result) {
+    buffer.writeln('Reading input (解卦輸入):');
+    buffer.writeln('- Original hexagram (本卦): ${_guaLabel(result.gua)}');
+    buffer.writeln('- Changing lines (變爻): '
+        '${_changingLineDescription(result)}');
+    final changed = result.changedGua;
+    buffer.writeln('- Transformed hexagram (變卦): '
+        '${changed == null ? 'None' : _guaLabel(changed)}');
+  }
+
+  /// A hexagram's name, code, and trigram structure when available.
+  String _guaLabel(Gua gua) {
+    final structure = _structure(gua);
+    final suffix = structure.isEmpty ? '' : ' — $structure';
+    return '${gua.guaName} (gua code ${gua.guaCode})$suffix';
+  }
+
+  /// The upper/lower trigram composition, or the symbol as a fallback.
+  String _structure(Gua gua) {
+    final content = gua.content;
+    if (content == null) return '';
+    final composition = content.symbolicMeaning.basicSymbol.composition;
+    if (composition.isNotEmpty) return composition;
+    return content.guaSymbol;
+  }
+
+  /// The changing line positions, e.g. `九三 (老陽), 六五 (老陰)`.
+  String _changingLineDescription(GenerationResult result) {
+    final changing = _changingLineIndices(result);
+    if (changing.isEmpty) return 'None';
+    return [
+      for (final i in changing)
+        '${_linePosition(result.gua, i)} (${result.lineTypes[i].label})',
+    ].join(', ');
+  }
+
+  /// A line's position, falling back to its 1-based index.
+  String _linePosition(Gua gua, int index) {
+    final content = gua.content;
+    if (content != null &&
+        index < content.lines.length &&
+        content.lines[index].position.isNotEmpty) {
+      return content.lines[index].position;
+    }
+    return 'Line ${index + 1}';
+  }
+
+  /// Indices of the changing lines, bottom (0) to top (5).
+  List<int> _changingLineIndices(GenerationResult result) {
+    if (result.lineTypes.length != 6) return const [];
+    return [
+      for (var i = 0; i < 6; i++)
+        if (result.lineTypes[i].isChanging) i,
+    ];
+  }
+
+  /// Indices of the stable (non-changing) lines, bottom (0) to top (5).
+  List<int> _stableLineIndices(GenerationResult result) {
+    if (result.lineTypes.length != 6) return const [];
+    return [
+      for (var i = 0; i < 6; i++)
+        if (!result.lineTypes[i].isChanging) i,
+    ];
+  }
+
+  /// The 用九 / 用六 line, when present (only 乾/坤 carry these).
+  HexagramLine? _specialLine(Gua gua) {
+    final content = gua.content;
+    if (content == null) return null;
+    for (final line in content.lines) {
+      if (line.position == '用九' || line.position == '用六') return line;
+    }
+    return null;
+  }
+
+  /// Write a hexagram's judgment (卦辭).
+  void _writeJudgment(
+    StringBuffer buffer,
+    String english,
+    String chinese,
+    Gua gua,
+  ) {
+    final content = gua.content;
+    if (content != null && content.guaCi.isNotEmpty) {
+      buffer.writeln('$english judgment ($chinese卦辭): ${content.guaCi}');
+    } else {
+      buffer.writeln('$english judgment ($chinese卦辭): (not available)');
+    }
+  }
+
+  /// Write one 爻辭 / 小象傳 from [gua] at [index], with [label] and [role].
+  void _writeLine(
+    StringBuffer buffer,
+    Gua gua,
+    int index, {
+    required String label,
+    String? role,
+  }) {
+    final content = gua.content;
+    if (content == null || index >= content.lines.length) {
+      buffer.writeln('$label): (text not available)');
+      return;
+    }
+    final line = content.lines[index];
+    final position = line.position.isEmpty ? '' : ' / ${line.position}';
+    final suffix = role == null ? '' : ' [$role]';
+    buffer.writeln('$label$position)$suffix:');
+    if (line.text.isNotEmpty) {
+      buffer.writeln('  Line text (爻辭): ${line.text}');
+    }
+    if (line.xiaoXiangZhuan.isNotEmpty) {
+      buffer.writeln('  Small Image (小象傳): ${line.xiaoXiangZhuan}');
+    }
+  }
+
   /// Append the shared hexagram text sections (卦辭 / 彖傳 / 大象傳 /
   /// 象徵總結) to [buffer].
   void _writeContent(StringBuffer buffer, HexagramContent content) {

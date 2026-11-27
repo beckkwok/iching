@@ -33,10 +33,15 @@ void main() {
   Future<void> _pumpSettings(
     WidgetTester tester, {
     bool isProduction = false,
+    bool? showModelSection,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        home: SettingsScreen(databaseService: db, isProduction: isProduction),
+        home: SettingsScreen(
+          databaseService: db,
+          isProduction: isProduction,
+          showModelSection: showModelSection,
+        ),
       ),
     );
     // Let the async DB reads (model info + language) complete.
@@ -142,9 +147,26 @@ void main() {
     expect(group.groupValue, ThemePreference.light);
   });
 
+  testWidgets('remote edition hides the model section by default',
+      (tester) async {
+    // On Android (tests) AppConfig.useRemoteBackend is true, so the local
+    // model section is hidden unless explicitly requested.
+    await _pumpSettings(tester);
+
+    expect(find.text('Model'), findsNothing);
+    expect(find.text('File Name'), findsNothing);
+    expect(find.text('Full Path'), findsNothing);
+    expect(find.text('Language'), findsOneWidget);
+    expect(find.text('Theme'), findsOneWidget);
+  });
+
   testWidgets('development shows model path and remove-file action',
       (tester) async {
-    await _pumpSettings(tester, isProduction: false);
+    await _pumpSettings(
+      tester,
+      isProduction: false,
+      showModelSection: true,
+    );
 
     expect(find.text('Full Path'), findsOneWidget);
     expect(find.text('Remove Model File'), findsOneWidget);
@@ -152,7 +174,11 @@ void main() {
 
   testWidgets('production hides model path and remove-file action',
       (tester) async {
-    await _pumpSettings(tester, isProduction: true);
+    await _pumpSettings(
+      tester,
+      isProduction: true,
+      showModelSection: true,
+    );
 
     expect(find.text('Full Path'), findsNothing);
     expect(find.text('Remove Model File'), findsNothing);

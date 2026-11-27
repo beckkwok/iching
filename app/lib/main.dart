@@ -8,6 +8,7 @@ import 'l10n/app_localizations.dart';
 import 'l10n/locale_controller.dart';
 import 'models/language_preference.dart';
 import 'models/theme_preference.dart';
+import 'screens/firebase_config_error_screen.dart';
 import 'screens/firebase_consent_screen.dart';
 import 'screens/home_shell.dart';
 import 'screens/model_selection_screen.dart';
@@ -22,9 +23,11 @@ import 'theme/theme_controller.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Firebase AI Logic / App Check (issues #82/#84). Off until configured.
+  // Firebase AI Logic / App Check (issues #82/#84). Android defaults to the
+  // remote edition; the config comes from the local dart-define file.
+  var firebaseReady = false;
   if (AppConfig.firebaseEnabled) {
-    await initializeFirebase();
+    firebaseReady = await initializeFirebase();
   }
 
   // Attempt database initialisation across platforms. The database only
@@ -79,9 +82,14 @@ void main() async {
 
   final Widget home;
   if (remoteLlm != null) {
-    home = consent
-        ? HomeShell(databaseService: db, llmService: remoteLlm)
-        : FirebaseConsentScreen(databaseService: db, llmService: remoteLlm);
+    if (!firebaseReady) {
+      // Android must never fall back to the local model-selection screen.
+      home = const FirebaseConfigErrorScreen();
+    } else if (consent) {
+      home = HomeShell(databaseService: db, llmService: remoteLlm);
+    } else {
+      home = FirebaseConsentScreen(databaseService: db, llmService: remoteLlm);
+    }
   } else {
     home = ModelSelectionScreen(databaseService: db);
   }

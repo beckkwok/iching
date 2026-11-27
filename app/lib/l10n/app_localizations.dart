@@ -187,6 +187,17 @@ class AppLocalizations {
       );
   String get firebaseConsentAgree => _t('Agree & continue', '同意並繼續');
 
+  String get firebaseConfigErrorTitle =>
+      _t('Firebase is not configured', 'Firebase 尚未設定');
+  String get firebaseConfigErrorBody => _t(
+        'This Android build has no Firebase configuration. Build or run with '
+            '--dart-define-from-file=firebase.local.json (see '
+            'docs/firebase-setup.md).',
+        '此 Android 版本沒有 Firebase 設定。請使用 '
+            '--dart-define-from-file=firebase.local.json 建置或執行'
+            '（參閱 docs/firebase-setup.md）。',
+      );
+
   String get about => _t('About', '關於');
   String get version => _t('Version', '版本');
 
