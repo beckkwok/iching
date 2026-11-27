@@ -44,3 +44,12 @@
   suite 275 passing.
 - Verified on `emulator-5554` (Chinese UI): Preference shows Language, Theme,
   Prompts, Privacy, About - no Model section.
+
+## Task: Hide the personalized greeting
+
+- Added `AppConfig.personalizedGreetingEnabled` (default false; enable with
+  `--dart-define=ENABLE_PERSONALIZED_GREETING=true` when bundling).
+- The Ask screen no longer loads or displays the memory-based greeting by
+  default; the static prompt is unchanged. Tests inject `showGreeting: true`
+  to cover the enabled path.
+- Tests: 274 passing (main + new test).

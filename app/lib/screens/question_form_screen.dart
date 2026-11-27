@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/app_config.dart';
 import '../l10n/app_localizations.dart';
 import '../models/agent_memory.dart';
 import '../models/language_preference.dart';
@@ -30,11 +31,16 @@ class QuestionFormScreen extends StatefulWidget {
   /// the bundled JSON assets is used.
   final GuaGenerator? guaGenerator;
 
+  /// Whether to show the memory-based greeting. Defaults to
+  /// [AppConfig.personalizedGreetingEnabled] (hidden unless enabled).
+  final bool showGreeting;
+
   const QuestionFormScreen({
     super.key,
     required this.databaseService,
     this.llmService,
     this.guaGenerator,
+    this.showGreeting = AppConfig.personalizedGreetingEnabled,
   });
 
   @override
@@ -61,6 +67,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
 
   /// Load the agent memory for the personalized greeting (issue #25).
   Future<void> _loadMemory() async {
+    if (!widget.showGreeting) return;
     final db = widget.databaseService;
     if (db == null) return;
     try {
@@ -164,8 +171,9 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
       fontFamily: notoSerifFamily,
     );
     final memory = _memory;
-    final greeting =
-        memory == null ? null : buildAgentGreeting(memory, l10n);
+    final greeting = !widget.showGreeting || memory == null
+        ? null
+        : buildAgentGreeting(memory, l10n);
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(

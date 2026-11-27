@@ -106,6 +106,28 @@ void main() {
     expect(find.byKey(const ValueKey('method-manual')), findsOneWidget);
   });
 
+  testWidgets('hides the personalized greeting by default', (tester) async {
+    final memory = AgentMemory(
+      feeling: 'hopeful about the new job',
+      facts: const [],
+      preferences: const [],
+      updatedAt: DateTime(2026, 11, 3),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: QuestionFormScreen(
+          databaseService: _MemoryDb(memory),
+          guaGenerator: generator,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.textContaining('Welcome back'), findsNothing);
+    expect(find.text('What would you like to ask the I-Ching?'), findsOneWidget);
+  });
+
   testWidgets('shows a personalized greeting from agent memory',
       (tester) async {
     final memory = AgentMemory(
@@ -120,6 +142,7 @@ void main() {
         home: QuestionFormScreen(
           databaseService: _MemoryDb(memory),
           guaGenerator: generator,
+          showGreeting: true,
         ),
       ),
     );
