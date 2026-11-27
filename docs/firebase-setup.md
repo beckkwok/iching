@@ -50,6 +50,11 @@ pass the values with individual `--dart-define` flags.
   tokens*.
 - **Release:** enable Play Integrity (the app must be registered with Google
   Play).
+- **Sideloaded release builds:** Play Integrity cannot attest an APK signed with
+  the local debug key and not distributed by Play. Build local release APKs
+  with `--dart-define=APP_CHECK_DEBUG=true` (and the pinned
+  `FIREBASE_APPCHECK_DEBUG_TOKEN`) so they use the App Check debug provider.
+  Leave the flag off for Play Store builds.
 
 ## Notes
 
